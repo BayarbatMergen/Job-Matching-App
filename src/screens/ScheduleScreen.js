@@ -4,7 +4,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-// 📆 한국어 캘린더 설정
+//  한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
   monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
   monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
@@ -49,15 +49,15 @@ export default function ScheduleScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 🔙 돌아가기 버튼 */}
+      {/*  돌아가기 버튼 */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.header}>📅 일정 확인</Text>
+        <Text style={styles.header}>일정 확인</Text>
       </View>
 
-      {/* 📆 캘린더 */}
+      {/* 캘린더 */}
       <Calendar
         onDayPress={(day) => {
           if (!selectedStartDate) {
@@ -119,7 +119,7 @@ export default function ScheduleScreen() {
       <Modal visible={isModalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>📌 일정 추가</Text>
+            <Text style={styles.modalTitle}>일정 추가</Text>
             
             <View style={styles.inputRow}>
               <Ionicons name="time-outline" size={24} color="#007AFF" />
