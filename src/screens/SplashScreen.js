@@ -9,14 +9,14 @@ const SplashScreen = ({ navigation }) => {
     // 애니메이션 실행 (아래에서 위로 올라오기)
     Animated.timing(slideUp, {
       toValue: 0, // 최종 위치 (중앙)
-      duration: 2500, // 애니메이션 시간 (1.5초)
+      duration: 1750, // 애니메이션 시간 (1.5초)
       useNativeDriver: true, // 성능 최적화
     }).start();
 
     // 2초 후 로그인 화면으로 이동
     setTimeout(() => {
       navigation.replace('Login');
-    }, 3000);
+    }, 2250);
   }, []);
 
   return (

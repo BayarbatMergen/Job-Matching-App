@@ -21,7 +21,7 @@ export default function MyPageScreen() {
       {/* 📌 프로필 영역 */}
       <View style={styles.profileContainer}>
         <Image 
-          source={{ uri: 'https://via.placeholder.com/100' }} 
+          source={require('../../assets/images/thechingu1.png')} // ✅ 이미지 변경
           style={styles.profileImage} 
         />
         <Text style={styles.userName}>홍길동</Text>
