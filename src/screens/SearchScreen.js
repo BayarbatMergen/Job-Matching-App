@@ -1,18 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const SearchScreen = () => {
+export default function SearchScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>검색</Text>
-      <Text>검색 기능을 개발하세요.</Text>
+      <Text style={styles.text}>🔍 검색 화면입니다.</Text>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  text: { fontSize: 20, fontWeight: 'bold' },
 });
-
-export default SearchScreen;

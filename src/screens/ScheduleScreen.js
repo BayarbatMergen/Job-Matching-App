@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 
-//  한국어 캘린더 설정
+// 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
   monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
   monthNamesShort: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
@@ -15,166 +13,223 @@ LocaleConfig.locales['kr'] = {
 LocaleConfig.defaultLocale = 'kr';
 
 export default function ScheduleScreen() {
-  const navigation = useNavigation();
-  const [selectedStartDate, setSelectedStartDate] = useState('');
-  const [selectedEndDate, setSelectedEndDate] = useState('');
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [hourInput, setHourInput] = useState('');
-  const [wageInput, setWageInput] = useState('');
-  const [scheduleData, setScheduleData] = useState({});
+  const [scheduleData, setScheduleData] = useState({
+    '2025-02-22': [
+      { name: '한화 대천', wage: 100000 },
+      { name: '롯데월드', wage: 120000 },
+    ],
+    '2025-02-25': [{ name: '서울랜드', wage: 95000 }],
+    '2025-02-28': [{ name: '에버랜드', wage: 150000 }],
+  });
 
-  // 📌 일정 추가 함수
-  const addSchedule = () => {
-    if (!selectedStartDate || !selectedEndDate || !hourInput || !wageInput) return;
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedSchedules, setSelectedSchedules] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
+  const [totalWage, setTotalWage] = useState(0);
+  const [allTotalWage, setAllTotalWage] = useState(0); // 📌 모든 일정의 총 급여
 
-    let currentDate = new Date(selectedStartDate);
-    const endDate = new Date(selectedEndDate);
+  // 📌 **모든 일정의 총 급여 계산**
+  useEffect(() => {
+    let sum = 0;
+    Object.values(scheduleData).forEach((schedules) => {
+      schedules.forEach((schedule) => {
+        sum += schedule.wage;
+      });
+    });
+    setAllTotalWage(sum);
+  }, [scheduleData]);
 
-    let newSchedules = { ...scheduleData };
-    while (currentDate <= endDate) {
-      const formattedDate = currentDate.toISOString().split('T')[0];
+  // 📌 **날짜 클릭 시 일정 표시 및 선택한 날짜 강조**
+  const handleDayPress = (day) => {
+    const formattedDate = day.dateString;
 
-      newSchedules[formattedDate] = newSchedules[formattedDate]
-        ? [...newSchedules[formattedDate], { hours: hourInput, wage: wageInput }]
-        : [{ hours: hourInput, wage: wageInput }];
+    setMarkedDates({
+      [formattedDate]: {
+        selected: true,
+        selectedColor: '#007AFF', // 선택된 날짜 강조
+      },
+    });
 
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
+    const schedules = scheduleData[formattedDate] || [];
+    setSelectedDate(formattedDate);
+    setSelectedSchedules(schedules);
 
-    setScheduleData(newSchedules);
-    setHourInput('');
-    setWageInput('');
-    setModalVisible(false);
+    // 📌 선택한 날짜의 총 급여 계산
+    const total = schedules.reduce((sum, schedule) => sum + schedule.wage, 0);
+    setTotalWage(total);
   };
 
   return (
-    <View style={styles.container}>
-      {/*  돌아가기 버튼 */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.header}>일정 확인</Text>
-      </View>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={{ flexGrow: 1 }}>
+      <View style={styles.container}>
+        {/* 📆 캘린더 */}
+        <Calendar
+          monthFormat={'yyyy MM'}
+          onDayPress={handleDayPress}
+          markingType={'custom'}
+          markedDates={{
+            ...markedDates,
+            ...Object.keys(scheduleData).reduce((acc, date) => {
+              acc[date] = {
+                customStyles: {
+                  container: { backgroundColor: '#FFD700', borderRadius: 5 },
+                  text: { color: '#000', fontWeight: 'bold' },
+                },
+              };
+              return acc;
+            }, {}),
+          }}
+          theme={{
+            todayTextColor: '#FF5733',
+            arrowColor: '#007AFF',
+            textDayFontSize: 20,
+            textMonthFontSize: 22,
+            textDayHeaderFontSize: 16,
+          }}
+          style={styles.calendar}
+        />
 
-      {/* 캘린더 */}
-      <Calendar
-        onDayPress={(day) => {
-          if (!selectedStartDate) {
-            setSelectedStartDate(day.dateString);
-          } else if (!selectedEndDate) {
-            setSelectedEndDate(day.dateString);
-          } else {
-            setSelectedStartDate(day.dateString);
-            setSelectedEndDate('');
-          }
-        }}
-        markedDates={{
-          ...Object.keys(scheduleData).reduce((acc, date) => {
-            acc[date] = {
-              selected: true,
-              customStyles: {
-                container: { backgroundColor: '#FFD580', borderRadius: 8 }, // ✨ 더 밝은 색상으로 변경
-                text: { color: '#333', fontWeight: 'bold' },
-              },
-            };
-            return acc;
-          }, {}),
-          [selectedStartDate]: { selected: true, selectedColor: '#007AFF' },
-          [selectedEndDate]: { selected: true, selectedColor: '#007AFF' },
-        }}
-        markingType={'custom'}
-        theme={{
-          selectedDayBackgroundColor: '#007AFF',
-          todayTextColor: '#FF5733',
-          arrowColor: '#007AFF',
-          textDayFontSize: 18,
-          textMonthFontSize: 20,
-          textDayHeaderFontSize: 16,
-        }}
-        style={styles.calendar}
-      />
-
-      {/* 📌 일정 추가 버튼 */}
-      {selectedStartDate && selectedEndDate && (
-        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-          <Text style={styles.addButtonText}>+ 일정 추가</Text>
-        </TouchableOpacity>
-      )}
-
-       {/* 📌 선택한 일정 표시 */}
-      <ScrollView style={styles.selectedDateBox}>
-        <Text style={styles.selectedDateText}>
-          📅 {selectedStartDate} ~ {selectedEndDate || '날짜를 선택하세요'}
-        </Text>
-        {(scheduleData[selectedStartDate] || []).map((item, index) => (
-          <View key={index} style={styles.scheduleItem}>
-            <Text style={styles.scheduleText}>⏳ {item.hours}시간</Text>
-            <Text style={styles.scheduleText}>💰 {item.wage} 원</Text>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* 📌 일정 추가 모달 */}
-      <Modal visible={isModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>일정 추가</Text>
-            
-            <View style={styles.inputRow}>
-              <Ionicons name="time-outline" size={24} color="#007AFF" />
-              <TextInput
-                style={styles.input}
-                placeholder="근무 시간 (예: 한화리조트)"
-                keyboardType="numeric"
-                value={hourInput}
-                onChangeText={setHourInput}
-              />
-            </View>
-
-            <View style={styles.inputRow}>
-              <Ionicons name="cash-outline" size={24} color="#007AFF" />
-              <TextInput
-                style={styles.input}
-                placeholder="급여 (예: 100'000)"
-                keyboardType="numeric"
-                value={wageInput}
-                onChangeText={setWageInput}
-              />
-            </View>
-
-            <TouchableOpacity style={styles.saveButton} onPress={addSchedule}>
-              <Text style={styles.saveButtonText}>저장</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.cancelText}>취소</Text>
-            </TouchableOpacity>
-          </View>
+        {/* 📌 선택한 날짜 일정 표시 */}
+        <View style={styles.selectedScheduleContainer}>
+          <Text style={styles.selectedDateText}>{selectedDate ? `${selectedDate}` : '날짜를 선택하세요'}</Text>
+          <ScrollView style={styles.scheduleList} contentContainerStyle={{ flexGrow: 1 }}>
+            {selectedSchedules.length > 0 ? (
+              selectedSchedules.map((schedule, index) => (
+                <View key={index} style={styles.scheduleDetail}>
+                  <View style={styles.scheduleRow}>
+                    <Text style={styles.scheduleLabel}>일정:</Text>
+                    <Text style={styles.scheduleDetailText}>{schedule.name}</Text>
+                  </View>
+                  <View style={styles.scheduleRow}>
+                    <Text style={styles.scheduleLabel}>급여:</Text>
+                    <Text style={styles.scheduleDetailWage}>{schedule.wage.toLocaleString()}원</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noScheduleText}>해당 날짜에 일정이 없습니다.</Text>
+            )}
+          </ScrollView>
         </View>
-      </Modal>
-    </View>
+
+        {/* 📌 총 급여 박스 */}
+        <View style={styles.totalWageContainer}>
+          <Text style={styles.totalWageText}>해당 날짜 총 급여: {totalWage.toLocaleString()}원</Text>
+        </View>
+
+        {/* 📌 캘린더에 있는 모든 일정 총 급여 박스 */}
+        <View style={styles.allTotalWageContainer}>
+          <Text style={styles.allTotalWageText}>총 급여 합산: {allTotalWage.toLocaleString()}원</Text>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  headerContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  backButton: { marginRight: 15 },
-  header: { fontSize: 24, fontWeight: 'bold', color: '#222' },
-  calendar: { borderRadius: 10, paddingBottom: 10, backgroundColor: '#F8F8F8', elevation: 3 },
-   selectedDateBox: { marginTop: 15, padding: 10, backgroundColor: '#E3F2FD', borderRadius: 8 },
-   selectedDateText: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-    scheduleItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: '#ddd' },
-  scheduleText: { fontSize: 16, color: '#333' },
-  addButton: { backgroundColor: '#007AFF', padding: 15, borderRadius: 10, marginTop: 20, alignItems: 'center' },
-  addButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { width: '85%', padding: 25, backgroundColor: 'white', borderRadius: 15, alignItems: 'center', elevation: 5 },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 15 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 10, paddingHorizontal: 10, marginBottom: 12, width: '100%' },
-  input: { flex: 1, height: 50, fontSize: 16, paddingLeft: 10 },
-  saveButton: { backgroundColor: '#007AFF', padding: 12, borderRadius: 8, alignItems: 'center', width: '100%' },
-  saveButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  cancelText: { fontSize: 16, color: 'red', marginTop: 10 },
+  scrollContainer: { flex: 1 },
+
+  container: { flex: 1, backgroundColor: '#fff', paddingTop: 20 },
+
+  // 📆 캘린더 스타일
+  calendar: { borderRadius: 10, backgroundColor: '#F8F8F8', paddingBottom: 10, elevation: 3, flexShrink: 1 },
+
+  // 📌 선택한 날짜 일정 표시 박스
+  selectedScheduleContainer: {
+    flex: 1,
+    marginTop: 20,
+    padding: 20,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 10,
+    elevation: 5,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+  },
+
+  selectedDateText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    marginBottom: 10,
+    color: '#333',
+  },
+
+  scheduleList: { flex: 1 },
+
+  scheduleDetail: {
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    marginBottom: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FFB000',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+
+  scheduleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+
+  scheduleLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+
+  scheduleDetailText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#007AFF',
+  },
+
+  scheduleDetailWage: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FF5733',
+  },
+
+  noScheduleText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#AAA',
+  },
+
+  totalWageContainer: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 10,
+    marginHorizontal: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCC',
+  },
+
+  totalWageText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+
+  allTotalWageContainer: {
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: '#FFD700',
+    borderRadius: 10,
+    marginHorizontal: 20,
+    alignItems: 'center',
+  },
+
+  allTotalWageText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
 });

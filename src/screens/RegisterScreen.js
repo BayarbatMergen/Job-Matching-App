@@ -5,9 +5,10 @@ import {
 import { Picker } from '@react-native-picker/picker';
 
 const RegisterScreen = ({ navigation }) => {
-  const [userType, setUserType] = useState(null); // 'personal' (개인) | 'business' (기업)
+  const [userType, setUserType] = useState(null); // 'personal' (개인) | 'business' (관리자)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [companyPassword, setCompanyPassword] = useState(''); // 관리자용 비밀번호
   const [idImage, setIdImage] = useState(null);
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
@@ -18,7 +19,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     console.log('회원가입:', {
-      userType, email, password, idImage, name, gender, phone, bank, accountNumber
+      userType, email, password, companyPassword, idImage, name, gender, phone, bank, accountNumber
     });
     navigation.navigate('JobList');
   };
@@ -35,7 +36,7 @@ const RegisterScreen = ({ navigation }) => {
                 <Text style={styles.modalButtonText}>개인 회원</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalButton} onPress={() => { setUserType('business'); setModalVisible(false); }}>
-                <Text style={styles.modalButtonText}>기업 회원</Text>
+                <Text style={styles.modalButtonText}>관리자</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -45,6 +46,7 @@ const RegisterScreen = ({ navigation }) => {
         <Image source={require('../../assets/images/thechingu.png')} style={styles.logo} />
         <Text style={styles.title}>회원가입</Text>
 
+        {/* 개인 회원가입 */}
         {userType === 'personal' && (
           <>
             <TextInput style={styles.input} placeholder="이메일" value={email} onChangeText={setEmail} keyboardType="email-address" />
@@ -72,9 +74,16 @@ const RegisterScreen = ({ navigation }) => {
           </>
         )}
 
+        {/* 관리자 회원가입 */}
         {userType === 'business' && (
           <>
-            <Text style={styles.businessPlaceholder}>기업 회원 가입 양식은 추후 추가됩니다.</Text>
+            <TextInput style={styles.input} placeholder="이메일" value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <TextInput style={styles.input} placeholder="비밀번호" secureTextEntry value={password} onChangeText={setPassword} />
+            <TextInput style={styles.input} placeholder="회사 비밀번호" secureTextEntry value={companyPassword} onChangeText={setCompanyPassword} />
+
+            <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
+              <Text style={styles.registerButtonText}>관리자 계정 생성</Text>
+            </TouchableOpacity>
           </>
         )}
 
@@ -99,7 +108,6 @@ const styles = StyleSheet.create({
   registerButton: { backgroundColor: '#007AFF', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 10 },
   registerButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   loginText: { color: '#007AFF', fontSize: 16, marginTop: 15, fontWeight: '500' },
-  businessPlaceholder: { fontSize: 16, fontWeight: '500', color: '#777', marginTop: 10 },
 
   // 회원가입 선택 모달
   modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
