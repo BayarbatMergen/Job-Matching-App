@@ -61,18 +61,16 @@ export default function ScheduleScreen({ navigation }) {
 
   // 📌 **정산 요청 버튼 클릭 시 관리자에게 요청 전달**
   const handleSettlementRequest = () => {
-    if (!selectedDate || selectedSchedules.length === 0) {
-      Alert.alert('정산 요청 실패', '정산할 일정을 선택해주세요.');
+    if (allTotalWage === 0) {
+      Alert.alert('정산 요청 실패', '정산할 일정이 없습니다.');
       return;
     }
-
+  
     // 관리자에게 정산 요청 전달
-    Alert.alert('정산 요청 완료', `관리자에게 ${selectedDate} 일정 정산 요청을 보냈습니다.`);
-
-    // ✅ 관리자에게 데이터 전달
-    navigation.navigate('AdminChat', { 
-      settlementRequest: { date: selectedDate, schedules: selectedSchedules }
-    });
+    Alert.alert('정산 요청 완료', `총 급여 ${allTotalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
+  
+    // ✅ 로그 기록 (네비게이션 제거)
+    console.log(`📌 [정산 요청] 총 급여: ${allTotalWage.toLocaleString()}원`);
   };
 
   return (

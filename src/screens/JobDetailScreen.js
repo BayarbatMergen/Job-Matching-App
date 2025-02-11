@@ -23,19 +23,19 @@ export default function JobDetailScreen({ route, navigation }) {
 
         <View style={styles.infoBox}>
           <Text style={styles.detailSubTitle}>📌 근무 조건</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>💰 급여:</Text> {job.wage}</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>📅 근무 기간:</Text> {job.date}</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>🗓 근무 요일:</Text> 금-토</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>⏰ 근무 시간:</Text> 9:00-18:00</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>🏢 업직종:</Text> 정비</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>📑 고용형태:</Text> 단기</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>🏠 숙식 여부:</Text> 숙소 있음</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>👥 모집 인원:</Text> 5명 (남성 3, 여성 2)</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>📍 근무 지역:</Text> 서울 강남구</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>급여:</Text> {job.wage}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 기간:</Text> {job.date}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 요일:</Text> 금-토</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 시간:</Text> 9:00-18:00</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>업직종:</Text> 정비</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>고용형태:</Text> 단기</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>숙식 여부:</Text> 숙소 있음</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>모집 인원:</Text> 5명 (남성 3, 여성 2)</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 지역:</Text> 서울 강남구</Text>
         </View>
 
         <View style={styles.descriptionBox}>
-          <Text style={styles.detailSubTitle}>📄 상세 요강</Text>
+          <Text style={styles.detailSubTitle}>상세 요강</Text>
           <Text style={styles.descriptionText}>
             - 고객 응대 및 서비스 지원{'\n'}
             - 근무시간 엄수 및 청결 유지{'\n'}
@@ -45,7 +45,7 @@ export default function JobDetailScreen({ route, navigation }) {
 
         {/* ✅ 지원하기 버튼 */}
         <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-          <Text style={styles.applyButtonText}>✅ 지원하기</Text>
+          <Text style={styles.applyButtonText}>지원하기</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

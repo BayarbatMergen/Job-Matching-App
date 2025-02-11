@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; // ✅ 아이콘 추가
 
 const jobListings = [
   { id: '1', title: '한화 리조트 대천 주말 알바 채용', wage: '일급 10만원', date: '11.22-11.23' },
@@ -8,6 +9,17 @@ const jobListings = [
 ];
 
 export default function JobListScreen({ navigation }) {
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: '모집 공고',
+      headerRight: () => (
+        <TouchableOpacity onPress={() => navigation.navigate('Notification')} style={styles.iconButton}>
+          <Ionicons name="notifications-outline" size={28} color="black" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -50,4 +62,5 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },
   wage: { fontSize: 16, color: 'red', marginBottom: 5 },
   date: { fontSize: 14, textAlign: 'right', color: 'gray' },
+  iconButton: { paddingRight: 15 }, // ✅ 아이콘 위치 조정
 });

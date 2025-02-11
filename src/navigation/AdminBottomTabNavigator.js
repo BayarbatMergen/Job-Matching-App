@@ -63,14 +63,8 @@ function AdminScheduleStack() {
 // 📌 관리자 채팅 네비게이터
 function AdminChatStack() {
   return (
-    <Stack.Navigator 
-      screenOptions={{ 
-        headerStyle: { backgroundColor: '#007AFF' },
-        headerTintColor: '#fff',
-        headerTitleAlign: 'center'
-      }}
-    >
-      <Stack.Screen name="AdminChat" component={AdminChatScreen} options={{ headerTitle: '관리자 채팅' }} />
+    <Stack.Navigator>
+      <Stack.Screen name="AdminChatScreen" component={AdminChatScreen} options={{ headerTitle: '관리자 채팅' }} />
     </Stack.Navigator>
   );
 }
