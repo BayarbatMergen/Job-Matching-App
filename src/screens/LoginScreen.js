@@ -7,11 +7,21 @@ const LoginScreen = ({ navigation }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [isResetMode, setIsResetMode] = useState(false);
 
+  // ✅ 관리자 계정 정보 (임시 설정)
+  const adminEmail = 'admin@example.com';
+  const adminPassword = 'admin123';
+
   // 📌 로그인 처리
   const handleLogin = () => {
     console.log('로그인 버튼 클릭됨:', email, password);
-    navigation.replace('Main'); // 로그인 후 공고 목록으로 이동
-  };
+  
+    if (email === adminEmail && password === adminPassword) {
+      Alert.alert('관리자 로그인 성공', '관리자 모드로 이동합니다.');
+      navigation.replace('AdminMain'); // ✅ 관리자 네비게이션으로 이동
+    } else {
+      navigation.replace('Main'); // ✅ 일반 사용자 네비게이션으로 이동 (메시지 제거)
+    }
+  };  
 
   // 📌 비밀번호 재설정 요청
   const handlePasswordReset = () => {

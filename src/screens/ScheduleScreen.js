@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 
 // 📆 한국어 캘린더 설정
@@ -12,7 +12,7 @@ LocaleConfig.locales['kr'] = {
 };
 LocaleConfig.defaultLocale = 'kr';
 
-export default function ScheduleScreen() {
+export default function ScheduleScreen({ navigation }) {
   const [scheduleData, setScheduleData] = useState({
     '2025-02-22': [
       { name: '한화 대천', wage: 100000 },
@@ -26,7 +26,7 @@ export default function ScheduleScreen() {
   const [selectedSchedules, setSelectedSchedules] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [totalWage, setTotalWage] = useState(0);
-  const [allTotalWage, setAllTotalWage] = useState(0); // 📌 모든 일정의 총 급여
+  const [allTotalWage, setAllTotalWage] = useState(0);
 
   // 📌 **모든 일정의 총 급여 계산**
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function ScheduleScreen() {
     setMarkedDates({
       [formattedDate]: {
         selected: true,
-        selectedColor: '#007AFF', // 선택된 날짜 강조
+        selectedColor: '#007AFF',
       },
     });
 
@@ -57,6 +57,22 @@ export default function ScheduleScreen() {
     // 📌 선택한 날짜의 총 급여 계산
     const total = schedules.reduce((sum, schedule) => sum + schedule.wage, 0);
     setTotalWage(total);
+  };
+
+  // 📌 **정산 요청 버튼 클릭 시 관리자에게 요청 전달**
+  const handleSettlementRequest = () => {
+    if (!selectedDate || selectedSchedules.length === 0) {
+      Alert.alert('정산 요청 실패', '정산할 일정을 선택해주세요.');
+      return;
+    }
+
+    // 관리자에게 정산 요청 전달
+    Alert.alert('정산 요청 완료', `관리자에게 ${selectedDate} 일정 정산 요청을 보냈습니다.`);
+
+    // ✅ 관리자에게 데이터 전달
+    navigation.navigate('AdminChat', { 
+      settlementRequest: { date: selectedDate, schedules: selectedSchedules }
+    });
   };
 
   return (
@@ -112,15 +128,20 @@ export default function ScheduleScreen() {
           </ScrollView>
         </View>
 
-        {/* 📌 총 급여 박스 */}
+        {/* 📌 해당 날짜 총 급여 */}
         <View style={styles.totalWageContainer}>
           <Text style={styles.totalWageText}>해당 날짜 총 급여: {totalWage.toLocaleString()}원</Text>
         </View>
 
-        {/* 📌 캘린더에 있는 모든 일정 총 급여 박스 */}
+        {/* 📌 전체 일정 총 급여 */}
         <View style={styles.allTotalWageContainer}>
           <Text style={styles.allTotalWageText}>총 급여 합산: {allTotalWage.toLocaleString()}원</Text>
         </View>
+
+        {/* 📌 정산 요청 버튼 (가장 아래 배치) */}
+        <TouchableOpacity style={styles.settlementButton} onPress={handleSettlementRequest}>
+          <Text style={styles.settlementButtonText}>정산 요청</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -128,7 +149,6 @@ export default function ScheduleScreen() {
 
 const styles = StyleSheet.create({
   scrollContainer: { flex: 1 },
-
   container: { flex: 1, backgroundColor: '#fff', paddingTop: 20 },
 
   // 📆 캘린더 스타일
@@ -146,90 +166,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#DDDDDD',
   },
-
-  selectedDateText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    marginBottom: 10,
-    color: '#333',
-  },
+  selectedDateText: { fontSize: 18, fontWeight: 'bold', textAlign: 'left', marginBottom: 10, color: '#333' },
 
   scheduleList: { flex: 1 },
+  scheduleDetail: { backgroundColor: '#FFFFFF', padding: 15, marginBottom: 8, borderRadius: 10, borderWidth: 1, borderColor: '#FFB000', elevation: 3 },
 
-  scheduleDetail: {
-    backgroundColor: '#FFFFFF',
-    padding: 15,
-    marginBottom: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#FFB000',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
+  scheduleRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
+  scheduleLabel: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  scheduleDetailText: { fontSize: 16, fontWeight: '500', color: '#007AFF' },
+  scheduleDetailWage: { fontSize: 16, fontWeight: '500', color: '#FF5733' },
 
-  scheduleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
+  noScheduleText: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', color: '#AAA' },
 
-  scheduleLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
+  totalWageContainer: { marginTop: 20, padding: 12, backgroundColor: '#F0F0F0', borderRadius: 10, marginHorizontal: 20, alignItems: 'center', borderWidth: 1, borderColor: '#CCC' },
+  totalWageText: { fontSize: 18, fontWeight: 'bold', color: '#333' },
 
-  scheduleDetailText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#007AFF',
-  },
+  allTotalWageContainer: { marginTop: 10, padding: 12, backgroundColor: '#FFD700', borderRadius: 10, marginHorizontal: 20, alignItems: 'center' },
+  allTotalWageText: { fontSize: 20, fontWeight: 'bold', color: '#333' },
 
-  scheduleDetailWage: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FF5733',
-  },
-
-  noScheduleText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#AAA',
-  },
-
-  totalWageContainer: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 10,
-    marginHorizontal: 20,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#CCC',
-  },
-
-  totalWageText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-
-  allTotalWageContainer: {
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: '#FFD700',
-    borderRadius: 10,
-    marginHorizontal: 20,
-    alignItems: 'center',
-  },
-
-  allTotalWageText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
+  settlementButton: { backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center', marginVertical: 20, marginHorizontal: 20 },
+  settlementButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });
