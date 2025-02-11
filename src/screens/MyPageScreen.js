@@ -7,12 +7,12 @@ export default function MyPageScreen() {
   const navigation = useNavigation();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
-  // 🔹 로그아웃 처리 (Firebase 없이)
+  // 🔹 로그아웃 처리
   const handleLogout = () => {
     setLogoutModalVisible(false);
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],  // ✅ 뒤로 가기 방지 후 로그인으로 이동
+      routes: [{ name: 'Login' }],  // ✅ 로그인 화면으로 이동 (뒤로 가기 방지)
     });
   };
 
@@ -21,7 +21,7 @@ export default function MyPageScreen() {
       {/* 📌 프로필 영역 */}
       <View style={styles.profileContainer}>
         <Image 
-          source={require('../../assets/images/thechingu1.png')} // ✅ 이미지 변경
+          source={require('../../assets/images/thechingu1.png')} // ✅ 프로필 이미지
           style={styles.profileImage} 
         />
         <Text style={styles.userName}>홍길동</Text>
@@ -30,12 +30,12 @@ export default function MyPageScreen() {
 
       {/* 🔹 설정 메뉴 */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('계좌 정보 변경')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('BankInfo')}>
           <Ionicons name="card-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>계좌 정보 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('비밀번호 변경')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword')}>
           <Ionicons name="key-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>비밀번호 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
@@ -44,12 +44,12 @@ export default function MyPageScreen() {
 
       {/* 📢 공지사항 & 고객센터 */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('공지사항')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Notice')}>
           <Ionicons name="megaphone-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>공지사항</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('고객센터 문의')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('CustomerSupport')}>
           <Ionicons name="help-circle-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>고객센터 문의</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
@@ -83,6 +83,7 @@ export default function MyPageScreen() {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },
