@@ -1,52 +1,115 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
-export default function AdminJobFormScreen({ navigation, route }) {
-  const jobToEdit = route.params?.job;
-  const addJob = route.params?.addJob; // ✅ 새 공고 추가 함수 받아오기
+export default function AdminJobFormScreen({ route, navigation }) {
+  const { addJob } = route.params;
+  const [form, setForm] = useState({
+    title: '',
+    wage: '',
+    workPeriod: '',
+    workDays: '',
+    workHours: '',
+    industry: '',
+    employmentType: '',
+    accommodation: false,
+    recruitment: '',
+    location: '',
+    description: '',
+  });
 
-  // 🔥 공고 입력 필드 상태
-  const [title, setTitle] = useState(jobToEdit ? jobToEdit.title : '');
-  const [wage, setWage] = useState(jobToEdit ? jobToEdit.wage : '');
-  const [date, setDate] = useState(jobToEdit ? jobToEdit.date : '');
+  // 🔹 숫자 입력 검증
+  const handleNumberInput = (key, value) => {
+    if (/^\d*$/.test(value)) {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    }
+  };
 
-  // 📌 공고 저장 처리 함수
-  const handleSave = () => {
-    const newJob = {
-      id: jobToEdit ? jobToEdit.id : Date.now().toString(), // 새로운 ID 생성
-      title,
-      wage,
-      date,
-    };
-
-    if (jobToEdit) {
-      console.log('📝 공고 수정:', newJob);
-    } else {
-      console.log('📌 새 공고 등록:', newJob);
-      addJob(newJob); // ✅ 새로운 공고 추가
+  // 🔹 공고 등록 버튼 클릭 시
+  const handleSubmit = () => {
+    for (let key in form) {
+      if (form[key] === '') {
+        Alert.alert('입력 오류', '모든 항목을 입력해주세요.');
+        return;
+      }
     }
 
-    navigation.goBack(); // 🔥 `goBack()`으로 AdminJobListScreen으로 이동
+    addJob({ id: Date.now().toString(), ...form });
+    Alert.alert('등록 완료', '공고가 성공적으로 등록되었습니다.');
+    navigation.goBack();
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{jobToEdit ? '공고 수정' : '공고 등록'}</Text>
-      <TextInput style={styles.input} placeholder="공고 제목" value={title} onChangeText={setTitle} />
-      <TextInput style={styles.input} placeholder="급여 (예: 시급 12,000원)" value={wage} onChangeText={setWage} />
-      <TextInput style={styles.input} placeholder="근무 기간 (예: 11.22-11.23)" value={date} onChangeText={setDate} />
+    <ScrollView style={styles.container}>
+      <Text style={styles.header}>공고 등록</Text>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>{jobToEdit ? '수정 완료' : '등록 완료'}</Text>
+      <Text style={styles.label}>제목</Text>
+      <TextInput style={styles.input} value={form.title} onChangeText={(text) => setForm({ ...form, title: text })} placeholder="공고 제목 입력" />
+
+      <Text style={styles.label}>급여</Text>
+      <TextInput style={styles.input} value={form.wage} keyboardType="numeric" onChangeText={(text) => handleNumberInput('wage', text)} placeholder="급여 입력 (숫자만)" />
+
+      <Text style={styles.label}>근무 기간</Text>
+      <TextInput
+        style={styles.input}
+        value={form.workPeriod}
+        onChangeText={(text) => setForm({ ...form, workPeriod: text })}
+        placeholder="YYYY-MM-DD ~ YYYY-MM-DD"
+      />
+
+      <Text style={styles.label}>근무 요일</Text>
+      <TextInput style={styles.input} value={form.workDays} onChangeText={(text) => setForm({ ...form, workDays: text })} placeholder="예: 월, 수, 금" />
+
+      <Text style={styles.label}>근무 시간</Text>
+      <TextInput style={styles.input} value={form.workHours} onChangeText={(text) => setForm({ ...form, workHours: text })} placeholder="예: 09:00 - 18:00" />
+
+      <Text style={styles.label}>업직종</Text>
+      <Picker selectedValue={form.industry} onValueChange={(value) => setForm({ ...form, industry: value })} style={styles.picker}>
+        <Picker.Item label="선택하세요" value="" />
+        <Picker.Item label="요식업" value="요식업" />
+        <Picker.Item label="서비스업" value="서비스업" />
+        <Picker.Item label="물류/창고" value="물류/창고" />
+        <Picker.Item label="기타" value="기타" />
+      </Picker>
+
+      <Text style={styles.label}>고용 형태</Text>
+      <Picker selectedValue={form.employmentType} onValueChange={(value) => setForm({ ...form, employmentType: value })} style={styles.picker}>
+        <Picker.Item label="선택하세요" value="" />
+        <Picker.Item label="정규직" value="정규직" />
+        <Picker.Item label="계약직" value="계약직" />
+        <Picker.Item label="아르바이트" value="아르바이트" />
+        <Picker.Item label="기타" value="기타" />
+      </Picker>
+
+      <Text style={styles.label}>숙식 제공 여부</Text>
+      <TouchableOpacity style={styles.toggleButton} onPress={() => setForm({ ...form, accommodation: !form.accommodation })}>
+        <Text>{form.accommodation ? '숙식 제공 O' : '숙식 제공 X'}</Text>
       </TouchableOpacity>
-    </View>
+
+      <Text style={styles.label}>모집 인원</Text>
+      <TextInput style={styles.input} value={form.recruitment} keyboardType="numeric" onChangeText={(text) => handleNumberInput('recruitment', text)} placeholder="모집 인원 (숫자만)" />
+
+      <Text style={styles.label}>근무 지역</Text>
+      <TextInput style={styles.input} value={form.location} onChangeText={(text) => setForm({ ...form, location: text })} placeholder="근무 지역 입력" />
+
+      <Text style={styles.label}>상세 요강</Text>
+      <TextInput style={styles.textArea} value={form.description} onChangeText={(text) => setForm({ ...form, description: text })} placeholder="상세 요강 입력" multiline />
+
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        <Text style={styles.submitButtonText}>공고 등록</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 12, borderRadius: 8, marginBottom: 12 },
-  saveButton: { backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center' },
-  saveButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: '#fff', padding: 20 },
+  header: { fontSize: 22, fontWeight: 'bold', marginBottom: 15 },
+  label: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 5 },
+  picker: { marginTop: 5, borderColor: '#ccc', borderWidth: 1 },
+  toggleButton: { padding: 10, borderWidth: 1, borderRadius: 8, marginTop: 5, alignItems: 'center' },
+  textArea: { borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 5, height: 80 },
+  submitButton: { backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 20 },
+  submitButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });

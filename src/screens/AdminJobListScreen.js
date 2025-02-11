@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const initialJobListings = [
@@ -13,9 +13,23 @@ const initialJobListings = [
 export default function AdminJobListScreen({ navigation }) {
   const [jobListings, setJobListings] = useState(initialJobListings);
 
-  // 🔥 새로운 공고 추가 함수
+  // 🔥 공고 추가 함수 (최신순 정렬)
   const addJob = (newJob) => {
-    setJobListings((prevJobs) => [...prevJobs, newJob]);
+    setJobListings((prevJobs) => [newJob, ...prevJobs]); // 최신 공고가 위로 오도록 배열 맨 앞에 추가
+  };
+
+  // ❌ 공고 삭제 함수
+  const deleteJob = (jobId) => {
+    Alert.alert('삭제 확인', '정말로 이 공고를 삭제하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        onPress: () => {
+          setJobListings((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
+          Alert.alert('삭제 완료', '공고가 삭제되었습니다.');
+        },
+      },
+    ]);
   };
 
   return (
@@ -27,28 +41,37 @@ export default function AdminJobListScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 80 }}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.jobCard}
-              onPress={() =>
-                navigation.navigate('AdminJobDetail', {
-                  job: item,
-                  updateJob: (updatedJob) => {
-                    setJobListings((prevJobs) =>
-                      prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
-                    );
-                  },
-                })
-              }
-            >
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.wage}>{item.wage}</Text>
-              <Text style={styles.date}>{item.date}</Text>
-            </TouchableOpacity>
+            <View style={styles.jobCard}>
+              <TouchableOpacity
+                style={styles.jobContent}
+                onPress={() =>
+                  navigation.navigate('AdminJobDetail', {
+                    job: item,
+                    updateJob: (updatedJob) => {
+                      setJobListings((prevJobs) =>
+                        prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
+                      );
+                    },
+                  })
+                }
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={styles.wage}>{item.wage}</Text>
+                  <Text style={styles.date}>{item.date}</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* ❌ 삭제 버튼 */}
+              <TouchableOpacity style={styles.deleteButton} onPress={() => deleteJob(item.id)}>
+                <Ionicons name="trash-outline" size={24} color="red" />
+              </TouchableOpacity>
+            </View>
           )}
           showsVerticalScrollIndicator={false}
         />
 
-        {/* 📌 하단에 고정된 공고 등록 버튼 */}
+        {/* 📌 하단 공고 등록 버튼 */}
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => navigation.navigate('AdminJobForm', { addJob })}
@@ -63,6 +86,33 @@ export default function AdminJobListScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  
+  jobCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F8F8',
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  jobContent: { flex: 1 },
+  
+  title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },
+  wage: { fontSize: 16, color: 'red', marginBottom: 5 },
+  date: { fontSize: 14, textAlign: 'right', color: 'gray' },
+
+  deleteButton: {
+    padding: 8,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+
   addButton: {
     position: 'absolute',
     bottom: 20,
@@ -80,19 +130,4 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   addButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
-  jobCard: {
-    backgroundColor: '#F8F8F8',
-    padding: 20,
-    marginBottom: 15,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  wage: { fontSize: 16, color: 'red', marginBottom: 5 },
-  date: { fontSize: 14, textAlign: 'right', color: 'gray' },
 });

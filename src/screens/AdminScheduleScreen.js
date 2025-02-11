@@ -100,7 +100,7 @@ export default function AdminScheduleScreen() {
             {selectedSchedules.length > 0 ? (
               selectedSchedules.map((schedule, index) => (
                 <View key={index} style={styles.scheduleDetail}>
-                  <Text style={styles.scheduleDetailText}>📌 {schedule.name}</Text>
+                  <Text style={styles.scheduleDetailText}> {schedule.name}</Text>
                 </View>
               ))
             ) : (

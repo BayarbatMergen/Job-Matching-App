@@ -30,12 +30,12 @@ export default function AdminMyPageScreen() {
 
       {/* 🔹 관리자 설정 메뉴 */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('계좌 정보 변경')}>
-          <Ionicons name="card-outline" size={26} color="#FF9500" />
-          <Text style={styles.menuText}>계좌 정보 변경</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('UserManagementScreen')}>
+          <Ionicons name="people-outline" size={26} color="#FF9500" />
+          <Text style={styles.menuText}>총 사용자 정보 관리</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('비밀번호 변경')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AdminPasswordChangeScreen')}>
           <Ionicons name="key-outline" size={26} color="#FF9500" />
           <Text style={styles.menuText}>비밀번호 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
@@ -44,14 +44,14 @@ export default function AdminMyPageScreen() {
 
       {/* 📢 공지사항 & 고객센터 */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('공지사항')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NoticeWriteScreen')}>
           <Ionicons name="megaphone-outline" size={26} color="#FF3B30" />
-          <Text style={styles.menuText}>공지사항</Text>
+          <Text style={styles.menuText}>공지사항 작성</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => console.log('고객센터 문의')}>
-          <Ionicons name="help-circle-outline" size={26} color="#FF3B30" />
-          <Text style={styles.menuText}>고객센터 문의</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('CustomerInquiryScreen')}>
+          <Ionicons name="chatbubbles-outline" size={26} color="#FF3B30" />
+          <Text style={styles.menuText}>고객센터 문의 확인</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
       </View>
