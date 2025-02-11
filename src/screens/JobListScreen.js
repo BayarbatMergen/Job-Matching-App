@@ -13,16 +13,21 @@ export default function JobListScreen({ navigation }) {
       <FlatList
         data={jobListings}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 20 }} // ✅ 스크롤 가능하게 조정
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.jobCard} 
-            onPress={() => navigation.navigate('JobDetail', { job: item })}
+          <TouchableOpacity
+            style={styles.jobCard}
+            onPress={() => {
+              console.log(`📌 Navigating to JobDetail with: ${JSON.stringify(item)}`);
+              navigation.navigate('JobDetail', { job: item }); // ✅ JobDetail로 이동
+            }}
           >
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.wage}>{item.wage}</Text>
             <Text style={styles.date}>{item.date}</Text>
           </TouchableOpacity>
         )}
+        showsVerticalScrollIndicator={false} // ✅ 스크롤 바 숨기기
       />
     </View>
   );
@@ -30,16 +35,16 @@ export default function JobListScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  jobCard: { 
-    backgroundColor: '#F8F8F8', 
-    padding: 20, 
-    marginBottom: 15, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: '#ccc', 
-    shadowColor: '#000', 
-    shadowOpacity: 0.2, 
-    shadowRadius: 5, 
+  jobCard: {
+    backgroundColor: '#F8F8F8',
+    padding: 20,
+    marginBottom: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
   title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },

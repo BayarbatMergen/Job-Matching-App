@@ -1,10 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 
-export default function JobDetailScreen({ route }) {
+export default function JobDetailScreen({ route, navigation }) {
   const { job } = route.params;
 
+  // ✅ 지원하기 버튼 클릭 시 실행
   const handleApply = () => {
+    Alert.alert(
+      "지원 완료",
+      `${job.title}에 대한 지원 요청이 전송되었습니다.`,
+      [
+        { text: "확인", onPress: () => navigation.navigate('JobList') } // ✅ 지원 후 공고 목록으로 이동
+      ]
+    );
     console.log(`✅ [지원 완료] ${job.title} - ${job.wage}, 근무 기간: ${job.date}`);
   };
 
@@ -15,7 +23,7 @@ export default function JobDetailScreen({ route }) {
 
         <View style={styles.infoBox}>
           <Text style={styles.detailSubTitle}>📌 근무 조건</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>💰 급여(일급):</Text> {job.wage}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>💰 급여:</Text> {job.wage}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>📅 근무 기간:</Text> {job.date}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>🗓 근무 요일:</Text> 금-토</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>⏰ 근무 시간:</Text> 9:00-18:00</Text>
@@ -35,6 +43,7 @@ export default function JobDetailScreen({ route }) {
           </Text>
         </View>
 
+        {/* ✅ 지원하기 버튼 */}
         <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
           <Text style={styles.applyButtonText}>✅ 지원하기</Text>
         </TouchableOpacity>
@@ -47,12 +56,32 @@ const styles = StyleSheet.create({
   scrollContainer: { flexGrow: 1, paddingVertical: 20 },
   container: { flex: 1, padding: 25, backgroundColor: '#fff' },
   detailTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#222' },
-  infoBox: { backgroundColor: '#F9F9F9', padding: 20, borderRadius: 10, borderWidth: 1, borderColor: '#ddd', marginBottom: 20 },
-  descriptionBox: { backgroundColor: '#FAFAFA', padding: 20, borderRadius: 10, borderWidth: 1, borderColor: '#ddd' },
+  infoBox: {
+    backgroundColor: '#F9F9F9',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 20
+  },
+  descriptionBox: {
+    backgroundColor: '#FAFAFA',
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd'
+  },
   detailSubTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#444' },
   detailText: { fontSize: 18, color: '#333', marginBottom: 12 },
   bold: { fontWeight: 'bold', color: '#000' },
   descriptionText: { fontSize: 16, color: '#444', lineHeight: 24 },
-  applyButton: { backgroundColor: '#007AFF', padding: 18, borderRadius: 12, marginTop: 30, alignItems: 'center', marginBottom: 40 },
+  applyButton: {
+    backgroundColor: '#007AFF',
+    padding: 18,
+    borderRadius: 12,
+    marginTop: 30,
+    alignItems: 'center',
+    marginBottom: 40
+  },
   applyButtonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
 });

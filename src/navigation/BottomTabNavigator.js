@@ -6,6 +6,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 
 // ✅ 사용자용 화면 import (관리자용과 혼동 금지!)
 import JobListScreen from '../screens/JobListScreen'; // 일반 사용자용
+import JobDetailScreen from '../screens/JobDetailScreen'; // ✅ 추가 (이전에는 없었음)
 import ScheduleScreen from '../screens/ScheduleScreen';
 import ChatScreen from '../screens/ChatScreen';
 import MyPageScreen from '../screens/MyPageScreen';
@@ -25,25 +26,23 @@ function HomeStack() {
         headerTitleAlign: 'center',
       }}
     >
+      {/* ✅ JobListScreen */}
       <Stack.Screen
         name="JobList"
         component={JobListScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => (
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#fff' }}>모집 공고</Text>
-          ),
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', paddingRight: 15 }}>
-              <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-                <Ionicons name="search-outline" size={26} color="white" style={{ marginRight: 15 }} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Notification')}>
-                <Ionicons name="notifications-outline" size={26} color="white" />
-              </TouchableOpacity>
-            </View>
-          ),
-        })}
+        options={{
+          headerTitle: '모집 공고', // ✅ JSX 대신 문자열 사용
+        }}
       />
+      {/* ✅ JobDetailScreen - 추가됨 (공고 상세 화면 이동 가능) */}
+      <Stack.Screen
+        name="JobDetail"
+        component={JobDetailScreen}
+        options={{
+          headerTitle: '공고 상세',
+        }}
+      />
+      {/* ✅ 검색 및 알림 화면 */}
       <Stack.Screen name="Search" component={SearchScreen} options={{ headerTitle: '검색' }} />
       <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerTitle: '알림' }} />
     </Stack.Navigator>
