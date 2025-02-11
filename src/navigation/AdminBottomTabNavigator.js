@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 
 // 📌 관리자 화면 Import
 import AdminJobListScreen from '../screens/AdminJobListScreen';
@@ -15,7 +15,7 @@ import AdminMyPageScreen from '../screens/AdminMyPageScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// 📌 모집 공고 (홈) 네비게이터 (헤더 추가)
+// 📌 모집 공고 (홈) 네비게이터
 function AdminHomeStack() {
   return (
     <Stack.Navigator 
@@ -45,7 +45,7 @@ function AdminHomeStack() {
   );
 }
 
-// 📌 일정 확인 네비게이터 (헤더 추가)
+// 📌 일정 확인 네비게이터
 function AdminScheduleStack() {
   return (
     <Stack.Navigator 
@@ -55,12 +55,12 @@ function AdminScheduleStack() {
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen name="AdminScheduleScreen" component={AdminScheduleScreen} options={{ headerTitle: '일정 확인' }} />
+      <Stack.Screen name="AdminSchedule" component={AdminScheduleScreen} options={{ headerTitle: '일정 확인' }} />
     </Stack.Navigator>
   );
 }
 
-// 📌 단톡방 네비게이터 (헤더 추가)
+// 📌 관리자 채팅 네비게이터
 function AdminChatStack() {
   return (
     <Stack.Navigator 
@@ -70,12 +70,12 @@ function AdminChatStack() {
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen name="AdminChatScreen" component={AdminChatScreen} options={{ headerTitle: '단톡방' }} />
+      <Stack.Screen name="AdminChat" component={AdminChatScreen} options={{ headerTitle: '관리자 채팅' }} />
     </Stack.Navigator>
   );
 }
 
-// 📌 마이페이지 네비게이터 (헤더 추가)
+// 📌 마이페이지 네비게이터
 function AdminMyPageStack() {
   return (
     <Stack.Navigator 
@@ -85,12 +85,12 @@ function AdminMyPageStack() {
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen name="AdminMyPageScreen" component={AdminMyPageScreen} options={{ headerTitle: '마이페이지' }} />
+      <Stack.Screen name="AdminMyPage" component={AdminMyPageScreen} options={{ headerTitle: '마이페이지' }} />
     </Stack.Navigator>
   );
 }
 
-// 📌 바텀 탭 네비게이션 (관리자)
+// 📌 바텀 탭 네비게이션 (관리자용)
 export default function AdminBottomTabNavigator() {
   return (
     <Tab.Navigator
