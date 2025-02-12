@@ -9,6 +9,7 @@ import AdminJobListScreen from '../screens/AdminJobListScreen';
 import AdminJobDetailScreen from '../screens/AdminJobDetailScreen';
 import AdminJobFormScreen from '../screens/AdminJobFormScreen';
 import AdminScheduleScreen from '../screens/AdminScheduleScreen';
+import AdminChatListScreen from '../screens/AdminChatListScreen'; // ✅ 추가: 관리자용 채팅 목록 화면
 import AdminChatScreen from '../screens/AdminChatScreen';
 import AdminMyPageScreen from '../screens/AdminMyPageScreen';
 
@@ -63,8 +64,26 @@ function AdminScheduleStack() {
 // 📌 관리자 채팅 네비게이터
 function AdminChatStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="AdminChatScreen" component={AdminChatScreen} options={{ headerTitle: '관리자 채팅' }} />
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerStyle: { backgroundColor: '#007AFF' },
+        headerTintColor: '#fff',
+        headerTitleAlign: 'center'
+      }}
+    >
+      {/* ✅ 관리자 채팅방 목록 (기본 화면) */}
+      <Stack.Screen 
+        name="AdminChatList" 
+        component={AdminChatListScreen} 
+        options={{ headerTitle: '관리자 채팅방 목록' }} 
+      />
+
+      {/* ✅ 선택한 채팅방 내부 화면 */}
+      <Stack.Screen 
+        name="AdminChatScreen" 
+        component={AdminChatScreen} 
+        options={({ route }) => ({ headerTitle: route.params?.roomName || '관리자 채팅' })} 
+      />
     </Stack.Navigator>
   );
 }
@@ -104,6 +123,7 @@ export default function AdminBottomTabNavigator() {
     >
       <Tab.Screen name="AdminHome" component={AdminHomeStack} />
       <Tab.Screen name="AdminSchedule" component={AdminScheduleStack} />
+      {/* ✅ 수정된 `AdminChatStack` 반영 */}
       <Tab.Screen name="AdminChat" component={AdminChatStack} />
       <Tab.Screen name="AdminMyPage" component={AdminMyPageStack} />
     </Tab.Navigator>

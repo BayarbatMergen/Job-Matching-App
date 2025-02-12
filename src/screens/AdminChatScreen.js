@@ -2,45 +2,39 @@ import React, { useState, useRef } from 'react';
 import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// 관리자 채팅 더미 데이터
-const dummyMessages = [
-  { id: 'msg-1', text: '📢 이번 주 근무 일정이 변경되었습니다.', createdAt: '2024-02-10 10:00' },
-  { id: 'msg-2', text: '⏰ 내일 출근 시간은 9시입니다.', createdAt: '2024-02-11 14:30' },
-  { id: 'msg-3', text: '💰 급여 정산은 15일에 진행됩니다.', createdAt: '2024-02-12 16:45' },
-];
-
-export default function AdminChatScreen() {
-  const [messages, setMessages] = useState(dummyMessages);
+export default function AdminChatScreen({ route }) {
+  const roomName = route.params?.roomName || '관리자 채팅방';
+  const [messages, setMessages] = useState([
+    { id: 'msg-1', text: '이번 주 근무 일정이 변경되었습니다.', createdAt: '2024-02-10 10:00' },
+    { id: 'msg-2', text: '내일 출근 시간은 9시입니다.', createdAt: '2024-02-11 14:30' },
+    { id: 'msg-3', text: '급여 정산은 15일에 진행됩니다.', createdAt: '2024-02-12 16:45' },
+  ]);
   const [newMessage, setNewMessage] = useState('');
-
-  // 📌 **연속 실행 방지를 위한 useRef 사용**
   const isSending = useRef(false);
 
-  // 📌 **메시지 전송 함수**
   const sendMessage = () => {
-    if (isSending.current || newMessage.trim() === '') return; // 🔥 중복 실행 방지
+    if (isSending.current || newMessage.trim() === '') return;
     isSending.current = true;
 
     const newMsg = {
-      id: `msg-${Date.now()}`, // 유니크 ID 생성
+      id: `msg-${Date.now()}`,
       text: newMessage,
       createdAt: new Date().toLocaleString(),
     };
 
-    console.log('📢 메시지 전송:', newMsg); // ✅ 디버깅용 로그 추가
-
-    setMessages((prevMessages) => [...prevMessages, newMsg]); // ✅ 새로운 배열 반환 (밑으로 추가)
-
-    setNewMessage(''); // 입력 필드 초기화
+    setMessages((prevMessages) => [...prevMessages, newMsg]);
+    setNewMessage('');
 
     setTimeout(() => {
-      isSending.current = false; // 🔥 일정 시간 후 isSending 해제
+      isSending.current = false;
     }, 100);
   };
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      {/* 📜 채팅 메시지 리스트 (위에서부터 아래로 쌓임) */}
+      <View style={styles.header}>
+      </View>
+
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
@@ -52,11 +46,10 @@ export default function AdminChatScreen() {
             </View>
           </View>
         )}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start' }} // ✅ 위에서부터 쌓이게 변경
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start' }}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* 🔻 하단 채팅 입력 바 (관리자용) */}
       <View style={styles.chatInputContainer}>
         <TextInput
           style={styles.chatInput}
@@ -78,14 +71,14 @@ const styles = StyleSheet.create({
   // 📜 메시지 스타일
   messageContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start', // 왼쪽 정렬
+    justifyContent: 'flex-start',
     paddingHorizontal: 15,
+    marginVertical: 5,
   },
   messageBubble: {
     padding: 12,
     backgroundColor: '#E3F2FD',
     borderRadius: 10,
-    marginVertical: 5,
     maxWidth: '85%',
     alignSelf: 'flex-start',
   },
