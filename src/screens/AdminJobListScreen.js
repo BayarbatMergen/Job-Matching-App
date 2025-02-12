@@ -3,11 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert
 import { Ionicons } from '@expo/vector-icons';
 
 const initialJobListings = [
-  { id: '1', title: '한화 리조트 대천 주말 알바 채용', wage: '일급 10만원', date: '11.22-11.23' },
-  { id: '2', title: '편의점 야간 근무자 모집', wage: '시급 12,000원', date: '11.25-11.30' },
-  { id: '3', title: '레스토랑 서빙 아르바이트', wage: '시급 11,000원', date: '12.01-12.15' },
-  { id: '4', title: '호텔 청소 아르바이트', wage: '시급 10,500원', date: '12.10-12.20' },
-  { id: '5', title: '물류 창고 아르바이트', wage: '일급 9만원', date: '12.05-12.15' },
+  { id: '1', title: '한화 리조트 대천 주말 알바 채용', wage: '일급 10만원', date: '11.22-11.23', maleRecruitment: '3', femaleRecruitment: '2' },
+  { id: '2', title: '편의점 야간 근무자 모집', wage: '시급 12,000원', date: '11.25-11.30', maleRecruitment: '1', femaleRecruitment: '1' },
+  { id: '3', title: '레스토랑 서빙 아르바이트', wage: '시급 11,000원', date: '12.01-12.15', maleRecruitment: '2', femaleRecruitment: '3' },
+  { id: '4', title: '호텔 청소 아르바이트', wage: '시급 10,500원', date: '12.10-12.20', maleRecruitment: '0', femaleRecruitment: '5' },
+  { id: '5', title: '물류 창고 아르바이트', wage: '일급 9만원', date: '12.05-12.15', maleRecruitment: '4', femaleRecruitment: '1' },
 ];
 
 export default function AdminJobListScreen({ navigation }) {
@@ -57,8 +57,11 @@ export default function AdminJobListScreen({ navigation }) {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.wage}>{item.wage}</Text>
                   <Text style={styles.date}>{item.date}</Text>
+                  <Text style={styles.wage}>{item.wage}</Text>
+                  <Text style={styles.recruitment}>
+                    남: {item.maleRecruitment}명 | 여: {item.femaleRecruitment}명
+                  </Text>
                 </View>
               </TouchableOpacity>
 
@@ -86,7 +89,7 @@ export default function AdminJobListScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  
+
   jobCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -102,10 +105,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   jobContent: { flex: 1 },
-  
+
   title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },
+  date: { fontSize: 14, color: '#555', marginBottom: 5 }, // ⬅️ 날짜 왼쪽 정렬
   wage: { fontSize: 16, color: 'red', marginBottom: 5 },
-  date: { fontSize: 14, textAlign: 'right', color: 'gray' },
+  recruitment: { fontSize: 14, color: '#555', marginTop: 5 },
 
   deleteButton: {
     padding: 8,

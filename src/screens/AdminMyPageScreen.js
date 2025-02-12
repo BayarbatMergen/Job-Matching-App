@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     fontWeight: '500' 
   },
 
-  // 🔴 로그아웃 버튼
+  // 로그아웃 버튼
   logoutButton: {
     backgroundColor: '#FF3B30',
     padding: 15,
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   logoutText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
 
-  // 🚀 로그아웃 모달 스타일
+  // 로그아웃 모달 스타일
   modalOverlay: { 
     flex: 1, 
     justifyContent: 'center', 

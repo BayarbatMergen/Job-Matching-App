@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-//  관리자 공지용 더미 데이터
-const dummyMessages = [
-  { id: 'msg-1', text: '📢 이번 주 근무 일정이 변경되었습니다.', createdAt: '2024-02-10 10:00' },
-  { id: 'msg-2', text: '⏰ 내일 출근 시간은 9시입니다.', createdAt: '2024-02-11 14:30' },
-  { id: 'msg-3', text: '💰 급여 정산은 15일에 진행됩니다.', createdAt: '2024-02-12 16:45' },
-];
-
-export default function ChatScreen() {
-  const [messages, setMessages] = useState(dummyMessages);
+export default function ChatScreen({ route }) {
+  const { roomName } = route.params;
+  const [messages, setMessages] = useState([
+    { id: 'msg-1', text: '관리자: 이번 주 근무 일정이 변경되었습니다.', createdAt: '2024-02-10 10:00' },
+    { id: 'msg-2', text: '관리자: 내일 출근 시간은 9시입니다.', createdAt: '2024-02-11 14:30' },
+  ]);
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      {/* 📜 채팅 메시지 리스트 */}
+      {/* 🔹 채팅방 이름 헤더 */}
+      <View style={styles.header}>
+        
+      </View>
+
+      {/* 🔹 채팅 메시지 리스트 */}
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
@@ -30,7 +32,7 @@ export default function ChatScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* 🔻 하단 채팅 입력 바 (입력 비활성화) */}
+      {/* 🔻 사용자는 입력할 수 없도록 비활성화된 입력 필드 */}
       <View style={styles.chatInputContainer}>
         <TextInput 
           style={styles.chatInput} 
@@ -48,19 +50,21 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: '#fff' },
 
-  // 📜 메시지 스타일
+
+
+  // 🔹 메시지 스타일
   messageContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start', // 왼쪽 정렬
-    paddingHorizontal: 15, // 좌우 여백 추가
+    justifyContent: 'flex-start',
+    paddingHorizontal: 15,
   },
   messageBubble: {
     padding: 12,
     backgroundColor: '#E3F2FD',
     borderRadius: 10,
     marginVertical: 5,
-    maxWidth: '85%', // 메시지 박스 크기 조정
-    alignSelf: 'flex-start', // 왼쪽 정렬
+    maxWidth: '85%',
+    alignSelf: 'flex-start',
   },
   messageText: { fontSize: 16, color: '#333' },
   timestamp: { fontSize: 12, color: '#777', marginTop: 5, textAlign: 'right' },
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F1F1',
     borderRadius: 20,
     paddingHorizontal: 15,
-    color: '#999', // 비활성화된 상태
+    color: '#999',
   },
   disabledSendButton: {
     marginLeft: 10,

@@ -13,7 +13,8 @@ export default function AdminJobFormScreen({ route, navigation }) {
     industry: '',
     employmentType: '',
     accommodation: false,
-    recruitment: '',
+    maleRecruitment: '',
+    femaleRecruitment: '',
     location: '',
     description: '',
   });
@@ -69,6 +70,7 @@ export default function AdminJobFormScreen({ route, navigation }) {
         <Picker.Item label="요식업" value="요식업" />
         <Picker.Item label="서비스업" value="서비스업" />
         <Picker.Item label="물류/창고" value="물류/창고" />
+        <Picker.Item label="정비" value="정비" />
         <Picker.Item label="기타" value="기타" />
       </Picker>
 
@@ -77,6 +79,7 @@ export default function AdminJobFormScreen({ route, navigation }) {
         <Picker.Item label="선택하세요" value="" />
         <Picker.Item label="정규직" value="정규직" />
         <Picker.Item label="계약직" value="계약직" />
+        <Picker.Item label="장기" value="장기" />
         <Picker.Item label="아르바이트" value="아르바이트" />
         <Picker.Item label="기타" value="기타" />
       </Picker>
@@ -87,7 +90,28 @@ export default function AdminJobFormScreen({ route, navigation }) {
       </TouchableOpacity>
 
       <Text style={styles.label}>모집 인원</Text>
-      <TextInput style={styles.input} value={form.recruitment} keyboardType="numeric" onChangeText={(text) => handleNumberInput('recruitment', text)} placeholder="모집 인원 (숫자만)" />
+      <View style={styles.recruitmentContainer}>
+        <View style={styles.recruitmentBox}>
+          <Text style={styles.recruitmentLabel}>남성 모집 인원</Text>
+          <TextInput
+            style={styles.input}
+            value={form.maleRecruitment}
+            keyboardType="numeric"
+            onChangeText={(text) => handleNumberInput('maleRecruitment', text)}
+            placeholder="남성 모집 인원 (숫자만)"
+          />
+        </View>
+        <View style={styles.recruitmentBox}>
+          <Text style={styles.recruitmentLabel}>여성 모집 인원</Text>
+          <TextInput
+            style={styles.input}
+            value={form.femaleRecruitment}
+            keyboardType="numeric"
+            onChangeText={(text) => handleNumberInput('femaleRecruitment', text)}
+            placeholder="여성 모집 인원 (숫자만)"
+          />
+        </View>
+      </View>
 
       <Text style={styles.label}>근무 지역</Text>
       <TextInput style={styles.input} value={form.location} onChangeText={(text) => setForm({ ...form, location: text })} placeholder="근무 지역 입력" />
@@ -109,7 +133,11 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 5 },
   picker: { marginTop: 5, borderColor: '#ccc', borderWidth: 1 },
   toggleButton: { padding: 10, borderWidth: 1, borderRadius: 8, marginTop: 5, alignItems: 'center' },
+  recruitmentContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  recruitmentBox: { flex: 1, marginHorizontal: 5 },
+  recruitmentLabel: { fontSize: 14, fontWeight: 'bold', marginBottom: 5 },
   textArea: { borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, marginTop: 5, height: 80 },
   submitButton: { backgroundColor: '#007AFF', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 20 },
   submitButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 });
+

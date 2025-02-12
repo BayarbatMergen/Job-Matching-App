@@ -4,10 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 // 샘플 알림 데이터
 const initialNotifications = [
-  { id: '1', message: '📢 새로운 공고가 등록되었습니다!', time: '1시간 전', read: false },
-  { id: '2', message: '💰 정산 요청이 완료되었습니다.', time: '2시간 전', read: true },
-  { id: '3', message: '⚠️ 관리자 공지가 도착했습니다.', time: '5시간 전', read: false },
-  { id: '4', message: '🎉 채용이 확정되었습니다! 자세한 내용을 확인하세요.', time: '1일 전', read: true },
+  { id: '1', message: '새로운 공고가 등록되었습니다!', time: '1시간 전', read: false },
+  { id: '2', message: '정산 요청이 완료되었습니다.', time: '2시간 전', read: true },
+  { id: '3', message: '관리자 공지가 도착했습니다.', time: '5시간 전', read: false },
+  { id: '4', message: '채용이 확정되었습니다! 자세한 내용을 확인하세요.', time: '1일 전', read: true },
 ];
 
 export default function NotificationScreen({ navigation }) {

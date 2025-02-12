@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 
 const notices = [
-  { id: '1', title: '📢 신규 기능 업데이트', date: '2025-02-10' },
-  { id: '2', title: '⏰ 서버 점검 안내', date: '2025-02-12' },
-  { id: '3', title: '⚠️ 보안 업데이트', date: '2025-02-15' },
+  { id: '1', title: '신규 기능 업데이트', date: '2025-02-10' },
+  { id: '2', title: '서버 점검 안내', date: '2025-02-12' },
+  { id: '3', title: '보안 업데이트', date: '2025-02-15' },
 ];
 
 export default function NoticeScreen() {
