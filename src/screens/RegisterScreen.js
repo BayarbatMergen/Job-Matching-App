@@ -4,6 +4,8 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker'; // 📌 이미지 업로드 라이브러리 추가
+import { Alert } from "react-native";
+
 
 const RegisterScreen = ({ navigation }) => {
   const [userType, setUserType] = useState(null); // 'personal' (개인) | 'business' (관리자)
@@ -56,13 +58,34 @@ const RegisterScreen = ({ navigation }) => {
       setIdImage(result.assets[0].uri);
     }
   };
-
   const handleRegister = async () => {
-    console.log('회원가입:', {
+    console.log("회원가입 정보:", {
       userType, email, password, companyPassword, idImage, name, gender, phone, bank, accountNumber
     });
-    navigation.navigate('JobList');
+  
+    try {
+      // ✅ Firebase Auth를 사용할 경우 회원가입 로직 추가
+      // await registerWithEmail(email, password); // 실제 회원가입 API 호출
+  
+      console.log("회원가입 성공!");
+  
+      // ✅ 회원가입 성공 후 알림 메시지 띄우기
+      Alert.alert(
+        "회원가입 완료",
+        "회원가입이 완료되었습니다. 메일을 확인해주세요.",
+        [
+          { text: "확인", onPress: () => {
+              console.log("✅ 로그인 화면으로 이동!");
+              navigation.replace("Login"); // ✅ 로그인 화면으로 이동
+          }}
+        ]
+      );
+    } catch (error) {
+      console.error("회원가입 실패:", error.message);
+      Alert.alert("회원가입 실패", error.message);
+    }
   };
+  
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>

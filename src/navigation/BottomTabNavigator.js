@@ -8,8 +8,9 @@ import JobListScreen from '../screens/JobListScreen';
 import JobDetailScreen from '../screens/JobDetailScreen';
 import ScheduleScreen from '../screens/ScheduleScreen';
 import MyPageScreen from '../screens/MyPageScreen';
-import ChatListScreen from '../screens/ChatListScreen'; // ✅ 채팅방 목록 추가
-import ChatScreen from '../screens/ChatScreen'; // ✅ 개별 채팅방 추가
+import ChatListScreen from '../screens/ChatListScreen';
+import ChatScreen from '../screens/ChatScreen';
+import NotificationScreen from '../screens/NotificationScreen'; // ✅ 알림 화면 추가
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -20,6 +21,7 @@ function HomeStack() {
     <Stack.Navigator screenOptions={defaultScreenOptions}>
       <Stack.Screen name="JobList" component={JobListScreen} options={{ headerTitle: '모집 공고' }} />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ headerTitle: '공고 상세' }} />
+      <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerTitle: '알림' }} />
     </Stack.Navigator>
   );
 }
