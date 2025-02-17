@@ -1,4 +1,10 @@
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
 import API_BASE_URL from "../config/apiConfig"; // ✅ 백엔드 API 경로
 import { auth } from "../config/firebase"; // ✅ Firebase 인증 인스턴스
 
@@ -13,20 +19,26 @@ export const loginWithFirebase = async (email, password) => {
   }
 };
 
-// 📌 백엔드 API 로그인
-export const loginWithBackend = async (email, password) => {
+// 📌 백엔드 API 로그인 (🔥 role 추가)
+export const loginWithBackend = async (email, password, role = "user") => { // 기본값을 "user"로 설정
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role }), // ✅ 역할 추가
     });
 
-    if (!response.ok) throw new Error("백엔드 로그인 실패");
+    const result = await response.json();
 
-    return await response.json();
+    if (!response.ok) {
+      console.error("❌ 백엔드 로그인 오류:", result);
+      throw new Error(result.message || "백엔드 로그인 실패");
+    }
+
+    console.log("✅ 백엔드 로그인 성공:", result);
+    return result;
   } catch (error) {
-    console.error("❌ 백엔드 로그인 오류:", error);
+    console.error("❌ 백엔드 로그인 요청 실패:", error);
     throw error;
   }
 };
@@ -42,16 +54,15 @@ export const registerWithFirebase = async (email, password) => {
   }
 };
 
-// 📌 백엔드 API 회원가입
+// 📌 백엔드 API 회원가입 (role 추가)
 export const registerWithBackend = async (userData) => {
   try {
     console.log("📤 [백엔드 회원가입 요청 데이터]:", JSON.stringify(userData, null, 2));
 
-    const response = await fetch("http://192.168.0.3:5000/api/auth/register", {
-
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData), // ✅ JSON 직렬화 시 정상 구조 유지
+      body: JSON.stringify({ ...userData, role: userData.role || "user" }), // ✅ 기본 role 추가
     });
 
     console.log("🔍 [백엔드 응답 상태]:", response.status);
@@ -64,15 +75,32 @@ export const registerWithBackend = async (userData) => {
 
     const responseData = await response.json();
     console.log("✅ [백엔드 응답 데이터]:", responseData);
-    
-    return responseData;
 
+    return responseData;
   } catch (error) {
     console.error("❌ 백엔드 회원가입 요청 중 오류:", error);
     throw error;
   }
 };
 
+// 🔥 비밀번호 찾기 요청 (이메일 전송)
+export const resetPassword = async (email) => {
+  try {
+    const response = await fetch("http://192.168.0.3:5000/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "비밀번호 재설정 실패");
+
+    return result.message;
+  } catch (error) {
+    console.error("❌ 비밀번호 찾기 오류:", error);
+    throw error;
+  }
+};
 
 
 // 📌 로그아웃

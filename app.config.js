@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 
 export default {
   expo: {
@@ -15,7 +15,7 @@ export default {
       supportsTablet: true
     },
     android: {
-      package: "com.anonymous.jobmatchingapp",  // ✅ Android 패키지 ID 추가
+      package: "com.anonymous.jobmatchingapp",
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
@@ -40,6 +40,7 @@ export default {
       typedRoutes: true
     },
     extra: {
+      useBackendAuth: true, // ✅ 백엔드 로그인 사용 (필수)
       firebaseApiKey: process.env.FIREBASE_API_KEY || "AIzaSyAMGE19uGk-A62cRMTWrf164o2XNTTevLI",
       firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN || "jobmatchingapp-383da.firebaseapp.com",
       firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "jobmatchingapp-383da",

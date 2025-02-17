@@ -1,14 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebase'); // Firestore 가져오기
-const cloudinary = require('../config/cloudinary'); // ✅ Cloudinary 가져오기
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
+const cloudinary = require('../config/cloudinary'); // ✅ Cloudinary 가져오기
 require('dotenv').config();
 
+console.log("📌 현재 SMTP 설정 확인:", process.env.SMTP_USER, process.env.SMTP_PASS ? "✅ 비밀번호 설정됨" : "❌ 비밀번호 없음");
+
 const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
+
+// 📌 Nodemailer SMTP 설정
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
+// ✅ SMTP 연결 테스트
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("❌ SMTP 서버 연결 실패:", error.message);
+  } else {
+    console.log("✅ SMTP 서버 연결 성공!");
+  }
+});
 
 // ✅ Multer 설정 (메모리 저장)
 const upload = multer({ storage: multer.memoryStorage() });
@@ -34,77 +57,77 @@ const uploadToCloudinary = (fileBuffer) => {
   });
 };
 
-// ✅ 회원가입 API (Cloudinary만 사용)
+// ✅ 회원가입 API
 router.post('/register', upload.single('idImage'), async (req, res) => {
   try {
     console.log("🔥 [회원가입 요청 데이터]:", req.body);
 
-    let { email, password, name, phone, gender, bank, accountNumber } = req.body;
+    let { email, password, name, phone, gender, bank, accountNumber, role } = req.body;
 
-    // ✅ 필수 값 검증
     if (!email || !password || !name || !phone || !gender) {
       return res.status(400).json({ message: '⚠️ 모든 필드를 입력하세요.' });
     }
 
-    email = email.toLowerCase().trim(); // ✅ 이메일 소문자로 변환 (중복 방지)
+    email = email.toLowerCase().trim();
 
-    // ✅ Firestore에서 이메일 중복 확인
-    const userRef = db.collection('users').doc(email);
-    const userSnap = await userRef.get();
-    if (userSnap.exists) {
-      return res.status(400).json({ message: '⚠️ 이미 존재하는 이메일입니다.' });
+    if (role !== 'admin' && role !== 'user') {
+      role = 'user';
     }
 
-    // ✅ 비밀번호 유효성 검사 (6자 이상 + 특수문자 포함)
-    if (!/^(?=.*[!@#$%^&*()]).{6,}$/.test(password)) {
-      return res.status(400).json({ message: '⚠️ 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다.' });
-    }
+    const collection = role === 'admin' ? 'admins' : 'users';
 
-    // ✅ 이름 한글만 허용
-    if (!/^[가-힣]+$/.test(name)) {
-      return res.status(400).json({ message: '⚠️ 이름은 한글만 입력 가능합니다.' });
-    }
+    await db.runTransaction(async (transaction) => {
+      const userRef = db.collection(collection).doc(email);
+      const userSnap = await transaction.get(userRef);
 
-    // ✅ 은행명 & 계좌번호 기본값 설정 (미입력 시 자동 추천)
-    const bankList = ['국민은행', '신한은행', '우리은행', '하나은행', '농협은행'];
-    if (!bank) bank = bankList[Math.floor(Math.random() * bankList.length)];
-    if (!accountNumber) accountNumber = `${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10000000 + Math.random() * 90000000)}`;
-
-    // ✅ 비밀번호 암호화
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // ✅ Cloudinary 이미지 업로드
-    let imageUrl = DEFAULT_IMAGE_URL;
-    if (req.file) {
-      try {
-        console.log("📤 Cloudinary로 이미지 업로드 중...");
-        imageUrl = await uploadToCloudinary(req.file.buffer);
-      } catch (error) {
-        console.error("❌ Cloudinary 업로드 실패:", error.message);
+      if (userSnap.exists) {
+        throw new Error('⚠️ 이미 존재하는 이메일입니다.');
       }
-    }
 
-    console.log("🚀 최종 이미지 URL:", imageUrl);
+      if (!/^(?=.*[!@#$%^&*()]).{6,}$/.test(password)) {
+        throw new Error('⚠️ 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다.');
+      }
 
-    // ✅ Firestore에 저장
-    await userRef.set({
-      userId: email,
-      name,
-      email,
-      phone,
-      gender,
-      bank,
-      accountNumber,
-      password: hashedPassword,
-      idImage: imageUrl, // ✅ Cloudinary 이미지 URL 저장
-      createdAt: new Date(),
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      let imageUrl = DEFAULT_IMAGE_URL;
+      if (req.file) {
+        try {
+          console.log("📤 Cloudinary로 이미지 업로드 중...");
+          imageUrl = await uploadToCloudinary(req.file.buffer);
+        } catch (error) {
+          console.error("❌ Cloudinary 업로드 실패:", error.message);
+        }
+      }
+
+      console.log("🚀 최종 이미지 URL:", imageUrl);
+
+      const newUser = {
+        userId: email,
+        name,
+        email,
+        phone,
+        gender,
+        bank: bank || "은행 미선택",
+        accountNumber: accountNumber || "0000-0000-0000",
+        password: hashedPassword,
+        role,
+        idImage: imageUrl,
+        createdAt: new Date(),
+      };
+
+      transaction.set(userRef, newUser);
+      console.log("✅ Firestore에 저장된 사용자:", newUser);
     });
 
-    res.status(201).json({ message: '✅ 회원가입 성공!', userId: email, idImage: imageUrl });
+    res.status(201).json({ 
+      message: `✅ ${role === 'admin' ? '관리자' : '사용자'} 회원가입 성공!`, 
+      userId: email 
+    });
 
   } catch (error) {
     console.error("❌ 회원가입 중 서버 오류 발생:", error.message);
-    res.status(500).json({ message: '❌ 서버 오류', error: error.message });
+    res.status(500).json({ message: error.message || '❌ 서버 오류' });
   }
 });
 
@@ -113,56 +136,73 @@ router.post('/login', async (req, res) => {
   try {
     console.log("🔥 [로그인 요청 데이터]:", req.body);
 
-    let { email, password } = req.body;
+    let { email, password, role } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: '⚠️ 이메일과 비밀번호를 입력하세요.' });
+    if (!email || !password || !role) {
+      return res.status(400).json({ message: '⚠️ 이메일, 비밀번호, 역할을 입력하세요.' });
     }
 
-    email = email.toLowerCase().trim(); // ✅ 이메일 소문자로 변환
+    email = email.toLowerCase().trim();
 
-    // ✅ Firestore에서 이메일로 사용자 찾기
-    const userRef = db.collection('users').doc(email);
+    const collection = role === 'admin' ? 'admins' : 'users';
+    const userRef = db.collection(collection).doc(email);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      console.warn("⚠️ 존재하지 않는 이메일:", email);
       return res.status(400).json({ message: '⚠️ 이메일 또는 비밀번호가 잘못되었습니다.' });
     }
 
     const userData = userSnap.data();
-    console.log("🔍 찾은 사용자:", userData);
 
-    // ✅ 비밀번호 비교 (암호화된 값과 비교)
     const isMatch = await bcrypt.compare(password, userData.password);
     if (!isMatch) {
-      console.warn("❌ 비밀번호 불일치", email);
       return res.status(400).json({ message: '⚠️ 이메일 또는 비밀번호가 잘못되었습니다.' });
     }
 
-    // ✅ JWT 토큰 생성
     const token = jwt.sign(
-      { userId: userData.userId, email },
+      { userId: userData.userId, email, role },
       SECRET_KEY,
-      { expiresIn: '7d' } // ✅ 7일 동안 토큰 유지
+      { expiresIn: '7d' }
     );
 
-    console.log("✅ 로그인 성공!", userData.userId);
     res.status(200).json({
-      message: '✅ 로그인 성공!',
-      user: { 
-        userId: userData.userId, 
-        email: userData.email, 
-        name: userData.name, 
-        idImage: userData.idImage || DEFAULT_IMAGE_URL
-      },
+      message: `✅ 로그인 성공!`,
+      user: { userId: userData.userId, email: userData.email, name: userData.name, role },
       token,
     });
 
   } catch (error) {
-    console.error("❌ 로그인 중 서버 오류 발생:", error.message);
-    res.status(500).json({ message: '❌ 서버 오류', error: error.message });
+    res.status(500).json({ message: '❌ 서버 오류' });
   }
 });
 
+// 🔹 **비밀번호 재설정 요청 (이메일 전송)**
+router.post('/reset-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "⚠️ 이메일을 입력하세요." });
+  }
+
+  try {
+    const resetToken = jwt.sign({ email }, SECRET_KEY, { expiresIn: "30m" });
+    const resetLink = `http://your-app.com/reset-password/${resetToken}`;
+
+    const mailOptions = {
+      from: `"Support" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: "비밀번호 재설정 요청",
+      text: `비밀번호를 재설정하려면 아래 링크를 클릭하세요: ${resetLink}`
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: "✅ 비밀번호 재설정 이메일이 발송되었습니다!" });
+
+  } catch (error) {
+    res.status(500).json({ message: "❌ 이메일 전송 실패" });
+  }
+});
+
+// ✅ **라우트 마지막에 추가**
+console.log("✅ authRoutes.js 로드 완료");
 module.exports = router;
