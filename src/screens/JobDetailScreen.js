@@ -5,15 +5,25 @@ export default function JobDetailScreen({ route, navigation }) {
   const { job } = route.params;
 
   // ✅ 지원하기 버튼 클릭 시 실행
-  const handleApply = () => {
-    Alert.alert(
-      "지원 완료",
-      `${job.title}에 대한 지원 요청이 전송되었습니다.`,
-      [
-        { text: "확인", onPress: () => navigation.navigate('JobList') } // ✅ 지원 후 공고 목록으로 이동
-      ]
-    );
-    console.log(`✅ [지원 완료] ${job.title} - ${job.wage}, 근무 기간: ${job.date}`);
+  const handleApply = async () => {
+    try {
+      const response = await fetch('http://YOUR_BACKEND_API_URL/api/jobs/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: job.id, userId: 'testUserId' }), // ✅ 실제 유저 ID를 적용해야 함
+      });
+
+      if (response.ok) {
+        Alert.alert('지원 완료', `${job.title}에 대한 지원 요청이 전송되었습니다.`);
+        console.log(`✅ [지원 완료] ${job.title} - ${job.wage}, 근무 기간: ${job.date}`);
+        navigation.navigate('JobList'); // ✅ 지원 후 공고 목록으로 이동
+      } else {
+        Alert.alert('지원 실패', '지원 요청을 전송하는 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('❌ 지원 요청 오류:', error);
+      Alert.alert('오류 발생', '서버와의 연결이 원활하지 않습니다.');
+    }
   };
 
   return (
@@ -25,22 +35,18 @@ export default function JobDetailScreen({ route, navigation }) {
           <Text style={styles.detailSubTitle}>📌 근무 조건</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>급여:</Text> {job.wage}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>근무 기간:</Text> {job.date}</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>근무 요일:</Text> 금-토</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>근무 시간:</Text> 9:00-18:00</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>업직종:</Text> 정비</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>고용형태:</Text> 단기</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>숙식 여부:</Text> 숙소 있음</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>모집 인원:</Text> 5명 (남성 3, 여성 2)</Text>
-          <Text style={styles.detailText}><Text style={styles.bold}>근무 지역:</Text> 서울 강남구</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 요일:</Text> {job.workingDays}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 시간:</Text> {job.workingHours}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>업직종:</Text> {job.industry}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>고용형태:</Text> {job.employmentType}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>숙식 여부:</Text> {job.accommodation}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>모집 인원:</Text> {job.recruitment}</Text>
+          <Text style={styles.detailText}><Text style={styles.bold}>근무 지역:</Text> {job.location}</Text>
         </View>
 
         <View style={styles.descriptionBox}>
           <Text style={styles.detailSubTitle}>상세 요강</Text>
-          <Text style={styles.descriptionText}>
-            - 고객 응대 및 서비스 지원{'\n'}
-            - 근무시간 엄수 및 청결 유지{'\n'}
-            - 동료들과 협력하여 원활한 운영 지원
-          </Text>
+          <Text style={styles.descriptionText}>{job.description || '상세 정보 없음'}</Text>
         </View>
 
         {/* ✅ 지원하기 버튼 */}
@@ -85,3 +91,4 @@ const styles = StyleSheet.create({
   },
   applyButtonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
 });
+

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { loginWithFirebase, loginWithBackend } from "../services/authService"; // ✅ Firebase & 백엔드 로그인 불러오기
+import Constants from 'expo-constants';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -7,30 +9,37 @@ const LoginScreen = ({ navigation }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [isResetMode, setIsResetMode] = useState(false);
 
-  // ✅ 관리자 계정 정보 (임시 설정)
-  const adminEmail = 'admin@example.com';
-  const adminPassword = 'admin123';
+  // 🔥 환경 변수에서 로그인 방식 선택 (Firebase vs 백엔드)
+  const useBackendAuth = Constants.expoConfig?.extra?.useBackendAuth ?? true;
 
-  // 📌 로그인 처리
-  const handleLogin = () => {
-    console.log('로그인 버튼 클릭됨:', email, password);
-  
-    if (email === adminEmail && password === adminPassword) {
-      Alert.alert('관리자 로그인 성공', '관리자 모드로 이동합니다.');
-      navigation.replace('AdminMain'); // ✅ 관리자 네비게이션으로 이동
-    } else {
-      navigation.replace('Main'); // ✅ 일반 사용자 네비게이션으로 이동 (메시지 제거)
-    }
-  };  
-
-  // 📌 비밀번호 재설정 요청
-  const handlePasswordReset = () => {
-    if (!resetEmail) {
-      Alert.alert('오류', '이메일을 입력하세요.');
+  // 📌 로그인 처리 (Firebase 또는 백엔드)
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('입력 오류', '이메일과 비밀번호를 입력하세요.');
       return;
     }
-    Alert.alert('안내', `비밀번호 재설정 메일이 ${resetEmail}로 발송되었습니다.`);
-    setIsResetMode(false); // 요청 후 로그인 화면으로 돌아가기
+
+    try {
+      let user;
+      if (useBackendAuth) {
+        const response = await loginWithBackend(email, password);
+        user = response.user;
+      } else {
+        user = await loginWithFirebase(email, password);
+      }
+
+      Alert.alert('로그인 성공', `${user.name || user.email}님 환영합니다!`);
+
+      // ✅ 관리자 여부 확인 후 페이지 이동
+      if (user.role === 'admin') {
+        navigation.replace('AdminMain'); // 관리자 페이지 이동
+      } else {
+        navigation.replace('Main'); // 일반 사용자 페이지 이동
+      }
+    } catch (error) {
+      console.error("❌ 로그인 실패:", error);
+      Alert.alert('로그인 실패', error.message || '서버 오류');
+    }
   };
 
   return (
@@ -94,7 +103,7 @@ const LoginScreen = ({ navigation }) => {
               keyboardType="email-address"
             />
 
-            <TouchableOpacity style={styles.resetButton} onPress={handlePasswordReset}>
+            <TouchableOpacity style={styles.resetButton} onPress={() => Alert.alert("기능 준비 중", "비밀번호 찾기 기능은 곧 지원됩니다.")}>
               <Text style={styles.resetButtonText}>비밀번호 재설정</Text>
             </TouchableOpacity>
 
@@ -114,18 +123,18 @@ const styles = StyleSheet.create({
   logo: { width: 180, height: 180, marginBottom: 10 },
   title: { fontSize: 26, fontWeight: 'bold', marginBottom: 20, color: '#333' },
   input: { width: '100%', height: 50, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 15, marginBottom: 12, fontSize: 16 },
-  
+
   loginButton: { backgroundColor: '#007AFF', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 10 },
   loginButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  
+
   footerContainer: { flexDirection: 'row', marginTop: 15 },
   registerText: { color: '#007AFF', fontSize: 16, fontWeight: '500' },
   forgotPasswordText: { color: '#FF5733', fontSize: 16, fontWeight: '500' },
   separator: { fontSize: 16, color: '#333', marginHorizontal: 10 },
-  
+
   resetButton: { backgroundColor: '#FF5733', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 10 },
   resetButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  
+
   backToLoginText: { color: '#007AFF', fontSize: 16, marginTop: 15, fontWeight: '500' },
 });
 

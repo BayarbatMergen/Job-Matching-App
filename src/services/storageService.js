@@ -1,5 +1,5 @@
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { app } from "../config/firebaseConfig"; // ✅ Firebase 설정 가져오기
+import { app } from "../config/firebase"; // ✅ Firebase 설정 가져오기
 
 const storage = getStorage(app);
 
