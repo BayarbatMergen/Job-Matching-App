@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ AsyncStorage 추가
 import { loginWithBackend, loginWithFirebase, resetPassword } from "../services/authService"; // ✅ 로그인 & 비밀번호 찾기 API
 import Constants from "expo-constants"; // ✅ 환경 변수에서 백엔드 사용 여부 가져오기
 
@@ -22,6 +23,24 @@ const LoginScreen = ({ navigation }) => {
   const [resetEmail, setResetEmail] = useState("");
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // ✅ 로그인된 사용자 이메일 불러오기 (디버깅용)
+  useEffect(() => {
+    const checkStoredEmail = async () => {
+      try {
+        const storedEmail = await AsyncStorage.getItem('userEmail');
+        if (storedEmail) {
+          console.log("✅ 저장된 사용자 이메일:", storedEmail);
+        } else {
+          console.warn("⚠️ 저장된 사용자 이메일 없음");
+        }
+      } catch (error) {
+        console.error("❌ AsyncStorage에서 이메일 불러오기 오류:", error);
+      }
+    };
+
+    checkStoredEmail();
+  }, []);
 
   // ✅ 로그인 처리 함수
   const handleLogin = async () => {
@@ -40,6 +59,10 @@ const LoginScreen = ({ navigation }) => {
       } else {
         user = await loginWithFirebase(email, password);
       }
+
+      // ✅ 로그인 성공 후 이메일을 AsyncStorage에 저장
+      await AsyncStorage.setItem('userEmail', user.email);
+      console.log("✅ 로그인 후 저장된 이메일:", user.email);
 
       Alert.alert("로그인 성공", `${user.name || user.email}님 환영합니다!`);
 

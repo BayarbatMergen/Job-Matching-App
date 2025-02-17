@@ -14,7 +14,7 @@ export default function JobDetailScreen({ route, navigation }) {
         const email = await AsyncStorage.getItem('userEmail');
         if (email) {
           setUserEmail(email);
-          console.log("📌 [Fetched User Email]:", email);
+          console.log("✅ 불러온 사용자 이메일:", email);
         } else {
           console.warn("⚠️ 저장된 사용자 이메일 없음");
         }
@@ -22,9 +22,10 @@ export default function JobDetailScreen({ route, navigation }) {
         console.error("❌ 이메일 불러오기 오류:", error);
       }
     };
-
+  
     fetchUserEmail();
   }, []);
+  
 
   // ✅ job 데이터 확인
   useEffect(() => {
