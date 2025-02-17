@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ AsyncStorage 추가
-import { loginWithBackend, loginWithFirebase, resetPassword } from "../services/authService"; // ✅ 로그인 & 비밀번호 찾기 API
+import { loginWithBackend, resetPassword } from "../services/authService"; // ✅ 로그인 & 비밀번호 찾기 API
 import Constants from "expo-constants"; // ✅ 환경 변수에서 백엔드 사용 여부 가져오기
 
 // ✅ 환경 변수에서 백엔드 인증 사용 여부 확인
@@ -51,22 +51,16 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true); // 로그인 진행 중
     try {
-      let user;
-      if (useBackendAuth) {
-        const role = email.includes("admin") ? "admin" : "user"; // ✅ 관리자 여부 자동 판별
-        const response = await loginWithBackend(email, password, role);
-        user = response.user;
-      } else {
-        user = await loginWithFirebase(email, password);
-      }
+      const role = email.includes("admin") ? "admin" : "user"; // ✅ 관리자 여부 자동 판별
+      const response = await loginWithBackend(email, password, role);
+      const user = response.user;
 
-      // ✅ 로그인 성공 후 이메일을 AsyncStorage에 저장
+      // ✅ 로그인 성공 시 role과 email을 AsyncStorage에 저장
       await AsyncStorage.setItem('userEmail', user.email);
-      console.log("✅ 로그인 후 저장된 이메일:", user.email);
+      await AsyncStorage.setItem('userRole', user.role); // 🔥 추가된 부분
 
       Alert.alert("로그인 성공", `${user.name || user.email}님 환영합니다!`);
 
-      // ✅ 관리자 여부 확인 후 페이지 이동
       if (user.role === "admin") {
         navigation.replace("AdminMain");
       } else {
@@ -76,11 +70,11 @@ const LoginScreen = ({ navigation }) => {
       console.error("❌ 로그인 실패:", error);
       Alert.alert("로그인 실패", error.message || "서버 오류");
     } finally {
-      setLoading(false); // 로그인 종료
+      setLoading(false);
     }
   };
 
-  // ✅ 비밀번호 재설정 요청 함수
+  // ✅ 비밀번호 재설정 요청 함수 (🔥 복구된 기능)
   const handleResetPassword = async () => {
     if (!resetEmail) {
       Alert.alert("입력 오류", "⚠️ 이메일을 입력하세요.");
@@ -88,7 +82,7 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      const message = await resetPassword(resetEmail);
+      const message = await resetPassword(resetEmail); // 🔥 API 호출
       Alert.alert("✅ 이메일 전송 완료", message);
       setIsResetMode(false); // 비밀번호 찾기 모드 종료
     } catch (error) {

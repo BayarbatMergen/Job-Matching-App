@@ -57,7 +57,7 @@ const uploadToCloudinary = (fileBuffer) => {
   });
 };
 
-// ✅ 회원가입 API
+// ✅ 회원가입 API (관리자 및 사용자 구분)
 router.post('/register', upload.single('idImage'), async (req, res) => {
   try {
     console.log("🔥 [회원가입 요청 데이터]:", req.body);
@@ -131,36 +131,47 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
   }
 });
 
-// ✅ 로그인 API
+// ✅ 로그인 API (role 포함하여 토큰 생성)
 router.post('/login', async (req, res) => {
   try {
     console.log("🔥 [로그인 요청 데이터]:", req.body);
 
-    let { email, password, role } = req.body;
+    let { email, password } = req.body;
 
-    if (!email || !password || !role) {
-      return res.status(400).json({ message: '⚠️ 이메일, 비밀번호, 역할을 입력하세요.' });
+    if (!email || !password) {
+      return res.status(400).json({ message: '⚠️ 이메일과 비밀번호를 입력하세요.' });
     }
 
     email = email.toLowerCase().trim();
 
-    const collection = role === 'admin' ? 'admins' : 'users';
-    const userRef = db.collection(collection).doc(email);
+    // 🔥 관리자 또는 일반 유저 확인
+    const adminRef = db.collection('admins').doc(email);
+    const userRef = db.collection('users').doc(email);
+
+    const adminSnap = await adminRef.get();
     const userSnap = await userRef.get();
 
-    if (!userSnap.exists) {
+    let userData = null;
+    let role = '';
+
+    if (adminSnap.exists) {
+      userData = adminSnap.data();
+      role = 'admin';
+    } else if (userSnap.exists) {
+      userData = userSnap.data();
+      role = 'user';
+    } else {
       return res.status(400).json({ message: '⚠️ 이메일 또는 비밀번호가 잘못되었습니다.' });
     }
-
-    const userData = userSnap.data();
 
     const isMatch = await bcrypt.compare(password, userData.password);
     if (!isMatch) {
       return res.status(400).json({ message: '⚠️ 이메일 또는 비밀번호가 잘못되었습니다.' });
     }
 
+    // ✅ 관리자 역할을 포함한 JWT 토큰 생성 (Firestore 보안 규칙에서 사용 가능)
     const token = jwt.sign(
-      { userId: userData.userId, email, role },
+      { userId: userData.userId, email, role }, // 🔥 `role` 포함
       SECRET_KEY,
       { expiresIn: '7d' }
     );
@@ -172,11 +183,13 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
+    console.error("❌ 서버 오류:", error);
     res.status(500).json({ message: '❌ 서버 오류' });
   }
 });
 
-// 🔹 **비밀번호 재설정 요청 (이메일 전송)**
+
+// ✅ 비밀번호 재설정 요청
 router.post('/reset-password', async (req, res) => {
   const { email } = req.body;
 
@@ -199,6 +212,7 @@ router.post('/reset-password', async (req, res) => {
     res.status(200).json({ message: "✅ 비밀번호 재설정 이메일이 발송되었습니다!" });
 
   } catch (error) {
+    console.error("❌ 이메일 전송 오류:", error);
     res.status(500).json({ message: "❌ 이메일 전송 실패" });
   }
 });
