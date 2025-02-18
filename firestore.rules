@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ✅ 모집 공고 (jobs) 컬렉션 권한 설정
+    match /jobs/{jobId} {
+      allow read: if true; // 🔥 모든 사용자 읽기 가능
+      allow create: if request.auth != null; // 🔥 로그인한 사용자만 생성 가능
+      allow delete, update: if request.auth != null && request.auth.token.role == "admin";
+    }
+
+    // ✅ 지원 데이터 (applications) 로그인한 사용자만 접근 가능
+    match /applications/{applicationId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ✅ 사용자 데이터는 본인만 접근 가능
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ✅ 관리자 데이터 접근 제한 (관리자 본인만 가능)
+    match /admins/{adminId} {
+      allow read, write: if request.auth != null && request.auth.token.role == "admin";
+    }
+  }
+}
