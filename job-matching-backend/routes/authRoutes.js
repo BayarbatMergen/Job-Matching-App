@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 const cloudinary = require('../config/cloudinary'); // ✅ Cloudinary 가져오기
+const authenticateToken = require('../middlewares/authMiddleware'); // 🔥 이 줄 추가
+const authMiddleware = require('../middlewares/authMiddleware');
+
 require('dotenv').config();
 
 console.log("📌 현재 SMTP 설정 확인:", process.env.SMTP_USER, process.env.SMTP_PASS ? "✅ 비밀번호 설정됨" : "❌ 비밀번호 없음");
@@ -214,6 +217,107 @@ router.post('/reset-password', async (req, res) => {
   } catch (error) {
     console.error("❌ 이메일 전송 오류:", error);
     res.status(500).json({ message: "❌ 이메일 전송 실패" });
+  }
+});
+
+// ✅ 사용자 정보 조회 API
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const userEmail = req.user.email; // JWT에서 email 가져오기
+
+    const userRef = db.collection('users').doc(userEmail);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
+    }
+
+    const userData = userSnap.data();
+    delete userData.password; // 🔥 비밀번호 제거
+
+    res.status(200).json(userData);
+  } catch (error) {
+    console.error("❌ 사용자 정보 조회 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류" });
+  }
+});
+
+// ✅ 사용자 정보 수정 API
+router.put('/update', authMiddleware, upload.single('idImage'), async (req, res) => {
+  try {
+    console.log("🔥 [사용자 정보 수정 요청]:", req.body);
+    const { name, phone, gender } = req.body;
+    const userId = req.user.email; // 🔥 JWT에서 사용자 이메일 가져오기
+
+    if (!name && !phone && !gender && !req.file) {
+      return res.status(400).json({ message: "⚠️ 변경할 정보를 입력하세요." });
+    }
+
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
+    }
+
+    let updateData = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (gender) updateData.gender = gender;
+
+    if (req.file) {
+      console.log("📤 Cloudinary로 ID 이미지 업로드 중...");
+      updateData.idImage = await uploadToCloudinary(req.file.buffer);
+    }
+
+    await userRef.update(updateData);
+    console.log("✅ 사용자 정보 수정 완료:", updateData);
+
+    res.status(200).json({ message: "✅ 사용자 정보 수정 성공!", updatedUser: updateData });
+  } catch (error) {
+    console.error("❌ 사용자 정보 수정 중 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+});
+
+// ✅ 비밀번호 변경 API (PUT /auth/change-password)
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userEmail = req.user.email; // ✅ JWT에서 사용자 이메일 가져오기
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "⚠️ 현재 비밀번호와 새 비밀번호를 입력하세요." });
+    }
+
+    if (!/^(?=.*[!@#$%^&*()]).{6,}$/.test(newPassword)) {
+      return res.status(400).json({ message: "⚠️ 새 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다." });
+    }
+
+    // 🔎 Firestore에서 사용자 데이터 가져오기
+    const userRef = db.collection('users').doc(userEmail);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
+    }
+
+    const userData = userSnap.data();
+
+    // ✅ 현재 비밀번호 검증
+    const isMatch = await bcrypt.compare(currentPassword, userData.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "❌ 현재 비밀번호가 일치하지 않습니다." });
+    }
+
+    // 🔐 새 비밀번호 해싱 후 저장
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await userRef.update({ password: hashedPassword });
+
+    res.status(200).json({ message: "✅ 비밀번호가 성공적으로 변경되었습니다!" });
+  } catch (error) {
+    console.error("❌ 비밀번호 변경 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생", error: error.message });
   }
 });
 

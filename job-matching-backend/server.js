@@ -4,6 +4,7 @@ const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { db } = require('./config/firebase'); // ✅ Firebase Firestore 가져오기
 
+
 // ✅ Express 앱 초기화
 const app = express();
 

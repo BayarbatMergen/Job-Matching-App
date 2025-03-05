@@ -50,6 +50,8 @@ const RegisterScreen = ({ navigation }) => {
 
   // ✅ 회원가입 요청
   const handleRegister = async () => {
+    console.log("🔥 회원가입 요청 시작...");
+
     if (!email || !password || !confirmPassword || !name || !phone || !gender || !bank || !accountNumber) {
       Alert.alert('입력 오류', '⚠️ 모든 필드를 입력하세요.');
       return;
@@ -82,8 +84,10 @@ const RegisterScreen = ({ navigation }) => {
       });
     }
 
+    console.log("📤 회원가입 요청 데이터:", formData);
+
     try {
-      const response = await fetch("http://192.168.0.3:5000/api/auth/register", {
+      const response = await fetch("http://192.168.0.6:5000/api/auth/register", {
         method: "POST",
         body: formData,
         headers: { "Content-Type": "multipart/form-data" },

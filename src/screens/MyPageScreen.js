@@ -1,31 +1,103 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const API_BASE_URL = 'http://192.168.0.6:5000';
+  
 export default function MyPageScreen() {
   const navigation = useNavigation();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [userData, setUserData] = useState(null); // ✅ 사용자 정보 상태 관리
+  const [loading, setLoading] = useState(true);
+
+// ✅ 사용자 정보 불러오기
+const fetchUserData = async () => {
+  try {
+    console.log("🚀 API 요청 시작...");
+    
+    const token = await AsyncStorage.getItem("token");
+    console.log("🔹 저장된 토큰:", token);
+    
+    if (!token) {
+      Alert.alert("로그인 필요", "로그인이 필요합니다.");
+      navigation.navigate("Login");
+      return;
+    }
+
+    const apiUrl = `${API_BASE_URL}/api/auth/me`;
+    console.log("🔹 API 요청 URL:", apiUrl);
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    console.log("🔹 서버 응답 상태 코드:", response.status);
+
+    if (!response.ok) {
+      console.error("❌ 서버 응답 오류:", response.status, response.statusText);
+      throw new Error(`서버 오류: ${response.status}`);
+    }
+
+    // ✅ JSON 형식 확인
+    const contentType = response.headers.get("content-type");
+    console.log("🔹 응답 Content-Type:", contentType);
+
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error("❌ JSON 형식의 응답이 아닙니다!");
+    }
+
+    const data = await response.json();
+    console.log("✅ [서버 응답 데이터]:", data);
+
+    setUserData(data);
+  } catch (error) {
+    console.error("❌ 사용자 정보 가져오기 오류:", error);
+    Alert.alert("오류", error.message || "사용자 정보를 불러올 수 없습니다.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  console.log("🚀 useEffect 실행됨! fetchUserData() 호출");
+  fetchUserData();
+}, []);
 
   // 🔹 로그아웃 처리
-  const handleLogout = () => {
-    setLogoutModalVisible(false);
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],  // ✅ 로그인 화면으로 이동 (뒤로 가기 방지)
-    });
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("token"); // ✅ 토큰 삭제
+      await AsyncStorage.removeItem("userRole"); // ✅ 역할 정보 삭제
+      setLogoutModalVisible(false);
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); // 로그인 화면으로 이동
+    } catch (error) {
+      console.error("❌ 로그아웃 실패:", error);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>로딩 중...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       {/* 📌 프로필 영역 */}
       <View style={styles.profileContainer}>
         <Image 
-          source={require('../../assets/images/thechingu1.png')} // ✅ 프로필 이미지
+          source={{ uri: userData?.idImage || 'https://your-default-profile-url.com' }} // ✅ 프로필 이미지
           style={styles.profileImage} 
         />
-        <Text style={styles.userName}>홍길동</Text>
-        <Text style={styles.userEmail}>user@example.com</Text>
+        <Text style={styles.userName}>{userData?.name || "이름 없음"}</Text>
+        <Text style={styles.userEmail}>{userData?.email || "이메일 없음"}</Text>
       </View>
 
       {/* 🔹 설정 메뉴 */}
@@ -82,13 +154,16 @@ export default function MyPageScreen() {
       </Modal>
     </ScrollView>
   );
+  
 }
+
 
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },
 
-  // 🔹 프로필 영역 스타일
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
   profileContainer: {
     alignItems: 'center',
     paddingVertical: 25,
@@ -97,76 +172,19 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   profileImage: { 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    borderWidth: 2, 
-    borderColor: '#fff', 
-    marginBottom: 10 
+    width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#fff', marginBottom: 10 
   },
   userName: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   userEmail: { fontSize: 16, color: '#E0E0E0' },
 
-  // 🔹 메뉴 스타일
-  section: { 
-    backgroundColor: '#fff', 
-    marginTop: 15, 
-    borderRadius: 12, 
-    paddingVertical: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  menuText: { 
-    fontSize: 17, 
-    marginLeft: 15, 
-    color: '#333', 
-    flex: 1, 
-    fontWeight: '500' 
-  },
+  section: { backgroundColor: '#fff', marginTop: 15, borderRadius: 12, paddingVertical: 5, elevation: 3 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  menuText: { fontSize: 17, marginLeft: 15, color: '#333', flex: 1, fontWeight: '500' },
 
-  // 🔴 로그아웃 버튼
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginVertical: 30,
-    marginHorizontal: 20
-  },
+  logoutButton: { backgroundColor: '#FF3B30', padding: 15, borderRadius: 10, alignItems: 'center', marginVertical: 30, marginHorizontal: 20 },
   logoutText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
 
-  // 🚀 로그아웃 모달 스타일
-  modalOverlay: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.5)' 
-  },
-  modalContainer: { 
-    width: '80%', 
-    padding: 20, 
-    backgroundColor: '#fff', 
-    borderRadius: 15, 
-    alignItems: 'center',
-    elevation: 5 
-  },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 10 },
-  modalText: { fontSize: 16, color: '#666', marginVertical: 10 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-
-  cancelButton: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', backgroundColor: '#E0E0E0', marginRight: 10 },
-  cancelButtonText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-
-  confirmButton: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', backgroundColor: '#FF3B30' },
-  confirmButtonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContainer: { width: '80%', padding: 20, backgroundColor: '#fff', borderRadius: 15, alignItems: 'center', elevation: 5 },
 });
+
