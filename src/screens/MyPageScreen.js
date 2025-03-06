@@ -1,80 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert } from 'react-native';
+import { 
+  View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert, ActivityIndicator 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_BASE_URL = 'http://192.168.0.6:5000';
-  
+
 export default function MyPageScreen() {
   const navigation = useNavigation();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
-  const [userData, setUserData] = useState(null); // ✅ 사용자 정보 상태 관리
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-// ✅ 사용자 정보 불러오기
-const fetchUserData = async () => {
-  try {
-    console.log("🚀 API 요청 시작...");
-    
-    const token = await AsyncStorage.getItem("token");
-    console.log("🔹 저장된 토큰:", token);
-    
-    if (!token) {
-      Alert.alert("로그인 필요", "로그인이 필요합니다.");
-      navigation.navigate("Login");
-      return;
+  // ✅ 사용자 정보 불러오기
+  const fetchUserData = async () => {
+    try {
+      console.log("🚀 API 요청 시작...");
+
+      const token = await AsyncStorage.getItem("authToken"); // ✅ `authToken`으로 통일
+      console.log("🔹 저장된 토큰 (마이페이지):", token);
+
+      if (!token) {
+        console.warn("🚨 저장된 토큰 없음 → 로그인 화면으로 이동");
+        Alert.alert("로그인 필요", "로그인이 필요합니다.");
+        navigation.replace("Login");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("🔹 서버 응답 상태 코드:", response.status);
+
+      if (!response.ok) {
+        console.error("❌ 서버 응답 오류:", response.status, response.statusText);
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("❌ JSON 형식의 응답이 아닙니다!");
+      }
+
+      const data = await response.json();
+      console.log("✅ [서버 응답 데이터]:", data);
+
+      setUserData(data);
+    } catch (error) {
+      console.error("❌ 사용자 정보 가져오기 오류:", error);
+      Alert.alert("오류", error.message || "사용자 정보를 불러올 수 없습니다.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const apiUrl = `${API_BASE_URL}/api/auth/me`;
-    console.log("🔹 API 요청 URL:", apiUrl);
-
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    console.log("🔹 서버 응답 상태 코드:", response.status);
-
-    if (!response.ok) {
-      console.error("❌ 서버 응답 오류:", response.status, response.statusText);
-      throw new Error(`서버 오류: ${response.status}`);
-    }
-
-    // ✅ JSON 형식 확인
-    const contentType = response.headers.get("content-type");
-    console.log("🔹 응답 Content-Type:", contentType);
-
-    if (!contentType || !contentType.includes("application/json")) {
-      throw new Error("❌ JSON 형식의 응답이 아닙니다!");
-    }
-
-    const data = await response.json();
-    console.log("✅ [서버 응답 데이터]:", data);
-
-    setUserData(data);
-  } catch (error) {
-    console.error("❌ 사용자 정보 가져오기 오류:", error);
-    Alert.alert("오류", error.message || "사용자 정보를 불러올 수 없습니다.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-useEffect(() => {
-  console.log("🚀 useEffect 실행됨! fetchUserData() 호출");
-  fetchUserData();
-}, []);
+  useEffect(() => {
+    console.log("🚀 useEffect 실행됨! fetchUserData() 호출");
+    setTimeout(() => {
+      fetchUserData();
+    }, 1000);
+  }, []);
 
   // 🔹 로그아웃 처리
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem("token"); // ✅ 토큰 삭제
-      await AsyncStorage.removeItem("userRole"); // ✅ 역할 정보 삭제
+      await AsyncStorage.removeItem("authToken"); // ✅ 토큰 삭제
+      await AsyncStorage.removeItem("userEmail"); // ✅ 사용자 이메일 삭제
       setLogoutModalVisible(false);
-      navigation.reset({ index: 0, routes: [{ name: 'Login' }] }); // 로그인 화면으로 이동
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     } catch (error) {
       console.error("❌ 로그아웃 실패:", error);
     }
@@ -83,7 +80,7 @@ useEffect(() => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>로딩 중...</Text>
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
@@ -93,7 +90,7 @@ useEffect(() => {
       {/* 📌 프로필 영역 */}
       <View style={styles.profileContainer}>
         <Image 
-          source={{ uri: userData?.idImage || 'https://your-default-profile-url.com' }} // ✅ 프로필 이미지
+          source={{ uri: userData?.idImage || 'https://your-default-profile-url.com' }} 
           style={styles.profileImage} 
         />
         <Text style={styles.userName}>{userData?.name || "이름 없음"}</Text>
@@ -154,10 +151,7 @@ useEffect(() => {
       </Modal>
     </ScrollView>
   );
-  
 }
-
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },

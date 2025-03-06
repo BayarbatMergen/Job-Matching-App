@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { db } from '../config/firebase'; // ✅ Firestore import
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
@@ -13,33 +16,55 @@ LocaleConfig.locales['kr'] = {
 LocaleConfig.defaultLocale = 'kr';
 
 export default function ScheduleScreen({ navigation }) {
-  const [scheduleData, setScheduleData] = useState({
-    '2025-02-22': [
-      { name: '한화 대천', wage: 100000 },
-      { name: '롯데월드', wage: 120000 },
-    ],
-    '2025-02-25': [{ name: '서울랜드', wage: 95000 }],
-    '2025-02-28': [{ name: '에버랜드', wage: 150000 }],
-  });
-
+  const [scheduleData, setScheduleData] = useState({});
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSchedules, setSelectedSchedules] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [totalWage, setTotalWage] = useState(0);
   const [allTotalWage, setAllTotalWage] = useState(0);
 
-  // 📌 **모든 일정의 총 급여 계산**
-  useEffect(() => {
-    let sum = 0;
-    Object.values(scheduleData).forEach((schedules) => {
-      schedules.forEach((schedule) => {
-        sum += schedule.wage;
-      });
-    });
-    setAllTotalWage(sum);
-  }, [scheduleData]);
+  // ✅ Firestore에서 일정 불러오기 함수
+  const fetchSchedulesFromFirestore = async () => {
+    try {
+      console.log("📡 Firestore에서 일정 불러오는 중...");
+      const userEmail = await AsyncStorage.getItem("userEmail");
+      if (!userEmail) {
+        console.error("❌ 사용자 이메일을 찾을 수 없습니다.");
+        return;
+      }
 
-  // 📌 **날짜 클릭 시 일정 표시 및 선택한 날짜 강조**
+      const q = query(collection(db, "schedules"), where("userEmail", "==", userEmail));
+      const querySnapshot = await getDocs(q);
+
+      let fetchedSchedules = {};
+      let totalWageSum = 0;
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const date = data.date; // 📌 Firestore 문서의 날짜 (예: '2025-02-22')
+        if (!fetchedSchedules[date]) {
+          fetchedSchedules[date] = [];
+        }
+        fetchedSchedules[date].push({ name: data.name, wage: data.wage });
+        totalWageSum += data.wage;
+      });
+
+      setScheduleData(fetchedSchedules);
+      setAllTotalWage(totalWageSum);
+
+      console.log("✅ Firestore에서 일정 불러오기 완료:", fetchedSchedules);
+    } catch (error) {
+      console.error("❌ Firestore에서 일정 불러오기 오류:", error);
+      Alert.alert("오류", "일정을 불러오는 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ✅ Firestore에서 일정 불러오기 (마운트 시 실행)
+  useEffect(() => {
+    fetchSchedulesFromFirestore();
+  }, []);
+
+  // 📌 날짜 클릭 시 일정 표시 및 선택한 날짜 강조
   const handleDayPress = (day) => {
     const formattedDate = day.dateString;
 
@@ -69,7 +94,7 @@ export default function ScheduleScreen({ navigation }) {
     // 관리자에게 정산 요청 전달
     Alert.alert('정산 요청 완료', `총 급여 ${allTotalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
   
-    // ✅ 로그 기록 (네비게이션 제거)
+    // ✅ 로그 기록
     console.log(`📌 [정산 요청] 총 급여: ${allTotalWage.toLocaleString()}원`);
   };
 
@@ -136,7 +161,7 @@ export default function ScheduleScreen({ navigation }) {
           <Text style={styles.allTotalWageText}>총 급여 합산: {allTotalWage.toLocaleString()}원</Text>
         </View>
 
-        {/* 📌 정산 요청 버튼 (가장 아래 배치) */}
+        {/* 📌 정산 요청 버튼 */}
         <TouchableOpacity style={styles.settlementButton} onPress={handleSettlementRequest}>
           <Text style={styles.settlementButtonText}>정산 요청</Text>
         </TouchableOpacity>

@@ -10,13 +10,9 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ AsyncStorage 추가
-import { loginWithBackend, resetPassword } from "../services/authService"; // ✅ 로그인 & 비밀번호 찾기 API
-import Constants from "expo-constants"; // ✅ 환경 변수에서 백엔드 사용 여부 가져오기
-
-
-// ✅ 환경 변수에서 백엔드 인증 사용 여부 확인
-const useBackendAuth = Constants.expoConfig?.extra?.useBackendAuth ?? true;
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loginWithBackend, resetPasswordWithBackend } from "../services/authService";
+import { fetchUserData } from "../services/authService";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -25,57 +21,82 @@ const LoginScreen = ({ navigation }) => {
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ 로그인된 사용자 이메일 불러오기 (디버깅용)
+  // ✅ 저장된 이메일 불러오기 (디버깅용)
   useEffect(() => {
-    const checkStoredEmail = async () => {
-      try {
-        const storedEmail = await AsyncStorage.getItem('userEmail');
-        if (storedEmail) {
-          console.log("✅ 저장된 사용자 이메일:", storedEmail);
+    console.log("🚀 useEffect 실행됨! fetchUserData() 호출 예정");
+
+    const fetchWithDelay = async () => {
+        let token = await AsyncStorage.getItem('authToken');
+
+        if (!token) {
+            console.warn("⚠️ 저장된 토큰이 없음! 0.5초 후 다시 시도...");
+            setTimeout(async () => {
+                token = await AsyncStorage.getItem('authToken');
+                console.log("🔹 가져온 토큰 (재시도 후):", token);
+                if (token) {
+                    fetchUserData(token);
+                } else {
+                    console.error("❌ 최종적으로 토큰 없음. 로그인 화면 유지");
+                }
+            }, 500);
         } else {
-          console.warn("⚠️ 저장된 사용자 이메일 없음");
+            console.log("🔹 가져온 토큰:", token);
+            fetchUserData(token);
         }
-      } catch (error) {
-        console.error("❌ AsyncStorage에서 이메일 불러오기 오류:", error);
-      }
     };
 
-    checkStoredEmail();
-  }, []);
+    fetchWithDelay();
+}, []);
+
+
+
+
 
   // ✅ 로그인 처리 함수
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("입력 오류", "이메일과 비밀번호를 입력하세요.");
+      Alert.alert("입력 오류", "⚠️ 이메일과 비밀번호를 입력하세요.");
       return;
     }
-
-    setLoading(true); // 로그인 진행 중
+  
     try {
-      const role = email.includes("admin") ? "admin" : "user"; // ✅ 관리자 여부 자동 판별
-      const response = await loginWithBackend(email, password, role);
-      const user = response.user;
-
-      // ✅ 로그인 성공 시 role과 email을 AsyncStorage에 저장
-      await AsyncStorage.setItem('userEmail', user.email);
-      await AsyncStorage.setItem('userRole', user.role); // 🔥 추가된 부분
-
-      Alert.alert("로그인 성공", `${user.name || user.email}님 환영합니다!`);
-
-      if (user.role === "admin") {
-        navigation.replace("AdminMain");
+      const response = await fetch("http://192.168.0.6:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+  
+      const result = await response.json();
+      console.log("✅ 로그인 응답 데이터:", result);
+  
+      if (response.ok) {
+        Alert.alert("로그인 성공", "✅ 환영합니다!");
+  
+        // ✅ 1. 토큰과 이메일 저장 후 바로 확인
+        await AsyncStorage.setItem('authToken', result.token);
+        await AsyncStorage.setItem('userEmail', result.user.email);
+        console.log("🔹 토큰과 이메일 저장 완료");
+  
+        // ✅ 2. 저장된 토큰 즉시 확인
+        const savedToken = await AsyncStorage.getItem('authToken');
+        console.log("🔹 저장된 토큰 확인:", savedToken);
+  
+        if (savedToken) {
+          navigation.replace("Main"); // ✅ 홈 화면으로 이동
+        } else {
+          Alert.alert("로그인 오류", "토큰 저장 실패");
+        }
       } else {
-        navigation.replace("Main");
+        Alert.alert("로그인 실패", result.message || "서버 오류");
       }
+  
     } catch (error) {
-      console.error("❌ 로그인 실패:", error);
-      Alert.alert("로그인 실패", error.message || "서버 오류");
-    } finally {
-      setLoading(false);
+      console.error("❌ 로그인 오류:", error);
+      Alert.alert("로그인 실패", "서버 오류");
     }
   };
 
-  // ✅ 비밀번호 재설정 요청 함수 (🔥 복구된 기능)
+  // ✅ 비밀번호 재설정 요청
   const handleResetPassword = async () => {
     if (!resetEmail) {
       Alert.alert("입력 오류", "⚠️ 이메일을 입력하세요.");
@@ -83,9 +104,9 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      const message = await resetPassword(resetEmail); // 🔥 API 호출
+      const message = await resetPasswordWithBackend(resetEmail);
       Alert.alert("✅ 이메일 전송 완료", message);
-      setIsResetMode(false); // 비밀번호 찾기 모드 종료
+      setIsResetMode(false);
     } catch (error) {
       Alert.alert("❌ 실패", error.message || "서버 오류");
     }
@@ -108,7 +129,6 @@ const LoginScreen = ({ navigation }) => {
           <>
             <Text style={styles.title}>로그인</Text>
 
-            {/* 이메일 입력 */}
             <TextInput
               style={styles.input}
               placeholder="이메일"
@@ -119,7 +139,6 @@ const LoginScreen = ({ navigation }) => {
               autoCapitalize="none"
             />
 
-            {/* 비밀번호 입력 */}
             <TextInput
               style={styles.input}
               placeholder="비밀번호"
@@ -129,18 +148,16 @@ const LoginScreen = ({ navigation }) => {
               onChangeText={setPassword}
             />
 
-            {/* 로그인 버튼 */}
             <TouchableOpacity
               style={styles.loginButton}
               onPress={handleLogin}
-              disabled={loading} // 중복 클릭 방지
+              disabled={loading}
             >
               <Text style={styles.loginButtonText}>
                 {loading ? "로그인 중..." : "로그인"}
               </Text>
             </TouchableOpacity>
 
-            {/* 회원가입 / 비밀번호 찾기 */}
             <View style={styles.footerContainer}>
               <TouchableOpacity onPress={() => navigation.navigate("Register")}>
                 <Text style={styles.registerText}>회원가입</Text>
@@ -182,6 +199,7 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
+// ✅ 스타일
 const styles = StyleSheet.create({
   container: {
     flex: 1,

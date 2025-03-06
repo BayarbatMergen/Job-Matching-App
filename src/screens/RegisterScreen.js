@@ -3,70 +3,57 @@ import {
   View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(''); // ⚠️ 비밀번호 오류 메시지
   const [name, setName] = useState('');
-  const [gender, setGender] = useState(null); // ✅ 성별 추가
+  const [gender, setGender] = useState(null);
   const [phone, setPhone] = useState('');
   const [bank, setBank] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [idImage, setIdImage] = useState(null);
 
-  // 🔥 비밀번호 유효성 검사 (특수문자 포함 여부)
   const isPasswordValid = (password) => /^(?=.*[!@#$%^&*()]).{6,}$/.test(password);
 
-  // ✅ 성별 선택 함수
   const handleGenderSelect = (selectedGender) => {
     setGender(selectedGender);
   };
 
-  // ✅ 사진 업로드 (갤러리에서 선택)
   const pickImage = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permissionResult.granted) {
-        Alert.alert('갤러리 접근 권한이 필요합니다.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setIdImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("❌ 이미지 선택 오류:", error);
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('갤러리 접근 권한이 필요합니다.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setIdImage(result.assets[0].uri);
     }
   };
 
-  // ✅ 회원가입 요청
   const handleRegister = async () => {
-    console.log("🔥 회원가입 요청 시작...");
-
     if (!email || !password || !confirmPassword || !name || !phone || !gender || !bank || !accountNumber) {
       Alert.alert('입력 오류', '⚠️ 모든 필드를 입력하세요.');
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert("비밀번호 불일치", "⚠️ 비밀번호가 일치하지 않습니다.");
       return;
     }
-
     if (!isPasswordValid(password)) {
       Alert.alert("비밀번호 오류", "⚠️ 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다.");
       return;
     }
-
     let formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
@@ -104,66 +91,30 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        
-        {/* 로고 */}
         <Image source={require('../../assets/images/thechingu.png')} style={styles.logo} />
         <Text style={styles.title}>회원가입</Text>
-
         <TextInput style={styles.input} placeholder="이메일" value={email} onChangeText={setEmail} keyboardType="email-address" />
-
-        {/* ✅ 비밀번호 입력 */}
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호 (6자 이상, 특수문자 포함)"
-          secureTextEntry
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            setPasswordError(isPasswordValid(text) ? "" : "⚠️ 특수문자를 포함해야 합니다.");
-          }}
-        />
-
-        {/* ⚠️ 비밀번호 검증 메시지 */}
-        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
-
+        <TextInput style={styles.input} placeholder="비밀번호 (6자 이상, 특수문자 포함)" secureTextEntry value={password} onChangeText={setPassword} />
         <TextInput style={styles.input} placeholder="비밀번호 확인" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
         <TextInput style={styles.input} placeholder="이름" value={name} onChangeText={setName} />
-
-        {/* ✅ 성별 선택 */}
         <View style={styles.genderContainer}>
           <Text style={styles.label}>성별 선택:</Text>
           <View style={styles.genderButtons}>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'male' && styles.selectedGender]}
-              onPress={() => handleGenderSelect('male')}
-            >
+            <TouchableOpacity style={[styles.genderButton, gender === 'male' && styles.selectedGender]} onPress={() => handleGenderSelect('male')}>
               <Text style={[styles.genderButtonText, gender === 'male' && styles.selectedGenderText]}>남</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.genderButton, gender === 'female' && styles.selectedGender]}
-              onPress={() => handleGenderSelect('female')}
-            >
+            <TouchableOpacity style={[styles.genderButton, gender === 'female' && styles.selectedGender]} onPress={() => handleGenderSelect('female')}>
               <Text style={[styles.genderButtonText, gender === 'female' && styles.selectedGenderText]}>여</Text>
             </TouchableOpacity>
           </View>
         </View>
-
         <TextInput style={styles.input} placeholder="전화번호" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         <TextInput style={styles.input} placeholder="은행명" value={bank} onChangeText={setBank} />
         <TextInput style={styles.input} placeholder="계좌번호" value={accountNumber} onChangeText={setAccountNumber} keyboardType="numeric" />
-
-        <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-          <Text style={styles.uploadButtonText}>신분증 사진 업로드</Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={styles.uploadButton} onPress={pickImage}><Text style={styles.uploadButtonText}>신분증 사진 업로드</Text></TouchableOpacity>
         {idImage && <Image source={{ uri: idImage }} style={styles.profileImage} />}
-
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-          <Text style={styles.registerButtonText}>회원가입</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.loginText}>로그인으로 이동</Text>
-        </TouchableOpacity>
+        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}><Text style={styles.registerButtonText}>회원가입</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}><Text style={styles.loginText}>로그인으로 이동</Text></TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );

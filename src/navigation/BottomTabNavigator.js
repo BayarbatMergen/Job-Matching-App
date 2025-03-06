@@ -63,6 +63,7 @@ const defaultScreenOptions = {
   headerStyle: { backgroundColor: '#007AFF' },
   headerTintColor: '#fff',
   headerTitleAlign: 'center',
+  
 };
 
 // 📌 바텀 탭 네비게이션 (사용자용)

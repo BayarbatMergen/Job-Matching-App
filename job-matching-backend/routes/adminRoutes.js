@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../firebase');
+const { db, auth } = require('../config/firebase'); // ✅ 올바른 경로로 변경
 const bcrypt = require('bcrypt');
 
 // ✅ 관리자 로그인 API
