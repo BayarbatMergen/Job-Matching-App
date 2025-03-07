@@ -5,9 +5,11 @@ const firebase = require('firebase/app'); // ✅ 일반 Firebase SDK 추가
 const { getAuth } = require('firebase/auth'); // ✅ Firebase Auth 가져오기
 const path = require('path');
 require('dotenv').config();
+
 console.log("🔍 Firebase API Key:", process.env.FIREBASE_API_KEY);
 console.log("🔍 Firebase Project ID:", process.env.FIREBASE_PROJECT_ID);
 console.log("🔍 Firebase Storage Bucket:", process.env.FIREBASE_STORAGE_BUCKET);
+
 // ✅ Firebase 서비스 계정 JSON 파일 로드
 let serviceAccount;
 try {
@@ -24,14 +26,14 @@ if (!admin.apps.length) {
     admin.initializeApp({
       credential: serviceAccount 
         ? admin.credential.cert(serviceAccount) 
-        : admin.credential.applicationDefault(), // 환경변수 기반 초기화
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com", // ✅ Storage 버킷 설정
+        : admin.credential.applicationDefault(), // ✅ 환경변수 기반 초기화
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com", 
     });
 
     console.log('🔥 Firebase Admin SDK 초기화 완료');
   } catch (error) {
     console.error('❌ Firebase 초기화 실패:', error.message);
-    process.exit(1); // 🚨 Firebase가 없으면 정상 동작 불가 → 서버 종료
+    process.exit(1); // 🚨 Firebase가 없으면 서버 실행 중단
   }
 } else {
   console.log('✅ Firebase Admin SDK가 이미 초기화됨');
@@ -54,8 +56,8 @@ if (!firebase.getApps().length) {
 
 // ✅ Firestore & Storage 초기화
 const db = getFirestore();
-const storage = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com"); // ✅ 버킷 적용
-const auth = getAuth(); // ✅ Firebase Authentication 추가
+const storage = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com");
+const auth = admin.auth(); // ✅ Firebase Authentication 추가 (Admin SDK로 가져오기)
 
 // ✅ Firestore & Storage 연결 확인
 if (!db) {

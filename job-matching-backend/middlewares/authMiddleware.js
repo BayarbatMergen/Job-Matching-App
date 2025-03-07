@@ -25,6 +25,7 @@ const authenticateToken = async (req, res, next) => {
             console.log("✅ [Firebase 인증 성공] 사용자 정보:", decodedToken);
         } catch (firebaseError) {
             console.warn("⚠️ Firebase ID 토큰 검증 실패. JWT로 재검증 시도...");
+
             try {
                 // ✅ 2️⃣ 백엔드에서 자체 발급한 JWT 토큰 검증
                 decodedToken = jwt.verify(token, SECRET_KEY);
@@ -35,7 +36,9 @@ const authenticateToken = async (req, res, next) => {
             }
         }
 
-        if (!decodedToken || !decodedToken.email) {
+        // ✅ 토큰에 필수 정보가 포함되어 있는지 확인
+        if (!decodedToken || !decodedToken.email || !decodedToken.userId) {
+            console.error("❌ [인증 실패] 유효하지 않은 토큰 데이터:", decodedToken);
             return res.status(401).json({ message: "❌ 유효하지 않은 인증 정보입니다." });
         }
 

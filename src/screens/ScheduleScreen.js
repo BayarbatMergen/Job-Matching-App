@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { db } from '../config/firebase'; // ✅ Firestore import
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fetchUserSchedules } from '../services/firestoreService';
 
 // 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
@@ -22,49 +21,74 @@ export default function ScheduleScreen({ navigation }) {
   const [markedDates, setMarkedDates] = useState({});
   const [totalWage, setTotalWage] = useState(0);
   const [allTotalWage, setAllTotalWage] = useState(0);
-
-  // ✅ Firestore에서 일정 불러오기 함수
-  const fetchSchedulesFromFirestore = async () => {
-    try {
-      console.log("📡 Firestore에서 일정 불러오는 중...");
-      const userEmail = await AsyncStorage.getItem("userEmail");
-      if (!userEmail) {
-        console.error("❌ 사용자 이메일을 찾을 수 없습니다.");
+  const [userId, setUserId] = useState(null); // 🔥 `userId` 상태 추가
+  
+  useEffect(() => {
+    const checkUserId = async () => {
+      await AsyncStorage.flushGetRequests(); // ✅ 강제로 저장된 값 로딩
+      await new Promise(resolve => setTimeout(resolve, 1000)); // ✅ 1초 대기
+  
+      const storedUserId = await AsyncStorage.getItem("userId");
+      console.log("🔍 [AsyncStorage] 저장된 userId:", storedUserId);
+  
+      if (!storedUserId || storedUserId === "TEST_USER_ID_123") {
+        console.error("❌ userId가 저장되지 않았거나 초기값이 유지됨!");
         return;
       }
-
-      const q = query(collection(db, "schedules"), where("userEmail", "==", userEmail));
-      const querySnapshot = await getDocs(q);
-
-      let fetchedSchedules = {};
-      let totalWageSum = 0;
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const date = data.date; // 📌 Firestore 문서의 날짜 (예: '2025-02-22')
-        if (!fetchedSchedules[date]) {
-          fetchedSchedules[date] = [];
-        }
-        fetchedSchedules[date].push({ name: data.name, wage: data.wage });
-        totalWageSum += data.wage;
-      });
-
-      setScheduleData(fetchedSchedules);
-      setAllTotalWage(totalWageSum);
-
-      console.log("✅ Firestore에서 일정 불러오기 완료:", fetchedSchedules);
-    } catch (error) {
-      console.error("❌ Firestore에서 일정 불러오기 오류:", error);
-      Alert.alert("오류", "일정을 불러오는 중 오류가 발생했습니다.");
-    }
-  };
-
-  // ✅ Firestore에서 일정 불러오기 (마운트 시 실행)
-  useEffect(() => {
-    fetchSchedulesFromFirestore();
+  
+      setUserId(storedUserId);
+      
+      // ✅ userId가 있으면 Firestore에서 일정 불러오기
+      fetchSchedules(storedUserId);
+    };
+  
+    checkUserId();
   }, []);
+  
+  
+  
+// ✅ Firestore에서 일정 불러오기
+const fetchSchedules = async (uid) => {
+  try {
+    console.log("📌 Firestore에서 일정 가져오는 중...", uid);
+    const schedulesArray = await fetchUserSchedules(uid);
 
-  // 📌 날짜 클릭 시 일정 표시 및 선택한 날짜 강조
+    if (!schedulesArray || schedulesArray.length === 0) {
+      console.warn("⚠️ Firestore에서 불러온 일정이 없습니다.");
+      setScheduleData({});
+      return;
+    }
+
+    // 🔥 Firestore 데이터를 `{ date: [일정 목록] }` 형태로 변환
+    const formattedSchedules = {};
+    schedulesArray.forEach(schedule => {
+      if (!schedule.date) return; // 🔥 date 필드가 없는 데이터 방어 처리
+      if (!formattedSchedules[schedule.date]) {
+        formattedSchedules[schedule.date] = [];
+      }
+      formattedSchedules[schedule.date].push(schedule);
+    });
+
+    setScheduleData(formattedSchedules);
+
+    // 🔥 캘린더에 일정이 있는 날짜 표시
+    const updatedMarkedDates = {};
+    Object.keys(formattedSchedules).forEach(date => {
+      updatedMarkedDates[date] = {
+        customStyles: {
+          container: { backgroundColor: '#FFD700', borderRadius: 5 },
+          text: { color: '#000', fontWeight: 'bold' },
+        },
+      };
+    });
+    setMarkedDates(updatedMarkedDates);
+  } catch (error) {
+    console.error("❌ 일정 데이터 로딩 오류:", error);
+  }
+};
+
+
+  // 📌 날짜 클릭 시 일정 표시
   const handleDayPress = (day) => {
     const formattedDate = day.dateString;
 
@@ -90,10 +114,10 @@ export default function ScheduleScreen({ navigation }) {
       Alert.alert('정산 요청 실패', '정산할 일정이 없습니다.');
       return;
     }
-  
+
     // 관리자에게 정산 요청 전달
     Alert.alert('정산 요청 완료', `총 급여 ${allTotalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
-  
+
     // ✅ 로그 기록
     console.log(`📌 [정산 요청] 총 급여: ${allTotalWage.toLocaleString()}원`);
   };
@@ -151,11 +175,6 @@ export default function ScheduleScreen({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* 📌 해당 날짜 총 급여 */}
-        <View style={styles.totalWageContainer}>
-          <Text style={styles.totalWageText}>해당 날짜 총 급여: {totalWage.toLocaleString()}원</Text>
-        </View>
-
         {/* 📌 전체 일정 총 급여 */}
         <View style={styles.allTotalWageContainer}>
           <Text style={styles.allTotalWageText}>총 급여 합산: {allTotalWage.toLocaleString()}원</Text>
@@ -169,6 +188,7 @@ export default function ScheduleScreen({ navigation }) {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   scrollContainer: { flex: 1 },

@@ -178,6 +178,14 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+     // ✅ `userId`가 `undefined`인지 체크
+     if (!userData.userId) {
+      console.error("❌ 로그인 응답에 userId가 없습니다!");
+      return res.status(500).json({ message: "❌ 로그인 응답에 userId가 없습니다!" });
+    }
+
+    console.log("✅ 로그인 성공! 반환되는 userId:", userData.userId);
+
     // ✅ 로그인 성공 응답 (🚀 token을 먼저 생성한 후 응답)
     res.status(200).json({
       message: "✅ 로그인 성공!",

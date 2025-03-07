@@ -198,6 +198,17 @@ const LoginScreen = ({ navigation }) => {
     </KeyboardAvoidingView>
   );
 };
+const checkStoredUserId = async () => {
+  await AsyncStorage.flushGetRequests();  // 강제 로딩
+  await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+
+  const storedUserId = await AsyncStorage.getItem("userId");
+  console.log("✅ [AsyncStorage 확인] 저장된 userId:", storedUserId);
+
+  if (!storedUserId) {
+    console.error("❌ [오류] AsyncStorage에 userId가 저장되지 않았습니다.");
+  }
+};
 
 // ✅ 스타일
 const styles = StyleSheet.create({

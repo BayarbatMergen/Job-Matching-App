@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ✅ 환경변수 적용 (Expo + 일반 .env 환경 지원)
 const firebaseConfig = {
@@ -18,9 +19,14 @@ const firebaseConfig = {
 // ✅ Firebase 초기화
 const app = initializeApp(firebaseConfig);
 
-// ✅ 인증(Auth), Firestore, Storage 초기화
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+// ✅ 인증(Auth) 설정 (React Native 환경에서 AsyncStorage 사용)
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
 
-export default app;
+// ✅ Firestore & Storage 초기화
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// ✅ Firebase 인스턴스 export
+export { app, auth, db, storage };

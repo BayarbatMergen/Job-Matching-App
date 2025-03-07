@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { testAsyncStorage } from './src/services/authService'; // ✅ testAsyncStorage 가져오기
 
 // ✅ 기본 인증 화면
 import LoginScreen from './src/screens/LoginScreen';
@@ -29,6 +30,11 @@ import ChatScreen from './src/screens/ChatScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  // 🔥 앱 실행 시 AsyncStorage 테스트 실행
+  useEffect(() => {
+    testAsyncStorage();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -54,14 +60,14 @@ export default function App() {
         <Stack.Screen name="CustomerSupport" component={CustomerSupportScreen} options={{ headerShown: true, title: '고객센터 문의' }} />
 
         <Stack.Screen name="ChatList" component={ChatListScreen} options={{ headerShown: true, title: '채팅방 목록' }} />
-<Stack.Screen 
-  name="ChatScreen" 
-  component={ChatScreen} 
-  options={({ route }) => ({ 
-    headerShown: true, 
-    title: route.params?.roomName || '단톡방' 
-  })}
-/>
+        <Stack.Screen 
+          name="ChatScreen" 
+          component={ChatScreen} 
+          options={({ route }) => ({ 
+            headerShown: true, 
+            title: route.params?.roomName || '단톡방' 
+          })}
+        />
         
       </Stack.Navigator>
     </NavigationContainer>
