@@ -27,6 +27,9 @@ import CustomerSupportScreen from './src/screens/CustomerSupportScreen';
 import ChatListScreen from './src/screens/ChatListScreen';
 import ChatScreen from './src/screens/ChatScreen';
 
+// ✅ 📆 **일정 관련 네비게이션 추가**
+import ScheduleNavigator from './src/navigation/ScheduleNavigator';  // ✅ 일정 네비게이션 추가!
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -59,6 +62,7 @@ export default function App() {
         <Stack.Screen name="Notice" component={NoticeScreen} options={{ headerShown: true, title: '공지사항' }} />
         <Stack.Screen name="CustomerSupport" component={CustomerSupportScreen} options={{ headerShown: true, title: '고객센터 문의' }} />
 
+        {/* ✅ 채팅 기능 */}
         <Stack.Screen name="ChatList" component={ChatListScreen} options={{ headerShown: true, title: '채팅방 목록' }} />
         <Stack.Screen 
           name="ChatScreen" 
@@ -68,7 +72,9 @@ export default function App() {
             title: route.params?.roomName || '단톡방' 
           })}
         />
-        
+
+        {/* ✅ 일정 관련 네비게이션 */}
+        <Stack.Screen name="Schedule" component={ScheduleNavigator} options={{ headerShown: true, title: '일정 관리' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

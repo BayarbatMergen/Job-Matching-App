@@ -3,27 +3,55 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert, ActivityIndicator 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';  // ✅ 유지
+import { fetchUserData, logout } from "../services/authService";
 
 const API_BASE_URL = 'http://192.168.0.6:5000';
 
-export default function MyPageScreen() {
-  const navigation = useNavigation();
-  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+export default function MyPageScreen({ navigation }) {
+  const [userId, setUserId] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      console.log("🚀 MyPageScreen useEffect 실행됨!");
+
+      const userId = await fetchUserData();
+      if (!userId) {
+        console.warn("🚨 사용자 데이터 없음 → 로그인 화면 이동");
+        Alert.alert("인증 오류", "로그인이 필요합니다.", [
+          { text: "확인", onPress: () => navigation.replace("Login") },
+        ]);
+        return;
+      }
+      try {
+        const response = await fetch(`http://192.168.0.6:5000/api/auth/user/${userId}`);
+        if (!response.ok) throw new Error("서버 오류");
+
+        const userInfo = await response.json();
+        console.log("✅ [서버에서 가져온 사용자 데이터]:", userInfo);
+
+        setUserData(userInfo);
+      } catch (error) {
+        console.error("❌ 사용자 정보 가져오기 오류:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadUserData();
+  }, [navigation]);
 
   // ✅ 사용자 정보 불러오기
-  const fetchUserData = async () => {
+  const fetchUserInfo = async (token) => {
     try {
       console.log("🚀 API 요청 시작...");
-
-      const token = await AsyncStorage.getItem("authToken"); // ✅ `authToken`으로 통일
       console.log("🔹 저장된 토큰 (마이페이지):", token);
 
       if (!token) {
-        console.warn("🚨 저장된 토큰 없음 → 로그인 화면으로 이동");
+        console.warn("🚨 저장된 토큰 없음 → 로그인 화면 이동");
         Alert.alert("로그인 필요", "로그인이 필요합니다.");
         navigation.replace("Login");
         return;
@@ -41,11 +69,6 @@ export default function MyPageScreen() {
         throw new Error(`서버 오류: ${response.status}`);
       }
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("❌ JSON 형식의 응답이 아닙니다!");
-      }
-
       const data = await response.json();
       console.log("✅ [서버 응답 데이터]:", data);
 
@@ -54,16 +77,9 @@ export default function MyPageScreen() {
       console.error("❌ 사용자 정보 가져오기 오류:", error);
       Alert.alert("오류", error.message || "사용자 정보를 불러올 수 없습니다.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    console.log("🚀 useEffect 실행됨! fetchUserData() 호출");
-    setTimeout(() => {
-      fetchUserData();
-    }, 1000);
-  }, []);
 
   // 🔹 로그아웃 처리
   const handleLogout = async () => {
@@ -77,7 +93,7 @@ export default function MyPageScreen() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />

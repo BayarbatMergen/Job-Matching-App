@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchUserSchedules } from '../services/firestoreService';
+import * as SecureStore from 'expo-secure-store';
+import { fetchUserData } from '../services/authService';
+import { fetchUserSchedules } from "../services/scheduleService"; // ✅ 불러오기
 
 // 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
@@ -21,72 +22,98 @@ export default function ScheduleScreen({ navigation }) {
   const [markedDates, setMarkedDates] = useState({});
   const [totalWage, setTotalWage] = useState(0);
   const [allTotalWage, setAllTotalWage] = useState(0);
-  const [userId, setUserId] = useState(null); // 🔥 `userId` 상태 추가
-  
-  useEffect(() => {
-    const checkUserId = async () => {
-      await AsyncStorage.flushGetRequests(); // ✅ 강제로 저장된 값 로딩
-      await new Promise(resolve => setTimeout(resolve, 1000)); // ✅ 1초 대기
-  
-      const storedUserId = await AsyncStorage.getItem("userId");
-      console.log("🔍 [AsyncStorage] 저장된 userId:", storedUserId);
-  
-      if (!storedUserId || storedUserId === "TEST_USER_ID_123") {
-        console.error("❌ userId가 저장되지 않았거나 초기값이 유지됨!");
-        return;
-      }
-  
-      setUserId(storedUserId);
-      
-      // ✅ userId가 있으면 Firestore에서 일정 불러오기
-      fetchSchedules(storedUserId);
-    };
-  
-    checkUserId();
-  }, []);
-  
-  
-  
-// ✅ Firestore에서 일정 불러오기
-const fetchSchedules = async (uid) => {
-  try {
-    console.log("📌 Firestore에서 일정 가져오는 중...", uid);
-    const schedulesArray = await fetchUserSchedules(uid);
+  const [userId, setUserId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    if (!schedulesArray || schedulesArray.length === 0) {
-      console.warn("⚠️ Firestore에서 불러온 일정이 없습니다.");
-      setScheduleData({});
+  // ✅ 사용자 데이터 초기화
+  useEffect(() => {
+    const initializeUser = async () => {
+      try {
+        console.log("🚀 [useEffect] 사용자 데이터 확인 시작");
+
+        const token = await SecureStore.getItemAsync("token");
+        console.log("🔹 저장된 토큰 (스케줄 페이지):", token);
+
+        if (!token) {
+          console.warn("🚨 저장된 토큰 없음 → 로그인 화면으로 이동");
+          Alert.alert("로그인 필요", "로그인이 필요합니다.");
+          navigation.replace("Login");
+          return;
+        }
+
+        const storedUserId = await fetchUserData();
+        if (!storedUserId) {
+          throw new Error("로그인 필요");
+        }
+
+        console.log("✅ [useEffect] 최종 userId 확인:", storedUserId);
+        setUserId(storedUserId);
+      } catch (error) {
+        console.error("❌ [useEffect] 오류:", error.message);
+        Alert.alert("오류", "인증이 필요합니다. 로그인하세요.", [
+          { text: "확인", onPress: () => navigation.navigate("Login") },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeUser();
+  }, [navigation]);
+
+  // ✅ `userId` 변경될 때 일정 불러오기
+  useEffect(() => {
+    if (userId) {
+      fetchSchedules(userId);
+    }
+  }, [userId]);
+
+  // ✅ Firestore에서 일정 불러오기
+  const fetchSchedules = async (uid) => {
+    if (!uid) {
+      console.warn("⚠️ userId가 null이므로 일정 데이터를 가져올 수 없음");
       return;
     }
 
-    // 🔥 Firestore 데이터를 `{ date: [일정 목록] }` 형태로 변환
-    const formattedSchedules = {};
-    schedulesArray.forEach(schedule => {
-      if (!schedule.date) return; // 🔥 date 필드가 없는 데이터 방어 처리
-      if (!formattedSchedules[schedule.date]) {
-        formattedSchedules[schedule.date] = [];
+    try {
+      console.log("📌 Firestore에서 일정 가져오는 중...", uid);
+      const schedulesArray = await fetchUserSchedules(uid);
+
+      if (!schedulesArray || schedulesArray.length === 0) {
+        console.warn("⚠️ Firestore에서 불러온 일정이 없습니다.");
+        setScheduleData({});
+        setAllTotalWage(0); // 🔹 총 급여를 초기화
+        return;
       }
-      formattedSchedules[schedule.date].push(schedule);
-    });
 
-    setScheduleData(formattedSchedules);
+      const formattedSchedules = {};
+      let totalWageSum = 0;
+      schedulesArray.forEach((schedule) => {
+        if (!schedule.date) return;
+        if (!formattedSchedules[schedule.date]) {
+          formattedSchedules[schedule.date] = [];
+        }
+        formattedSchedules[schedule.date].push(schedule);
+        totalWageSum += schedule.wage;
+      });
 
-    // 🔥 캘린더에 일정이 있는 날짜 표시
-    const updatedMarkedDates = {};
-    Object.keys(formattedSchedules).forEach(date => {
-      updatedMarkedDates[date] = {
-        customStyles: {
-          container: { backgroundColor: '#FFD700', borderRadius: 5 },
-          text: { color: '#000', fontWeight: 'bold' },
-        },
-      };
-    });
-    setMarkedDates(updatedMarkedDates);
-  } catch (error) {
-    console.error("❌ 일정 데이터 로딩 오류:", error);
-  }
-};
+      setScheduleData(formattedSchedules);
+      setAllTotalWage(totalWageSum);
 
+      const updatedMarkedDates = {};
+      Object.keys(formattedSchedules).forEach((date) => {
+        updatedMarkedDates[date] = {
+          customStyles: {
+            container: { backgroundColor: "#FFD700", borderRadius: 5 },
+            text: { color: "#000", fontWeight: "bold" },
+          },
+        };
+      });
+      setMarkedDates(updatedMarkedDates);
+    } catch (error) {
+      console.error("❌ 일정 데이터 로딩 오류:", error);
+    }
+  };
 
   // 📌 날짜 클릭 시 일정 표시
   const handleDayPress = (day) => {
@@ -108,19 +135,59 @@ const fetchSchedules = async (uid) => {
     setTotalWage(total);
   };
 
+  const formatWage = (wage) => {
+    return wage ? parseInt(wage, 10).toLocaleString() : "0";
+  };
+  
+  
   // 📌 **정산 요청 버튼 클릭 시 관리자에게 요청 전달**
-  const handleSettlementRequest = () => {
+  const handleSettlementRequest = async () => {
     if (allTotalWage === 0) {
       Alert.alert('정산 요청 실패', '정산할 일정이 없습니다.');
       return;
     }
-
-    // 관리자에게 정산 요청 전달
-    Alert.alert('정산 요청 완료', `총 급여 ${allTotalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
-
-    // ✅ 로그 기록
-    console.log(`📌 [정산 요청] 총 급여: ${allTotalWage.toLocaleString()}원`);
+  
+    try {
+      console.log("📌 정산 요청 전송 중...");
+  
+      const token = await SecureStore.getItemAsync("token");
+      if (!token) {
+        Alert.alert("인증 오류", "로그인이 필요합니다.");
+        return;
+      }
+  
+      const response = await fetch("http://192.168.0.6:5000/api/schedules/settlement", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ totalWage: allTotalWage }), // 🔹 userId 제거 (백엔드에서 처리)
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        Alert.alert("정산 요청 완료", `총 급여 ${allTotalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
+        console.log(`📌 [정산 요청] 총 급여: ${allTotalWage.toLocaleString()}원`);
+      } else {
+        console.error("❌ 정산 요청 실패:", result.message);
+        Alert.alert("정산 요청 실패", result.message || "서버 오류");
+      }
+    } catch (error) {
+      console.error("❌ 정산 요청 중 오류 발생:", error);
+      Alert.alert("정산 요청 실패", "서버 오류 발생");
+    }
   };
+  
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={{ flexGrow: 1 }}>
@@ -177,7 +244,8 @@ const fetchSchedules = async (uid) => {
 
         {/* 📌 전체 일정 총 급여 */}
         <View style={styles.allTotalWageContainer}>
-          <Text style={styles.allTotalWageText}>총 급여 합산: {allTotalWage.toLocaleString()}원</Text>
+      <Text style={styles.allTotalWageText}>
+        총 급여 합산: {formatWage(allTotalWage)}원</Text>
         </View>
 
         {/* 📌 정산 요청 버튼 */}
@@ -189,10 +257,10 @@ const fetchSchedules = async (uid) => {
   );
 }
 
-
 const styles = StyleSheet.create({
   scrollContainer: { flex: 1 },
   container: { flex: 1, backgroundColor: '#fff', paddingTop: 20 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // 📆 캘린더 스타일
   calendar: { borderRadius: 10, backgroundColor: '#F8F8F8', paddingBottom: 10, elevation: 3, flexShrink: 1 },

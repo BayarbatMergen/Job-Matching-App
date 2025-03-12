@@ -190,4 +190,54 @@ router.get('/applications/:jobId', async (req, res) => {
   }
 });
 
+router.get("/user/:userId", async (req, res) => {
+  try {
+    let { userId } = req.params;
+    console.log(`📌 사용자 일정 요청 userId: ${userId}`);
+
+    if (!userId || userId === "UNKNOWN_USER") {
+      console.warn("⚠️ userId가 없음 → fetchUserData() 실행!");
+      userId = await fetchUserData();
+    }
+
+    if (!userId) {
+      console.error("❌ userId를 가져올 수 없습니다. Firestore 요청 중단!");
+      return res.status(400).json({ message: "❌ 유효한 userId가 필요합니다." });
+    }
+
+    const schedulesRef = db.collection("schedules");
+    const querySnapshot = await schedulesRef.where("userId", "==", userId).get();
+
+    if (querySnapshot.empty) {
+      return res.status(404).json({ message: "❌ 해당 사용자의 일정이 없습니다." });
+    }
+
+    const schedules = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return res.status(200).json(schedules);
+  } catch (error) {
+    console.error("🔥 사용자 일정 조회 오류:", error);
+    return res.status(500).json({ message: "서버 오류 발생", error: error.message });
+  }
+});
+
+
+router.get("/id/:scheduleId", async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+    console.log(`📌 개별 일정 요청 scheduleId: ${scheduleId}`);
+
+    const scheduleRef = db.collection("schedules").doc(scheduleId);
+    const scheduleDoc = await scheduleRef.get();
+
+    if (!scheduleDoc.exists) {
+      return res.status(404).json({ message: "❌ 해당 일정이 존재하지 않습니다." });
+    }
+
+    return res.status(200).json({ id: scheduleDoc.id, ...scheduleDoc.data() });
+  } catch (error) {
+    console.error("🔥 Firestore에서 일정 상세 조회 오류:", error);
+    return res.status(500).json({ message: "서버 오류 발생", error: error.message });
+  }
+});
+
 module.exports = router;

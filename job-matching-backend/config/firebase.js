@@ -6,6 +6,7 @@ const { getAuth } = require('firebase/auth'); // ✅ Firebase Auth 가져오기
 const path = require('path');
 require('dotenv').config();
 
+// 🔍 Firebase 환경 변수 확인 (디버깅 시 사용 가능)
 console.log("🔍 Firebase API Key:", process.env.FIREBASE_API_KEY);
 console.log("🔍 Firebase Project ID:", process.env.FIREBASE_PROJECT_ID);
 console.log("🔍 Firebase Storage Bucket:", process.env.FIREBASE_STORAGE_BUCKET);
@@ -20,14 +21,14 @@ try {
   console.warn('⚠️ Firebase 서비스 계정 JSON 파일을 찾을 수 없습니다. 환경변수를 사용합니다.');
 }
 
-// ✅ Firebase Admin SDK 초기화
+// ✅ Firebase Admin SDK 초기화 (백엔드 관리용)
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
       credential: serviceAccount 
         ? admin.credential.cert(serviceAccount) 
         : admin.credential.applicationDefault(), // ✅ 환경변수 기반 초기화
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com", 
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com",
     });
 
     console.log('🔥 Firebase Admin SDK 초기화 완료');
@@ -39,7 +40,7 @@ if (!admin.apps.length) {
   console.log('✅ Firebase Admin SDK가 이미 초기화됨');
 }
 
-// ✅ Firebase Client SDK 초기화 (일반 Firebase 기능용)
+// ✅ Firebase Client SDK 초기화 (앱 내 기능용)
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -55,9 +56,13 @@ if (!firebase.getApps().length) {
 }
 
 // ✅ Firestore & Storage 초기화
-const db = getFirestore();
+const db = getFirestore(); // 🔹 Firestore 인스턴스
 const storage = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com");
-const auth = admin.auth(); // ✅ Firebase Authentication 추가 (Admin SDK로 가져오기)
+const adminAuth = admin.auth(); // 🔹 Admin SDK 기반 인증
+const clientAuth = getAuth(); // 🔹 Client SDK 기반 인증 (앱 내 로그인)
+
+// 🔹 **스케줄 컬렉션 추가** (스케줄 관련 Firestore 컬렉션 가져오기)
+const schedulesCollection = db.collection('schedules');
 
 // ✅ Firestore & Storage 연결 확인
 if (!db) {
@@ -72,4 +77,4 @@ if (!storage) {
 
 console.log('✅ Firestore & Storage 초기화 완료');
 
-module.exports = { db, storage, auth };
+module.exports = { db, storage, adminAuth, clientAuth, schedulesCollection };

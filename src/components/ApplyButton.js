@@ -7,7 +7,7 @@ const ApplyButton = ({ jobId, userEmail }) => {
   const handleApply = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://your-server-ip:5000/api/jobs/apply", {
+      const response = await fetch("http://192.168.0.6:5000/api/jobs/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobId, userEmail }),

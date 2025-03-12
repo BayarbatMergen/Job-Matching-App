@@ -9,10 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginWithBackend, resetPasswordWithBackend } from "../services/authService";
 import { fetchUserData } from "../services/authService";
+import { saveUserData } from "../services/authService";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -26,39 +28,30 @@ const LoginScreen = ({ navigation }) => {
     console.log("🚀 useEffect 실행됨! fetchUserData() 호출 예정");
 
     const fetchWithDelay = async () => {
-        let token = await AsyncStorage.getItem('authToken');
+      let token = await AsyncStorage.getItem('authToken');
 
-        if (!token) {
-            console.warn("⚠️ 저장된 토큰이 없음! 0.5초 후 다시 시도...");
-            setTimeout(async () => {
-                token = await AsyncStorage.getItem('authToken');
-                console.log("🔹 가져온 토큰 (재시도 후):", token);
-                if (token) {
-                    fetchUserData(token);
-                } else {
-                    console.error("❌ 최종적으로 토큰 없음. 로그인 화면 유지");
-                }
-            }, 500);
-        } else {
-            console.log("🔹 가져온 토큰:", token);
+      if (!token) {
+        console.warn("⚠️ 저장된 토큰이 없음! 0.5초 후 다시 시도...");
+        setTimeout(async () => {
+          token = await AsyncStorage.getItem('authToken');
+          console.log("🔹 가져온 토큰 (재시도 후):", token);
+          if (token) {
             fetchUserData(token);
-        }
+          } else {
+            console.error("❌ 최종적으로 토큰 없음. 로그인 화면 유지");
+          }
+        }, 500);
+      } else {
+        console.log("🔹 가져온 토큰:", token);
+        fetchUserData(token);
+      }
     };
 
     fetchWithDelay();
-}, []);
-
-
-
-
+  }, []);
 
   // ✅ 로그인 처리 함수
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("입력 오류", "⚠️ 이메일과 비밀번호를 입력하세요.");
-      return;
-    }
-  
     try {
       const response = await fetch("http://192.168.0.6:5000/api/auth/login", {
         method: "POST",
@@ -67,32 +60,23 @@ const LoginScreen = ({ navigation }) => {
       });
   
       const result = await response.json();
-      console.log("✅ 로그인 응답 데이터:", result);
   
       if (response.ok) {
-        Alert.alert("로그인 성공", "✅ 환영합니다!");
+        console.log("✅ 로그인 성공:", result);
   
-        // ✅ 1. 토큰과 이메일 저장 후 바로 확인
-        await AsyncStorage.setItem('authToken', result.token);
-        await AsyncStorage.setItem('userEmail', result.user.email);
-        console.log("🔹 토큰과 이메일 저장 완료");
+        // 🔹 토큰 저장 후 fetchUserData 실행
+        await saveUserData(result.token, result.user.userId);
   
-        // ✅ 2. 저장된 토큰 즉시 확인
-        const savedToken = await AsyncStorage.getItem('authToken');
-        console.log("🔹 저장된 토큰 확인:", savedToken);
+        console.log("🚀 토큰 저장 완료, 사용자 데이터 로드 시작");
+        await fetchUserData(); // 🚀 저장된 후 실행되도록 수정
   
-        if (savedToken) {
-          navigation.replace("Main"); // ✅ 홈 화면으로 이동
-        } else {
-          Alert.alert("로그인 오류", "토큰 저장 실패");
-        }
+        navigation.replace("Main"); // 로그인 성공 시 홈 화면으로 이동
       } else {
-        Alert.alert("로그인 실패", result.message || "서버 오류");
+        Alert.alert("로그인 실패", result.message);
       }
-  
     } catch (error) {
-      console.error("❌ 로그인 오류:", error);
-      Alert.alert("로그인 실패", "서버 오류");
+      console.error("❌ 로그인 중 오류 발생:", error);
+      Alert.alert("서버 오류", "잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -103,12 +87,16 @@ const LoginScreen = ({ navigation }) => {
       return;
     }
 
+    setLoading(true);
+
     try {
       const message = await resetPasswordWithBackend(resetEmail);
       Alert.alert("✅ 이메일 전송 완료", message);
       setIsResetMode(false);
     } catch (error) {
       Alert.alert("❌ 실패", error.message || "서버 오류");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,9 +141,11 @@ const LoginScreen = ({ navigation }) => {
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={styles.loginButtonText}>
-                {loading ? "로그인 중..." : "로그인"}
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.loginButtonText}>로그인</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.footerContainer}>
@@ -185,8 +175,13 @@ const LoginScreen = ({ navigation }) => {
             <TouchableOpacity
               style={styles.resetButton}
               onPress={handleResetPassword}
+              disabled={loading}
             >
-              <Text style={styles.resetButtonText}>비밀번호 재설정 요청</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.resetButtonText}>비밀번호 재설정 요청</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setIsResetMode(false)}>
@@ -197,17 +192,6 @@ const LoginScreen = ({ navigation }) => {
       </View>
     </KeyboardAvoidingView>
   );
-};
-const checkStoredUserId = async () => {
-  await AsyncStorage.flushGetRequests();  // 강제 로딩
-  await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
-
-  const storedUserId = await AsyncStorage.getItem("userId");
-  console.log("✅ [AsyncStorage 확인] 저장된 userId:", storedUserId);
-
-  if (!storedUserId) {
-    console.error("❌ [오류] AsyncStorage에 userId가 저장되지 않았습니다.");
-  }
 };
 
 // ✅ 스타일

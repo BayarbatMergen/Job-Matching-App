@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert
+  View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -17,6 +17,7 @@ const RegisterScreen = ({ navigation }) => {
   const [bank, setBank] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [idImage, setIdImage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const isPasswordValid = (password) => /^(?=.*[!@#$%^&*()]).{6,}$/.test(password);
 
@@ -54,6 +55,9 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert("비밀번호 오류", "⚠️ 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다.");
       return;
     }
+
+    setLoading(true);
+
     let formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
@@ -81,10 +85,16 @@ const RegisterScreen = ({ navigation }) => {
       });
 
       const result = await response.json();
-      Alert.alert("회원가입 완료", "✅ 로그인 해주세요!");
-      navigation.replace("Login");
+      if (response.ok) {
+        Alert.alert("회원가입 완료", "✅ 로그인 해주세요!");
+        navigation.replace("Login");
+      } else {
+        Alert.alert("회원가입 실패", result.message || "서버 오류");
+      }
     } catch (error) {
       Alert.alert("회원가입 실패", error.message || "서버 오류");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -113,13 +123,18 @@ const RegisterScreen = ({ navigation }) => {
         <TextInput style={styles.input} placeholder="계좌번호" value={accountNumber} onChangeText={setAccountNumber} keyboardType="numeric" />
         <TouchableOpacity style={styles.uploadButton} onPress={pickImage}><Text style={styles.uploadButtonText}>신분증 사진 업로드</Text></TouchableOpacity>
         {idImage && <Image source={{ uri: idImage }} style={styles.profileImage} />}
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}><Text style={styles.registerButtonText}>회원가입</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.registerButtonText}>회원가입</Text>
+          )}
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Login')}><Text style={styles.loginText}>로그인으로 이동</Text></TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, alignItems: 'center', padding: 20, backgroundColor: '#fff' },
@@ -138,52 +153,6 @@ const styles = StyleSheet.create({
   registerButton: { backgroundColor: '#007AFF', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 10 },
   registerButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   loginText: { color: '#007AFF', fontSize: 16, marginTop: 15, fontWeight: '500' },
-
-  // 📌 모달 스타일 개선
-modalContainer: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0,0,0,0.5)', // 반투명 배경
-},
-modalContent: {
-  width: '80%',  // 너비 조정
-  padding: 25,
-  backgroundColor: 'white',
-  borderRadius: 15,
-  alignItems: 'center',
-  elevation: 5, // 그림자 효과 추가
-},
-modalTitle: {
-  fontSize: 22,
-  fontWeight: 'bold',
-  marginBottom: 15,
-  color: '#333',
-},
-modalButton: {
-  width: '90%', // 버튼 너비 증가 (100% → 90%)
-  padding: 15,
-  backgroundColor: '#007AFF',
-  marginBottom: 12,
-  borderRadius: 8,
-  alignItems: 'center',
-},
-modalButtonText: {
-  color: 'white',
-  fontSize: 18,
-  fontWeight: 'bold',
-},
-
-container: { 
-  flexGrow: 1, 
-  alignItems: 'center',  // ✅ 전체 화면을 가운데 정렬
-  justifyContent: 'center',  // ✅ 입력 폼을 중앙으로 정렬
-  paddingHorizontal: 20, 
-  backgroundColor: '#fff',
-  paddingVertical: 20,  // ✅ 위/아래 여백 추가
-},
-
-
 });
 
 export default RegisterScreen;

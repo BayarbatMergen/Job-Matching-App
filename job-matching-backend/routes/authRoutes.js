@@ -7,8 +7,9 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const cloudinary = require('../config/cloudinary'); // ✅ Cloudinary 가져오기
 const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updatePassword } = require('firebase/auth');
-const authMiddleware = require('../middlewares/authMiddleware'); // ✅ Firebase 인증 미들웨어
+const { verifyToken } = require('../middlewares/authMiddleware');
 require('dotenv').config();
+const { validateToken } = require("../controllers/authController");
 
 const admin = require('firebase-admin'); // ✅ Firebase Admin SDK 가져오기
 const auth = admin.auth(); // ✅ Firebase Admin SDK에서 `auth()` 호출
@@ -154,14 +155,16 @@ router.post('/login', async (req, res) => {
     }
 
     // ✅ Firestore에서 사용자 정보 가져오기
-    const userRef = db.collection('users').doc(email);
-    const userSnap = await userRef.get();
-
-    if (!userSnap.exists) {
+    const userQuery = await db.collection('users').where('email', '==', email).get();
+    
+    if (userQuery.empty) {
       return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
     }
 
-    const userData = userSnap.data();
+    const userDoc = userQuery.docs[0]; 
+    const userData = userDoc.data();
+    const userId = userDoc.id;  // ✅ Firestore 문서 ID 사용
+
     const isMatch = await bcrypt.compare(password, userData.password);
 
     if (!isMatch) {
@@ -169,28 +172,20 @@ router.post('/login', async (req, res) => {
     }
 
     // ✅ role 추가 (기본값 'user')
-    const role = userData.role || "user"; 
+    const role = userData.role || "user";
 
-    // ✅ JWT 토큰 생성 (🚨 토큰을 먼저 선언)
+    // ✅ JWT 토큰 생성
     const token = jwt.sign(
-      { userId: userData.userId, email: userData.email, role }, 
+      { userId: userData.userId, email: userData.email, role },  // ✅ userId를 UID로 변경
       SECRET_KEY, 
       { expiresIn: '7d' }
     );
+    console.log("✅ 로그인 성공! 반환되는 userId:", userId);
 
-     // ✅ `userId`가 `undefined`인지 체크
-     if (!userData.userId) {
-      console.error("❌ 로그인 응답에 userId가 없습니다!");
-      return res.status(500).json({ message: "❌ 로그인 응답에 userId가 없습니다!" });
-    }
-
-    console.log("✅ 로그인 성공! 반환되는 userId:", userData.userId);
-
-    // ✅ 로그인 성공 응답 (🚀 token을 먼저 생성한 후 응답)
     res.status(200).json({
       message: "✅ 로그인 성공!",
-      user: { userId: userData.userId, email: userData.email, name: userData.name, role },
-      token,  // 🔥 이제 token이 초기화된 후 전달됨!
+      user: { userId, email: userData.email, name: userData.name, role },
+      token,
     });
 
   } catch (error) {
@@ -200,12 +195,10 @@ router.post('/login', async (req, res) => {
 });
 
 
-
-// ✅ 사용자 정보 조회 API
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
   try {
-    const userEmail = req.user.email;
-    const userRef = db.collection('users').doc(userEmail);
+    const userId = req.user.userId;  // ✅ userId 사용하도록 변경
+    const userRef = db.collection('users').doc(userId); // 🔹 userId로 조회
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
@@ -213,7 +206,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     }
 
     const userData = userSnap.data();
-    delete userData.password;
+    delete userData.password; // 🔹 비밀번호는 응답에서 제외
 
     res.status(200).json(userData);
   } catch (error) {
@@ -222,12 +215,13 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
+
 // ✅ 사용자 정보 수정 API
-router.put('/update', authMiddleware, upload.single('idImage'), async (req, res) => {
+router.put('/update', verifyToken, upload.single('idImage'), async (req, res) => {
   try {
     console.log("🔥 [사용자 정보 수정 요청]:", req.body);
     const { name, phone, gender } = req.body;
-    const userEmail = req.user.email;
+    const userId = req.user.userId;
 
     let updateData = {};
     if (name) updateData.name = name;
@@ -238,7 +232,7 @@ router.put('/update', authMiddleware, upload.single('idImage'), async (req, res)
       updateData.idImage = await uploadToCloudinary(req.file.buffer);
     }
 
-    await db.collection('users').doc(userEmail).update(updateData);
+    await db.collection('users').doc(userId).update(updateData);
     res.status(200).json({ message: "✅ 사용자 정보 수정 성공!", updatedUser: updateData });
   } catch (error) {
     console.error("❌ 사용자 정보 수정 중 오류:", error);
@@ -246,20 +240,23 @@ router.put('/update', authMiddleware, upload.single('idImage'), async (req, res)
   }
 });
 
-// ✅ 비밀번호 변경 API
-router.put('/change-password', authMiddleware, async (req, res) => {
+
+router.put('/change-password', verifyToken, async (req, res) => {
   try {
     const { newPassword } = req.body;
     if (!newPassword) {
       return res.status(400).json({ message: "⚠️ 새 비밀번호를 입력하세요." });
     }
 
-    const user = auth.currentUser;
-    if (!user) {
-      return res.status(401).json({ message: "❌ 인증된 사용자가 없습니다." });
-    }
+    const userId = req.user.userId;
+    
+    // ✅ Firebase Auth 비밀번호 변경
+    await admin.auth().updateUser(userId, { password: newPassword });
 
-    await updatePassword(user, newPassword);
+    // ✅ Firestore 데이터도 업데이트
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.collection('users').doc(userId).update({ password: hashedPassword });
+
     res.status(200).json({ message: "✅ 비밀번호 변경 성공!" });
   } catch (error) {
     console.error("❌ 비밀번호 변경 오류:", error);
@@ -267,5 +264,22 @@ router.put('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
+
+// ✅ 토큰 검증 API
+router.post("/validate-token", (req, res) => {
+  const token = req.body.token;
+  if (!token) {
+    return res.status(400).json({ message: "토큰이 제공되지 않았습니다." });
+  }
+  // 토큰 검증 로직
+  jwt.verify(token, SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "토큰이 유효하지 않습니다." });
+    }
+    res.status(200).json({ valid: true, user: decoded });
+  });
+});
+
 console.log("✅ authRoutes.js 로드 완료");
+
 module.exports = router;

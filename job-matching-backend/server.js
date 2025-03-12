@@ -1,24 +1,33 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const nodemailer = require('nodemailer');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
 
 // ✅ Firebase 초기화
 const serviceAccount = require("./config/firebaseServiceAccount.json");
+const { verifyToken } = require("./middlewares/authMiddleware"); // ✅ 인증 미들웨어 불러오기
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: "jobmatchingapp-383da.firebasestorage.app",
-});
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: "jobmatchingapp-383da.firebasestorage.app",
+  });
+}
 
 const db = admin.firestore();
 const app = express(); // ✅ Express 앱 초기화
 
 // ✅ 미들웨어 설정
-app.use(cors()); // ✅ CORS 설정 (모든 출처 허용)
+app.use(cors({ origin: "*" }));
 app.use(express.json()); // ✅ JSON 요청 처리
 app.use(express.urlencoded({ extended: true })); // ✅ URL 인코딩된 데이터 처리
+
+// ✅ 환경 변수 검증 추가
+if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  console.error("❌ [오류] SMTP 환경 변수가 설정되지 않았습니다.");
+  process.exit(1); // 🚀 서버 실행 중단 (환경 변수 필수)
+}
 
 // ✅ SMTP 설정
 console.log("✅ SMTP 설정 확인");
@@ -27,7 +36,7 @@ console.log("✅ ADMIN_EMAIL:", process.env.ADMIN_EMAIL || "❌ 없음");
 
 // ✅ Nodemailer SMTP 설정
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: process.env.SMTP_PORT || 587,
   secure: false, // TLS 사용
   requireTLS: true,
@@ -48,43 +57,43 @@ async function testSMTP() {
 }
 
 // ✅ API 라우트 가져오기
-const authRoutes = require('./routes/authRoutes');
-const jobRoutes = require('./routes/jobRoutes');
-const jobSeekerRoutes = require('./routes/jobSeekerRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const scheduleRoutes = require('./routes/scheduleRoutes'); // ✅ 일정 API 경로 수정
+const authRoutes = require("./routes/authRoutes");
+const jobRoutes = require("./routes/jobRoutes");
+const jobSeekerRoutes = require("./routes/jobSeekerRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const scheduleRoutes = require("./routes/scheduleRoutes"); // ✅ 일정 API 추가
 
 // ✅ API 엔드포인트 설정
-app.use('/api/auth', authRoutes);
-app.use('/api/jobs', jobRoutes);
-app.use('/api/jobseekers', jobSeekerRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/schedules', scheduleRoutes); // ✅ `/api/schedules` 오타 수정
+app.use("/api/auth", authRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/jobseekers", jobSeekerRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/schedules", scheduleRoutes); 
 
 // ✅ 구직자 지원 API
-app.post('/api/jobs/apply', async (req, res) => {
+app.post("/api/jobs/apply", verifyToken, async (req, res) => {
   const { jobId, userEmail } = req.body;
 
   if (!jobId || !userEmail) {
-    return res.status(400).json({ message: '⚠️ 필수 정보를 입력하세요.' });
+    return res.status(400).json({ message: "⚠️ 필수 정보를 입력하세요." });
   }
 
   try {
-    const jobRef = db.collection('jobs').doc(jobId);
+    const jobRef = db.collection("jobs").doc(jobId);
     const jobSnap = await jobRef.get();
 
     if (!jobSnap.exists) {
-      return res.status(404).json({ message: '❌ 해당 공고를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: "❌ 해당 공고를 찾을 수 없습니다." });
     }
 
     const jobData = jobSnap.data();
 
     // ✅ Firestore에 지원 내역 저장
-    await db.collection('applications').add({
+    await db.collection("applications").add({
       jobId,
       userEmail,
       appliedAt: new Date(),
-      status: '지원 완료',
+      status: "지원 완료",
     });
 
     // ✅ 관리자 이메일 전송
@@ -92,7 +101,7 @@ app.post('/api/jobs/apply', async (req, res) => {
       const mailOptions = {
         from: `"Job Matching Support" <${process.env.SMTP_USER}>`,
         to: process.env.ADMIN_EMAIL,
-        subject: '새로운 구직 지원 알림',
+        subject: "새로운 구직 지원 알림",
         text: `📢 새로운 구직 지원 요청이 있습니다.\n\n📌 지원자: ${userEmail}\n📌 지원한 공고: ${jobData.title}`,
       };
 
@@ -102,38 +111,46 @@ app.post('/api/jobs/apply', async (req, res) => {
       console.warn("⚠️ 관리자 이메일이 설정되지 않아 이메일을 보낼 수 없습니다.");
     }
 
-    res.status(200).json({ message: '✅ 지원 요청이 완료되었습니다.' });
+    res.status(200).json({ message: "✅ 지원 요청이 완료되었습니다." });
   } catch (error) {
-    console.error('❌ 지원 요청 오류:', error.message);
-    res.status(500).json({ message: '❌ 서버 오류 발생' });
+    console.error("❌ 지원 요청 오류:", error.message);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
   }
 });
 
 // ✅ 특정 공고 지원자 목록 조회 API
-app.get('/api/jobs/applications/:jobId', async (req, res) => {
+app.get("/api/jobs/applications/:jobId", verifyToken, async (req, res) => {
   const { jobId } = req.params;
 
   try {
-    const applicationSnap = await db.collection('applications')
-      .where('jobId', '==', jobId)
-      .orderBy('appliedAt', 'desc')
+    const applicationSnap = await db
+      .collection("applications")
+      .where("jobId", "==", jobId)
+      .orderBy("appliedAt", "desc")
       .get();
 
     if (applicationSnap.empty) {
-      return res.status(404).json({ message: '해당 공고에 대한 지원자가 없습니다.' });
+      return res.status(404).json({ message: "해당 공고에 대한 지원자가 없습니다." });
     }
 
-    const applications = applicationSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const applications = applicationSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(applications);
   } catch (error) {
-    console.error('🔥 지원자 목록 조회 오류:', error);
-    res.status(500).json({ message: '❌ 서버 오류 발생', error: error.message });
+    console.error("🔥 지원자 목록 조회 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생", error: error.message });
   }
 });
 
+// ✅ 일정 API 엔드포인트 (GET /api/schedules/user/:userId)
+app.get('/api/schedules/user/:userId', (req, res) => {
+  console.log("✅ [백엔드] 일정 요청 받음:", req.params.userId);
+  res.json({ message: "테스트 일정 데이터", schedules: [] });
+});
+
+
 // ✅ 서버 상태 확인 엔드포인트
-app.get('/', (req, res) => {
-  res.send('✅ Job Matching Backend 서버가 실행 중입니다!');
+app.get("/", (req, res) => {
+  res.send("✅ Job Matching Backend 서버가 실행 중입니다!");
 });
 
 // ✅ 서버 실행

@@ -1,36 +1,59 @@
-import { getAuth } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../config/firebase";
+import * as SecureStore from 'expo-secure-store';
+import API_BASE_URL from "../config/apiConfig";
 
-export const fetchUserSchedules = async (userId) => {
+// 🔹 공통 API 요청 함수 (중복 최소화 & 오류 처리)
+const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.error("❌ Firebase Auth 로그인되지 않음");
+    const token = await SecureStore.getItemAsync("token");
+    if (!token) {
+      console.warn("⚠️ 인증 토큰 없음 → 로그인 필요");
       return [];
     }
 
-    const idToken = await currentUser.getIdToken();
-    console.log("🔥 Firebase ID 토큰:", idToken);
+    const headers = {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
 
-    const q = query(collection(db, "schedules"), where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
 
-    if (querySnapshot.empty) {
-      console.warn("⚠️ Firestore에서 불러온 일정이 없습니다.");
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+
+    if (response.status === 401) {
+      console.warn("❌ 인증 실패 → 로그아웃 후 재로그인 필요");
+      await SecureStore.deleteItemAsync("token");
+      await SecureStore.deleteItemAsync("userId");
       return [];
     }
 
-    let schedules = [];
-    querySnapshot.forEach(doc => {
-      schedules.push({ id: doc.id, ...doc.data() });
-    });
+    if (!response.ok) {
+      console.error(`🔥 API 요청 실패 (${response.status}): ${endpoint}`);
+      return [];
+    }
 
-    console.log("✅ Firestore에서 불러온 일정 데이터:", schedules);
-    return schedules;
+    const data = await response.json();
+    return data || []; // null 또는 undefined 방지
   } catch (error) {
-    console.error("❌ Firestore에서 일정 데이터 불러오기 오류:", error);
+    console.error(`🔥 API 요청 오류 (${endpoint}):`, error.message);
+    return [];
+  }
+};
+
+// ✅ 특정 날짜의 일정 가져오기
+export const fetchSchedulesByDate = async (selectedDate) => {
+  try {
+    const userId = await SecureStore.getItemAsync("userId");
+    if (!userId) {
+      console.warn("⚠️ [fetchSchedulesByDate] userId 없음 → 로그인 필요");
+      return [];
+    }
+
+    console.log(`📌 [fetchSchedulesByDate] ${selectedDate}의 일정 가져오는 중...`);
+    const result = await apiRequest(`/api/schedules/user/${userId}`);
+    return result || []; // 빈 배열 반환
+  } catch (error) {
+    console.error("❌ [fetchSchedulesByDate] 일정 불러오기 오류:", error.message);
     return [];
   }
 };
