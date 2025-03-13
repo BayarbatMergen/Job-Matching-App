@@ -126,42 +126,31 @@ export const fetchUserData = async () => {
   try {
     console.log("🚀 [fetchUserData] 실행됨!");
 
+ // 🔹 SecureStore가 존재하는지 체크
+ if (!SecureStore || !SecureStore.getItemAsync) {
+  console.error("❌ SecureStore 모듈을 찾을 수 없음. 기본값 반환.");
+  return null;
+}
     let token = await SecureStore.getItemAsync("token");
     let userId = await SecureStore.getItemAsync("userId");
 
-    // 🔹 0.5초 대기 후 다시 시도 (최대 3번까지 재시도)
-    let retryCount = 0;
-    while ((!token || !userId) && retryCount < 3) {
-      console.warn(`⚠️ 저장된 토큰 없음! ${retryCount + 1}번째 재시도...`);
+    if (!token || !userId) {
+      console.warn("⚠️ 저장된 토큰 또는 userId 없음! 0.5초 후 다시 시도...");
       await new Promise((resolve) => setTimeout(resolve, 500));
       token = await SecureStore.getItemAsync("token");
       userId = await SecureStore.getItemAsync("userId");
-      retryCount++;
     }
 
+    // 🚨 최종적으로 없으면 로그인 화면 이동하지 않고 `null` 반환
     if (!token || !userId) {
-      console.warn("⚠️ 최종적으로 저장된 토큰 없음. 로그인 화면 이동 X");
+      console.warn("⚠️ 최종적으로 저장된 토큰 없음. 로그인 화면 이동 X (로그인 필요)");
       return null;
     }
 
     console.log("✅ 저장된 토큰 가져옴:", token);
     console.log("✅ 저장된 userId 가져옴:", userId);
-
-  // ✅ 서버에서 사용자 정보까지 받아오도록 추가
-    const response = await fetch(`${API_BASE_URL}/api/auth/user/${userId}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      console.error("❌ 서버에서 사용자 정보 가져오기 실패");
-      return { userId };
-    }
-
-    const userData = await response.json();
-    console.log("✅ 서버에서 가져온 사용자 데이터:", userData);
     
-    return userData;
+    return userId;
   } catch (error) {
     console.error("❌ fetchUserData 오류:", error);
     return null;
