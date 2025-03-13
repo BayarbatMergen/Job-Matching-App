@@ -1,6 +1,6 @@
 const { getFirestore } = require("firebase-admin/firestore");
-
-const db = getFirestore();
+const { db } = require("../config/firebase");
+const { sendAdminNotification } = require("../utils/notificationService");
 
 /**
  * ✅ 전체 일정 조회 (관리자만 가능)
@@ -87,7 +87,68 @@ const getScheduleById = async (req, res) => {
   }
 };
 
+
+// ✅ 정산 요청 처리 함수
+const requestSettlement = async (req, res) => {
+  try {
+    console.log("📌 [정산 요청] 요청 받음:", req.body);
+
+    const userId = req.user?.userId;  // 🔥 JWT 토큰에서 userId 가져오기
+    const { totalWage } = req.body;
+
+    if (!userId || !totalWage) {
+      return res.status(400).json({ message: "⚠️ userId와 totalWage가 필요합니다." });
+    }
+
+    console.log(`✅ 정산 요청: userId=${userId}, totalWage=${totalWage.toLocaleString()}원`);
+
+    // Firestore의 "settlements" 컬렉션에 저장
+    await db.collection("settlements").add({
+      userId,
+      totalWage,
+      status: "pending",
+      requestedAt: new Date(),
+    });
+
+    res.status(200).json({ message: "✅ 정산 요청이 관리자에게 전송되었습니다." });
+  } catch (error) {
+    console.error("❌ 정산 요청 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+};
+
+
+// ✅ 정산 요청 처리 함수 (라우트 제거됨, `export`만 유지)
+exports.requestSettlement = async (req, res) => {
+  try {
+    const { userId, totalWage } = req.body;
+
+    if (!userId || !totalWage) {
+      return res.status(400).json({ message: "⚠️ userId와 totalWage가 필요합니다." });
+    }
+
+    console.log(`📌 [정산 요청] 사용자: ${userId}, 금액: ${totalWage}`);
+
+    // ✅ Firestore에 정산 요청 저장
+    await db.collection("settlementRequests").add({
+      userId,
+      totalWage,
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    // ✅ 관리자에게 알림 보내기
+    await sendAdminNotification(userId, totalWage);
+
+    res.status(200).json({ message: "✅ 정산 요청이 관리자에게 전송되었습니다." });
+  } catch (error) {
+    console.error("❌ 정산 요청 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+};
+
 module.exports = { 
+  requestSettlement,
   getAllSchedules, 
   getUserSchedules, 
   getScheduleById 

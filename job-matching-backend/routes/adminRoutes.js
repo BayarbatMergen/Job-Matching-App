@@ -76,4 +76,20 @@ router.delete('/jobs/:id', async (req, res) => {
   }
 });
 
+router.get('/notifications', async (req, res) => {
+  try {
+    console.log("📌 [관리자 알림 조회] 요청 수신");
+
+    const notificationsSnap = await db.collection('notifications').orderBy('timestamp', 'desc').get();
+    const notifications = notificationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    console.log("✅ 관리자 알림 조회 성공:", notifications);
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error("❌ 관리자 알림 조회 중 오류 발생:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+});
+
+
 module.exports = router;
