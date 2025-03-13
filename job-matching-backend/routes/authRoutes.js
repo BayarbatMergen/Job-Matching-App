@@ -290,6 +290,31 @@ router.put('/change-password', verifyToken, async (req, res) => {
   }
 });
 
+// 🔥 채팅 메시지 추가 API (서버를 통해 Firestore에 추가)
+router.post("/add-message", verifyToken, async (req, res) => {
+  try {
+    const { chatRoomId, text } = req.body;
+    const senderId = req.user.userId; // 인증된 사용자
+
+    if (!chatRoomId || !text) {
+      return res.status(400).json({ message: "⚠️ chatRoomId와 text가 필요합니다." });
+    }
+
+    const messageRef = db.collection("chats").doc(chatRoomId).collection("messages").doc();
+    const newMessage = {
+      text,
+      senderId,
+      createdAt: new Date(),
+    };
+
+    await messageRef.set(newMessage);
+
+    res.status(200).json({ message: "✅ 메시지 추가 성공", data: newMessage });
+  } catch (error) {
+    console.error("❌ 메시지 추가 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류" });
+  }
+});
 
 // ✅ 토큰 검증 API
 router.post("/validate-token", (req, res) => {

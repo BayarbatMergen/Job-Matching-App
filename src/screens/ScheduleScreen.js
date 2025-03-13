@@ -4,6 +4,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import * as SecureStore from 'expo-secure-store';
 import { fetchUserData } from '../services/authService';
 import { fetchUserSchedules } from "../services/scheduleService"; // ✅ 불러오기
+import API_BASE_URL from "../config/apiConfig";
 
 // 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
@@ -143,7 +144,7 @@ export default function ScheduleScreen({ navigation }) {
   // 📌 **정산 요청 버튼 클릭 시 관리자에게 요청 전달**
   const handleSettlementRequest = async () => {
     if (allTotalWage === 0) {
-      Alert.alert('정산 요청 실패', '정산할 일정이 없습니다.');
+      Alert.alert("정산 요청 실패", "정산할 일정이 없습니다.");
       return;
     }
   
@@ -156,20 +157,24 @@ export default function ScheduleScreen({ navigation }) {
         return;
       }
   
-      const response = await fetch("http://192.168.0.6:5000/api/schedules/settlement", {
+      // 🔥 totalWage를 숫자로 변환 후 천 단위 콤마 적용
+      const totalWage = Number(allTotalWage);
+      console.log(`📌 [정산 요청] 총 급여: ${totalWage.toLocaleString()}원`);
+  
+      const response = await fetch(`${API_BASE_URL}/schedules/request-settlement`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ totalWage: allTotalWage }), // 🔹 userId 제거 (백엔드에서 처리)
+        body: JSON.stringify({ totalWage }), // ✅ 숫자로 변환된 totalWage 전송
       });
   
       const result = await response.json();
   
       if (response.ok) {
-        Alert.alert("정산 요청 완료", `총 급여 ${allTotalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
-        console.log(`📌 [정산 요청] 총 급여: ${allTotalWage.toLocaleString()}원`);
+        Alert.alert("정산 요청 완료", `총 급여 ${totalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
+        console.log(`📌 [정산 요청] 총 급여: ${totalWage.toLocaleString()}원`);
       } else {
         console.error("❌ 정산 요청 실패:", result.message);
         Alert.alert("정산 요청 실패", result.message || "서버 오류");
@@ -180,7 +185,7 @@ export default function ScheduleScreen({ navigation }) {
     }
   };
   
-
+  
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>

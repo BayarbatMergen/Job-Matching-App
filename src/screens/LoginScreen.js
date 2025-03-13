@@ -23,7 +23,7 @@ const LoginScreen = ({ navigation }) => {
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ 저장된 이메일 불러오기 (디버깅용)
+  /* ✅ 저장된 이메일 불러오기 (디버깅용)
   useEffect(() => {
     console.log("🚀 useEffect 실행됨! fetchUserData() 호출 예정");
 
@@ -48,7 +48,7 @@ const LoginScreen = ({ navigation }) => {
     };
 
     fetchWithDelay();
-  }, []);
+  }, []); */
 
   // ✅ 로그인 처리 함수
   const handleLogin = async () => {

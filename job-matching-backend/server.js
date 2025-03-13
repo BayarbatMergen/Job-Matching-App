@@ -2,7 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
+const bodyParser = require("body-parser");
 const admin = require("firebase-admin");
+
+
 
 // ✅ Firebase 초기화
 const serviceAccount = require("./config/firebaseServiceAccount.json");
@@ -19,6 +22,7 @@ const db = admin.firestore();
 const app = express(); // ✅ Express 앱 초기화
 
 // ✅ 미들웨어 설정
+app.use(bodyParser.json()); // For JSON request bodies
 app.use(cors({ origin: "*" }));
 app.use(express.json()); // ✅ JSON 요청 처리
 app.use(express.urlencoded({ extended: true })); // ✅ URL 인코딩된 데이터 처리
@@ -62,6 +66,7 @@ const jobRoutes = require("./routes/jobRoutes");
 const jobSeekerRoutes = require("./routes/jobSeekerRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes"); // ✅ 일정 API 추가
+const chatRoutes = require("./routes/chatRoutes"); // Import chat routes
 
 // ✅ API 엔드포인트 설정
 app.use("/api/auth", authRoutes);
@@ -69,6 +74,7 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/jobseekers", jobSeekerRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/schedules", scheduleRoutes); 
+app.use("/api/chats", chatRoutes); 
 
 // ✅ 구직자 지원 API
 app.post("/api/jobs/apply", verifyToken, async (req, res) => {

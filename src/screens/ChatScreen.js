@@ -1,13 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, StyleSheet, SafeAreaView } from "react-native";
+import API_BASE_URL from "../config/apiConfig";
+import * as SecureStore from "expo-secure-store";
 
 export default function ChatScreen({ route }) {
-  const { roomName } = route.params;
-  const [messages, setMessages] = useState([
-    { id: 'msg-1', text: '관리자: 이번 주 근무 일정이 변경되었습니다.', createdAt: '2024-02-10 10:00' },
-    { id: 'msg-2', text: '관리자: 내일 출근 시간은 9시입니다.', createdAt: '2024-02-11 14:30' },
-  ]);
+  const { roomId, roomName } = route.params;
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const token = await SecureStore.getItemAsync("token");
+        const response = await fetch(`${API_BASE_URL}/api/chat/rooms/${roomId}/messages`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+        setMessages(result);
+      } catch (error) {
+        console.error("❌ 메시지 불러오기 오류:", error);
+      }
+    };
+
+    fetchMessages();
+  }, []);
+
 
   return (
     <SafeAreaView style={styles.safeContainer}>
