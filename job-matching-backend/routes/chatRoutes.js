@@ -1,21 +1,21 @@
 const express = require("express");
-const { verifyToken } = require("../middlewares/authMiddleware");
-const chatController = require("../controllers/chatController"); // ✅ chatController 올바르게 가져오기
-
 const router = express.Router();
+const { addMessageToChat, getChatMessages, getChatRooms } = require("../controllers/chatController");
+const { verifyToken } = require("../middlewares/authMiddleware");
 
-// ✅ 디버깅 로그 추가
-console.log("📌 addMessageToChat 존재 여부:", typeof chatController.addMessageToChat);
-console.log("📌 getChatMessages 존재 여부:", typeof chatController.getChatMessages);
-console.log("📌 getChatRooms 존재 여부:", typeof chatController.getChatRooms);
+console.log("📌 addMessageToChat 존재 여부:", typeof addMessageToChat);
+console.log("📌 getChatMessages 존재 여부:", typeof getChatMessages);
+console.log("📌 getChatRooms 존재 여부:", typeof getChatRooms);
 
-// ✅ 채팅방 목록 가져오기 API (GET /api/chats/rooms)
-router.get("/rooms", verifyToken, chatController.getChatRooms);
+// ✅ 채팅방 목록 가져오기
+router.get("/rooms", verifyToken, getChatRooms);
 
-// ✅ 특정 채팅방의 메시지 가져오기 API (GET /api/chats/:chatRoomId/messages)
-router.get("/:chatRoomId/messages", verifyToken, chatController.getChatMessages);
+// ✅ 특정 채팅방의 모든 메시지 가져오기 (추가)
+router.get("/rooms/:roomId/messages", verifyToken, getChatMessages);
 
-// ✅ 채팅 메시지 추가 API (POST /api/chats/add-message)
-router.post("/add-message", verifyToken, chatController.addMessageToChat);
+// ✅ 특정 채팅방에 메시지 추가
+router.post("/rooms/:roomId/messages", verifyToken, addMessageToChat);
+
+console.log("✅ chatRoutes.js 로드 완료");
 
 module.exports = router;

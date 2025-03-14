@@ -75,18 +75,18 @@ export default function ScheduleScreen({ navigation }) {
       console.warn("⚠️ userId가 null이므로 일정 데이터를 가져올 수 없음");
       return;
     }
-
+  
     try {
       console.log("📌 Firestore에서 일정 가져오는 중...", uid);
       const schedulesArray = await fetchUserSchedules(uid);
-
+  
       if (!schedulesArray || schedulesArray.length === 0) {
         console.warn("⚠️ Firestore에서 불러온 일정이 없습니다.");
         setScheduleData({});
         setAllTotalWage(0); // 🔹 총 급여를 초기화
         return;
       }
-
+  
       const formattedSchedules = {};
       let totalWageSum = 0;
       schedulesArray.forEach((schedule) => {
@@ -95,22 +95,13 @@ export default function ScheduleScreen({ navigation }) {
           formattedSchedules[schedule.date] = [];
         }
         formattedSchedules[schedule.date].push(schedule);
-        totalWageSum += schedule.wage;
+        
+        // ✅ 급여 값을 숫자로 변환 후 합산
+        totalWageSum += Number(schedule.wage) || 0;
       });
-
+  
       setScheduleData(formattedSchedules);
       setAllTotalWage(totalWageSum);
-
-      const updatedMarkedDates = {};
-      Object.keys(formattedSchedules).forEach((date) => {
-        updatedMarkedDates[date] = {
-          customStyles: {
-            container: { backgroundColor: "#FFD700", borderRadius: 5 },
-            text: { color: "#000", fontWeight: "bold" },
-          },
-        };
-      });
-      setMarkedDates(updatedMarkedDates);
     } catch (error) {
       console.error("❌ 일정 데이터 로딩 오류:", error);
     }
@@ -119,20 +110,20 @@ export default function ScheduleScreen({ navigation }) {
   // 📌 날짜 클릭 시 일정 표시
   const handleDayPress = (day) => {
     const formattedDate = day.dateString;
-
+  
     setMarkedDates({
       [formattedDate]: {
         selected: true,
         selectedColor: '#007AFF',
       },
     });
-
+  
     const schedules = scheduleData[formattedDate] || [];
     setSelectedDate(formattedDate);
     setSelectedSchedules(schedules);
-
-    // 📌 선택한 날짜의 총 급여 계산
-    const total = schedules.reduce((sum, schedule) => sum + schedule.wage, 0);
+  
+    // ✅ 선택한 날짜의 총 급여 계산 (숫자로 변환 후 합산)
+    const total = schedules.reduce((sum, schedule) => sum + Number(schedule.wage) || 0, 0);
     setTotalWage(total);
   };
 

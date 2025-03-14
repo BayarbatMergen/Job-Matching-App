@@ -1,37 +1,52 @@
 const { db } = require("../config/firebase");
 
-// ✅ 채팅방 목록 가져오기 함수 추가
-const getChatRooms = async (req, res) => {
+// ✅ 특정 채팅방의 모든 메시지 가져오기
+const getChatMessages = async (req, res) => {
   try {
-    const chatRoomsSnapshot = await db.collection("chats").get();
+    const { roomId } = req.params;
+    console.log(`📡 채팅 메시지 요청 받음 (채팅방: ${roomId})`);
 
-    if (chatRoomsSnapshot.empty) {
-      return res.status(404).json({ message: "채팅방이 없습니다." });
+    if (!roomId) {
+      return res.status(400).json({ message: "⚠️ 유효한 채팅방 ID가 필요합니다." });
     }
 
-    const chatRooms = chatRoomsSnapshot.docs.map(doc => ({
+    const messagesSnapshot = await db
+      .collection("chats")
+      .doc(roomId)
+      .collection("messages")
+      .orderBy("createdAt", "asc")
+      .get();
+
+    if (messagesSnapshot.empty) {
+      console.warn("⚠️ 해당 채팅방에 메시지가 없습니다.");
+      return res.status(200).json([]);
+    }
+
+    const messages = messagesSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    res.status(200).json(chatRooms);
+    console.log(`✅ [${roomId}] 메시지 개수: ${messages.length}`);
+    res.status(200).json(messages);
   } catch (error) {
-    console.error("❌ 채팅방 목록 불러오기 오류:", error);
+    console.error("❌ 채팅 메시지 불러오기 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
   }
 };
 
-// ✅ 채팅 메시지 추가 함수
+// ✅ 특정 채팅방에 메시지 추가
 const addMessageToChat = async (req, res) => {
   try {
-    const { chatRoomId, text } = req.body;
+    const { roomId } = req.params;
+    const { text } = req.body;
     const senderId = req.user.userId;
 
-    if (!chatRoomId || !text) {
+    if (!roomId || !text) {
       return res.status(400).json({ message: "⚠️ chatRoomId와 text가 필요합니다." });
     }
 
-    const messageRef = db.collection("chats").doc(chatRoomId).collection("messages").doc();
+    const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
     const newMessage = {
       text,
       senderId,
@@ -47,28 +62,28 @@ const addMessageToChat = async (req, res) => {
   }
 };
 
-// ✅ 특정 채팅방의 모든 메시지 가져오기
-const getChatMessages = async (req, res) => {
+// ✅ 모든 채팅방 목록 가져오기
+const getChatRooms = async (req, res) => {
   try {
-    const { chatRoomId } = req.params;
-    const messagesSnapshot = await db
-      .collection("chats")
-      .doc(chatRoomId)
-      .collection("messages")
-      .orderBy("createdAt", "asc")
-      .get();
+    console.log("📡 채팅방 목록 요청 받음...");
 
-    const messages = messagesSnapshot.docs.map((doc) => ({
+    const chatRoomsSnapshot = await db.collection("chats").get();
+    if (chatRoomsSnapshot.empty) {
+      return res.status(200).json({ message: "채팅방이 없습니다." });
+    }
+
+    const chatRooms = chatRoomsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    res.status(200).json(messages);
+    console.log(`✅ 채팅방 개수: ${chatRooms.length}`);
+    res.status(200).json(chatRooms);
   } catch (error) {
-    console.error("❌ 채팅 메시지 불러오기 오류:", error);
+    console.error("❌ 채팅방 목록 불러오기 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
   }
 };
 
-// ✅ module.exports에 `getChatRooms` 추가
-module.exports = { getChatRooms, addMessageToChat, getChatMessages };
+// ✅ `module.exports` 설정
+module.exports = { addMessageToChat, getChatMessages, getChatRooms };
