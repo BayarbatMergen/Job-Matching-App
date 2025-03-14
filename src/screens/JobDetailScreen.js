@@ -1,33 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ AsyncStorage 추가
+import * as SecureStore from 'expo-secure-store';
+import ApplyButton from '../components/ApplyButton'; // 경로 수정 필요
 
 export default function JobDetailScreen({ route, navigation }) {
-  const { job } = route.params ?? {}; // ✅ 유저 이메일이 없을 경우 기본값 처리
-  const [loading, setLoading] = useState(false);
-  const [userEmail, setUserEmail] = useState(null); // ✅ 로그인된 사용자 이메일 상태 추가
+  const { job } = route.params ?? {};
+  const [userId, setUserId] = useState(null);
 
-  // ✅ 로그인된 사용자 이메일 불러오기
   useEffect(() => {
-    const fetchUserEmail = async () => {
+    const fetchUserData = async () => {
       try {
-        const email = await AsyncStorage.getItem('userEmail');
-        if (email) {
-          setUserEmail(email);
-          console.log("✅ 불러온 사용자 이메일:", email);
+        const storedUserId = await SecureStore.getItemAsync('userId');
+        if (storedUserId) {
+          setUserId(storedUserId);
+          console.log("✅ 불러온 사용자 ID:", storedUserId);
         } else {
-          console.warn("⚠️ 저장된 사용자 이메일 없음");
+          console.warn("⚠️ 저장된 사용자 ID 없음");
         }
       } catch (error) {
-        console.error("❌ 이메일 불러오기 오류:", error);
+        console.error("❌ 사용자 ID 불러오기 오류:", error);
       }
     };
-  
-    fetchUserEmail();
-  }, []);
-  
 
-  // ✅ job 데이터 확인
+    fetchUserData();
+  }, []);
+
   useEffect(() => {
     console.log("📌 [Job Data]:", job);
   }, [job]);
@@ -75,17 +72,12 @@ export default function JobDetailScreen({ route, navigation }) {
         <View style={styles.infoBox}>
           <Text style={styles.detailSubTitle}>📌 근무 조건</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>급여:</Text> {job.wage || "미정"}</Text>
-
-          {/* ✅ 근무 기간을 "공고 등록일"로 대체 */}
           <Text style={styles.detailText}>
             <Text style={styles.bold}>공고 등록일:</Text> {job.createdAt ? new Date(job.createdAt.seconds * 1000).toLocaleDateString() : "미정"}
           </Text>
-
-          {/* ✅ 근무 요일을 올바르게 표시 (배열 -> 문자열) */}
           <Text style={styles.detailText}>
             <Text style={styles.bold}>근무 요일:</Text> {Array.isArray(job.workdays) ? job.workdays.join(", ") : job.workdays || "미정"}
           </Text>
-
           <Text style={styles.detailText}><Text style={styles.bold}>근무 시간:</Text> {job.workingHours || "미정"}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>업직종:</Text> {job.industry || "미정"}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>고용형태:</Text> {job.employmentType || "미정"}</Text>
@@ -99,14 +91,7 @@ export default function JobDetailScreen({ route, navigation }) {
           <Text style={styles.descriptionText}>{job.description || '상세 정보 없음'}</Text>
         </View>
 
-        {/* ✅ 지원하기 버튼 */}
-        <TouchableOpacity style={styles.applyButton} onPress={handleApply} disabled={loading || !userEmail}>
-          {loading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.applyButtonText}>{userEmail ? "지원하기" : "로그인이 필요합니다."}</Text>
-          )}
-        </TouchableOpacity>
+        <ApplyButton job={job} navigation={navigation} />
       </View>
     </ScrollView>
   );
@@ -135,13 +120,4 @@ const styles = StyleSheet.create({
   detailText: { fontSize: 18, color: '#333', marginBottom: 12 },
   bold: { fontWeight: 'bold', color: '#000' },
   descriptionText: { fontSize: 16, color: '#444', lineHeight: 24 },
-  applyButton: {
-    backgroundColor: '#007AFF',
-    padding: 18,
-    borderRadius: 12,
-    marginTop: 30,
-    alignItems: 'center',
-    marginBottom: 40
-  },
-  applyButtonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
 });

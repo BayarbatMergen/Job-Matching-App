@@ -184,7 +184,7 @@ router.post('/login', async (req, res) => {
 
     res.status(200).json({
       message: "✅ 로그인 성공!",
-      user: { userId, email: userData.email, name: userData.name, role },
+      user: { userId: userData.userId, email: userData.email, name: userData.name, role }, // UID 반환
       token,
     });
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
-import * as SecureStore from "expo-secure-store"; // AsyncStorage 대신 SecureStore 사용
+import * as SecureStore from "expo-secure-store";
+const jwtDecode = require('jwt-decode'); // 변경
 
 const ApplyButton = ({ job, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -13,38 +15,43 @@ const ApplyButton = ({ job, navigation }) => {
         const storedUserId = await SecureStore.getItemAsync("userId");
         const storedToken = await SecureStore.getItemAsync("token");
 
-        console.log("📌 [fetchUserData] storedUserId:", storedUserId);
-        console.log("📌 [fetchUserData] storedToken:", storedToken);
-
-        setUserId(storedUserId);
-        setToken(storedToken);
+        console.log("📌 [ApplyButton] storedUserId:", storedUserId);
+        console.log("📌 [ApplyButton] storedToken:", storedToken);
 
         if (!storedUserId || !storedToken) {
           console.warn("⚠️ 저장된 데이터가 불완전함:", { storedUserId, storedToken });
+          navigation.navigate("Login");
+          return;
         }
+
+        const decodedToken = jwtDecode(storedToken);
+        console.log("📌 [ApplyButton] decodedToken:", decodedToken);
+        const email = decodedToken.email;
+
+        setUserId(storedUserId);
+        setToken(storedToken);
+        setUserEmail(email);
       } catch (error) {
         console.error("❌ fetchUserData 오류:", error);
+        navigation.navigate("Login");
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [navigation]);
 
   const handleApply = async () => {
+    if (!userId || !token || !userEmail) {
+      Alert.alert("❌ 인증 오류", "로그인이 필요합니다.", [
+        { text: "확인", onPress: () => navigation.navigate("Login") },
+      ]);
+      return;
+    }
+
     setLoading(true);
     try {
-      if (!token) {
-        const retryToken = await SecureStore.getItemAsync("token");
-        console.log("📌 [handleApply] 재시도 토큰:", retryToken);
-        if (!retryToken) {
-          console.error("❌ 지원 요청 실패: 저장된 토큰 없음");
-          Alert.alert("❌ 인증 오류", "로그인이 필요합니다.", [
-            { text: "확인", onPress: () => navigation.navigate("Login") },
-          ]);
-          return;
-        }
-        setToken(retryToken);
-      }
+      const requestBody = { jobId: job.id, userEmail };
+      console.log("📌 [handleApply] 전송 데이터:", JSON.stringify(requestBody));
 
       const response = await fetch("http://192.168.0.6:5000/api/jobs/apply", {
         method: "POST",
@@ -52,7 +59,7 @@ const ApplyButton = ({ job, navigation }) => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ jobId: job.id, userId }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -65,8 +72,8 @@ const ApplyButton = ({ job, navigation }) => {
         throw new Error(data.message || "지원 요청 실패");
       }
     } catch (error) {
-      console.error("❌ 지원 요청 오류:", error);
-      Alert.alert("❌ 오류 발생", "서버와의 연결이 원활하지 않습니다.");
+      console.error("❌ 지원 요청 오류:", error.message);
+      Alert.alert("❌ 오류 발생", error.message);
     } finally {
       setLoading(false);
     }

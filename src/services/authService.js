@@ -14,16 +14,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const saveUserData = async (token, userId) => {
   try {
     console.log("🔹 [saveUserData] 저장할 데이터 → 토큰:", token, "| userId:", userId);
-
     await SecureStore.setItemAsync("token", token);
     await SecureStore.setItemAsync("userId", userId);
 
     const storedToken = await SecureStore.getItemAsync("token");
     const storedUserId = await SecureStore.getItemAsync("userId");
-
-    if (!storedToken || !storedUserId) {
-      throw new Error("❌ SecureStore 저장 실패! 토큰 또는 userId 없음");
-    }
 
     console.log("✅ 저장된 토큰 확인 (저장 후):", storedToken);
     console.log("✅ 저장된 userId 확인 (저장 후):", storedUserId);
@@ -49,7 +44,11 @@ export const loginWithBackend = async (email, password) => {
     const result = await response.json();
     console.log("✅ 백엔드 로그인 응답:", result);
 
-    await saveUserData(result.token, result.user.userId);
+    // 토큰에서 UID 추출
+    const decodedToken = jwt_decode(result.token);
+    const uid = decodedToken.userId; // "0aMo45lIebQO4bomONBSu592sO53"
+
+    await saveUserData(result.token, uid); // UID 저장
 
     return result;
   } catch (error) {

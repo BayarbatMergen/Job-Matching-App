@@ -128,7 +128,10 @@ router.delete('/:jobId', async (req, res) => {
 router.post('/apply', async (req, res) => {
   const { jobId, userEmail } = req.body;
 
+  console.log("📌 [POST /api/jobs/apply] 수신 데이터:", req.body);
+
   if (!jobId || !userEmail) {
+    console.warn("⚠️ 필수 정보 누락:", { jobId, userEmail });
     return res.status(400).json({ message: '⚠️ 필수 정보를 입력하세요.' });
   }
 
@@ -137,12 +140,12 @@ router.post('/apply', async (req, res) => {
     const jobSnap = await jobRef.get();
 
     if (!jobSnap.exists) {
+      console.warn("❌ 공고 없음:", jobId);
       return res.status(404).json({ message: '❌ 해당 공고를 찾을 수 없습니다.' });
     }
 
     const jobData = jobSnap.data();
 
-    // ✅ Firestore에 지원 내역 저장
     const applicationRef = db.collection('applications').doc();
     await applicationRef.set({
       jobId,
@@ -151,16 +154,16 @@ router.post('/apply', async (req, res) => {
       status: '지원 완료',
     });
 
-    // ✅ 관리자 이메일 전송
     const mailOptions = {
       from: `"Job Matching Support" <${process.env.SMTP_USER}>`,
-      to: process.env.ADMIN_EMAIL, // 📌 관리자의 이메일로 전송
+      to: process.env.ADMIN_EMAIL,
       subject: '새로운 구직 지원 알림',
       text: `📢 새로운 구직 지원 요청이 있습니다.\n\n📌 지원자: ${userEmail}\n📌 지원한 공고: ${jobData.title}`,
     };
 
     await transporter.sendMail(mailOptions);
 
+    console.log("✅ 지원 요청 완료:", { jobId, userEmail });
     res.status(200).json({ message: '✅ 지원 요청이 완료되었습니다.' });
   } catch (error) {
     console.error('❌ 지원 요청 오류:', error.message);
