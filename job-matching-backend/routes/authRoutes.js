@@ -72,57 +72,27 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
     email = email.toLowerCase().trim();
     role = role === 'admin' ? 'admin' : 'user';
 
-    console.log("📌 Firebase Auth 사용자 생성 시작...");
-
-    // ✅ 전화번호 변환 (E.164 형식)
     const formattedPhone = formatPhoneNumber(phone);
     if (!formattedPhone) {
-      return res.status(400).json({ message: "❌ 올바른 전화번호 형식이 아닙니다. (010-XXXX-XXXX)" });
+      return res.status(400).json({ message: "❌ 올바른 전화번호 형식이 아닙니다." });
     }
 
-    console.log("📌 변환된 전화번호 (E.164 형식):", formattedPhone);
-
-    // ✅ 전화번호 중복 체크
-    try {
-      const existingUser = await admin.auth().getUserByPhoneNumber(formattedPhone);
-      if (existingUser) {
-        console.error("❌ 전화번호 중복 오류: 해당 번호는 이미 등록되어 있습니다.");
-        return res.status(400).json({ message: "❌ 해당 전화번호로 이미 가입된 계정이 있습니다." });
-      }
-    } catch (error) {
-      if (error.code !== "auth/user-not-found") {
-        console.error("❌ Firebase 전화번호 중복 체크 오류:", error);
-        return res.status(500).json({ message: "❌ 서버 오류 발생 (전화번호 중복 검사 실패)" });
-      }
-    }
-
-    // ✅ Firebase Auth 계정 생성
     const userRecord = await admin.auth().createUser({
       email,
       password,
       displayName: name,
-      phoneNumber: formattedPhone, // ✅ 변환된 전화번호 사용
-      disabled: false,
+      phoneNumber: formattedPhone,
     });
 
-    console.log("✅ Firebase Auth 사용자 생성 완료:", userRecord.uid);
-
-    // ✅ 비밀번호 암호화 (Firestore 저장용)
     const hashedPassword = await bcrypt.hash(password, 10);
+    let imageUrl = 'https://your-default-profile-url.com';
+    if (req.file) imageUrl = await uploadToCloudinary(req.file.buffer);
 
-    // ✅ 기본 프로필 이미지 설정
-    let imageUrl = 'https://your-default-profile-url.com'; // 기본 이미지
-    if (req.file) {
-      console.log("📤 Cloudinary로 이미지 업로드 중...");
-      imageUrl = await uploadToCloudinary(req.file.buffer);
-    }
-
-    // ✅ Firestore에 저장할 사용자 데이터
     const userData = {
       userId: userRecord.uid,
       name,
       email,
-      password: hashedPassword,  // 🔥 Firestore에 암호화된 비밀번호 저장
+      password: hashedPassword,
       phone: formattedPhone,
       gender,
       bank: bank || "은행 미선택",
@@ -132,12 +102,8 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
       createdAt: new Date(),
     };
 
-    console.log("📌 [저장될 Firestore 사용자 데이터]:", userData);
-
-    await db.collection('users').doc(email).set(userData, { merge: true });
-
+    await db.collection('users').doc(userRecord.uid).set(userData); // UID로 저장
     res.status(201).json({ message: "✅ 회원가입 성공!", userId: userRecord.uid });
-
   } catch (error) {
     console.error("❌ 회원가입 중 오류 발생:", error);
     res.status(500).json({ message: error.message || '❌ 서버 오류' });
@@ -154,74 +120,70 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: "⚠️ 이메일과 비밀번호를 입력하세요." });
     }
 
-    // ✅ Firestore에서 사용자 정보 가져오기
     const userQuery = await db.collection('users').where('email', '==', email).get();
-    
     if (userQuery.empty) {
+      console.warn("❌ 사용자 없음: email =", email);
       return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
     }
 
-    const userDoc = userQuery.docs[0]; 
+    const userDoc = userQuery.docs[0];
     const userData = userDoc.data();
-    const userId = userDoc.id;  // ✅ Firestore 문서 ID 사용
+    const userId = userData.userId; // UID 사용
 
     const isMatch = await bcrypt.compare(password, userData.password);
-
     if (!isMatch) {
+      console.warn("❌ 비밀번호 불일치: email =", email);
       return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
     }
 
-    // ✅ role 추가 (기본값 'user')
-    const role = userData.role || "user";
+    const token = jwt.sign(
+      { userId, email: userData.email, role: userData.role },
+      SECRET_KEY,
+      { expiresIn: '7d' }
+    );
 
-    // ✅ JWT 토큰 생성
-  const token = jwt.sign(
-    { userId: userData.userId, email: userData.email, role },  // ✅ userId를 UID로 변경
-    SECRET_KEY, 
-    { expiresIn: '7d' }
-  );
-    console.log("✅ 로그인 성공! 반환되는 userId:", userId);
-
+    console.log("✅ 로그인 성공! userId:", userId);
     res.status(200).json({
       message: "✅ 로그인 성공!",
-      user: { userId: userData.userId, email: userData.email, name: userData.name, role }, // UID 반환
+      user: { userId, email: userData.email, name: userData.name, role: userData.role },
       token,
     });
-
   } catch (error) {
-    console.error("❌ 서버 오류:", error);
-    res.status(500).json({ message: "❌ 서버 오류", error: error.message });
+    console.error("❌ 로그인 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류" });
   }
 });
 
-
 router.get('/me', verifyToken, async (req, res) => {
   try {
-    const userId = req.user.userId;  // ✅ userId 사용하도록 변경
-    const userRef = db.collection('users').doc(userId); // 🔹 userId로 조회
+    const userId = req.user.userId;
+    console.log("📌 [GET /api/auth/me] 요청 수신 → userId:", userId);
+
+    const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
+      console.warn("❌ Firestore에 사용자 없음: userId =", userId);
       return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
     }
 
     const userData = userSnap.data();
-    delete userData.password; // 🔹 비밀번호는 응답에서 제외
+    delete userData.password;
 
+    console.log("✅ 사용자 정보 조회 성공:", userData);
     res.status(200).json(userData);
   } catch (error) {
-    console.error("❌ 사용자 정보 조회 오류:", error);
+    console.error("❌ /me 조회 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류" });
   }
 });
 
 // ✅ 사용자 정보 조회 API 추가
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
     console.log(`📌 [GET /api/auth/user/:userId] 요청 수신 → userId: ${userId}`);
 
-    // Firestore에서 해당 userId 문서 가져오기
     const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
 
@@ -231,7 +193,7 @@ router.get('/user/:userId', async (req, res) => {
     }
 
     const userData = userSnap.data();
-    delete userData.password; // 비밀번호 제거
+    delete userData.password;
 
     console.log("✅ 사용자 정보 조회 성공:", userData);
     res.status(200).json(userData);
@@ -245,18 +207,15 @@ router.get('/user/:userId', async (req, res) => {
 // ✅ 사용자 정보 수정 API
 router.put('/update', verifyToken, upload.single('idImage'), async (req, res) => {
   try {
-    console.log("🔥 [사용자 정보 수정 요청]:", req.body);
     const { name, phone, gender } = req.body;
     const userId = req.user.userId;
 
     let updateData = {};
     if (name) updateData.name = name;
-    if (phone) updateData.phone = phone;
+    if (phone) updateData.phone = formatPhoneNumber(phone);
     if (gender) updateData.gender = gender;
 
-    if (req.file) {
-      updateData.idImage = await uploadToCloudinary(req.file.buffer);
-    }
+    if (req.file) updateData.idImage = await uploadToCloudinary(req.file.buffer);
 
     await db.collection('users').doc(userId).update(updateData);
     res.status(200).json({ message: "✅ 사용자 정보 수정 성공!", updatedUser: updateData });
@@ -266,7 +225,7 @@ router.put('/update', verifyToken, upload.single('idImage'), async (req, res) =>
   }
 });
 
-
+// 비밀번호 변경 API
 router.put('/change-password', verifyToken, async (req, res) => {
   try {
     const { newPassword } = req.body;
@@ -275,11 +234,7 @@ router.put('/change-password', verifyToken, async (req, res) => {
     }
 
     const userId = req.user.userId;
-    
-    // ✅ Firebase Auth 비밀번호 변경
     await admin.auth().updateUser(userId, { password: newPassword });
-
-    // ✅ Firestore 데이터도 업데이트
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db.collection('users').doc(userId).update({ password: hashedPassword });
 
@@ -294,19 +249,14 @@ router.put('/change-password', verifyToken, async (req, res) => {
 router.post("/add-message", verifyToken, async (req, res) => {
   try {
     const { chatRoomId, text } = req.body;
-    const senderId = req.user.userId; // 인증된 사용자
+    const senderId = req.user.userId;
 
     if (!chatRoomId || !text) {
       return res.status(400).json({ message: "⚠️ chatRoomId와 text가 필요합니다." });
     }
 
     const messageRef = db.collection("chats").doc(chatRoomId).collection("messages").doc();
-    const newMessage = {
-      text,
-      senderId,
-      createdAt: new Date(),
-    };
-
+    const newMessage = { text, senderId, createdAt: new Date() };
     await messageRef.set(newMessage);
 
     res.status(200).json({ message: "✅ 메시지 추가 성공", data: newMessage });
@@ -319,14 +269,10 @@ router.post("/add-message", verifyToken, async (req, res) => {
 // ✅ 토큰 검증 API
 router.post("/validate-token", (req, res) => {
   const token = req.body.token;
-  if (!token) {
-    return res.status(400).json({ message: "토큰이 제공되지 않았습니다." });
-  }
-  // 토큰 검증 로직
+  if (!token) return res.status(400).json({ message: "토큰이 제공되지 않았습니다." });
+
   jwt.verify(token, SECRET_KEY, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "토큰이 유효하지 않습니다." });
-    }
+    if (err) return res.status(401).json({ message: "토큰이 유효하지 않습니다." });
     res.status(200).json({ valid: true, user: decoded });
   });
 });

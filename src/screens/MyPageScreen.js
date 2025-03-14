@@ -19,7 +19,7 @@ export default function MyPageScreen({ navigation }) {
       try {
         const token = await SecureStore.getItemAsync("token");
         console.log("✅ 저장된 토큰:", token);
-
+  
         if (!token) {
           console.warn("🚨 토큰 없음 → 로그인 화면 이동");
           Alert.alert("인증 오류", "로그인이 필요합니다.", [
@@ -27,7 +27,7 @@ export default function MyPageScreen({ navigation }) {
           ]);
           return;
         }
-
+  
         const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           method: "GET",
           headers: {
@@ -35,18 +35,21 @@ export default function MyPageScreen({ navigation }) {
             "Content-Type": "application/json",
           },
         });
-
+  
+        console.log("📌 서버 응답 상태:", response.status, response.statusText);
+        const errorData = await response.text(); // JSON 대신 텍스트로 먼저 확인
+        console.log("📌 서버 응답 데이터:", errorData);
+  
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "서버 오류");
+          throw new Error(JSON.parse(errorData).message || "서버 오류");
         }
-
-        const userInfo = await response.json();
+  
+        const userInfo = JSON.parse(errorData); // 성공 시 파싱
         console.log("✅ [서버에서 가져온 사용자 데이터]:", userInfo);
         setUserData(userInfo);
       } catch (error) {
         console.error("❌ 사용자 정보 가져오기 오류:", error);
-        Alert.alert("오류", "사용자 정보를 불러올 수 없습니다.", [
+        Alert.alert("오류", error.message || "사용자 정보를 불러올 수 없습니다.", [
           { text: "확인", onPress: () => navigation.replace("Login") },
         ]);
       } finally {
