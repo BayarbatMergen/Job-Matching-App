@@ -163,8 +163,8 @@ export const testAsyncStorage = async () => {
     const token = await SecureStore.getItemAsync("token");
     const userId = await SecureStore.getItemAsync("userId");
 
-    console.log("✅ 저장된 토큰:", token);
-    console.log("✅ 저장된 userId:", userId);
+    //console.log("✅ 저장된 토큰:", token);
+    //console.log("✅ 저장된 userId:", userId);
   } catch (error) {
     console.error("❌ SecureStore 테스트 오류:", error.message);
   }
