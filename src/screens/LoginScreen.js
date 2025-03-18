@@ -15,10 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginWithBackend, resetPasswordWithBackend } from "../services/authService";
 import { fetchUserData } from "../services/authService";
 import { saveUserData } from "../services/authService";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../config/firebase";
-import { signInWithCustomToken } from "firebase/auth";
-
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -27,73 +23,83 @@ const LoginScreen = ({ navigation }) => {
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  /* ✅ 저장된 이메일 불러오기 (디버깅용)
+  // ✅ 앱 시작 시 저장된 데이터 확인 및 자동 로그인 시도
   useEffect(() => {
-    console.log("🚀 useEffect 실행됨! fetchUserData() 호출 예정");
+    const checkStoredData = async () => {
+      try {
+        console.log("🚀 useEffect 실행됨! 저장된 데이터 확인 시작");
 
-    const fetchWithDelay = async () => {
-      let token = await AsyncStorage.getItem('authToken');
+        const token = await AsyncStorage.getItem('authToken');
+        const storedUserId = await AsyncStorage.getItem('userId');
 
-      if (!token) {
-        console.warn("⚠️ 저장된 토큰이 없음! 0.5초 후 다시 시도...");
-        setTimeout(async () => {
-          token = await AsyncStorage.getItem('authToken');
-          console.log("🔹 가져온 토큰 (재시도 후):", token);
-          if (token) {
-            fetchUserData(token);
-          } else {
-            console.error("❌ 최종적으로 토큰 없음. 로그인 화면 유지");
+        console.log("📌 AsyncStorage에서 가져온 데이터:", {
+          token,
+          storedUserId,
+        });
+
+        if (token && storedUserId) {
+          console.log("🔹 저장된 토큰과 userId 발견:", { token, storedUserId });
+          try {
+            await signInWithCustomToken(auth, token);
+            console.log("✅ Firebase 인증 복원 성공:", auth.currentUser.uid);
+            await fetchUserData(); // fetchUserData에서 ID Token 사용
+            navigation.replace("Main");
+          } catch (error) {
+            console.error("❌ Firebase 인증 복원 실패:", error);
+            // 인증 실패 시 저장된 데이터 삭제
+            await AsyncStorage.removeItem('authToken');
+            await AsyncStorage.removeItem('userId');
+            await AsyncStorage.removeItem('email');
+            await AsyncStorage.removeItem('password');
           }
-        }, 500);
-      } else {
-        console.log("🔹 가져온 토큰:", token);
-        fetchUserData(token);
+        } else {
+          console.warn("⚠️ 저장된 토큰 또는 userId 없음. 로그인 화면 유지");
+        }
+      } catch (error) {
+        console.error("❌ 저장된 데이터 확인 중 오류:", error);
       }
     };
 
-    fetchWithDelay();
-  }, []); */
+    checkStoredData();
+  }, []);
 
   // ✅ 로그인 처리 함수
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("입력 오류", "이메일과 비밀번호를 모두 입력해주세요.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const response = await fetch("http://192.168.0.6:5000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-  
+
       const result = await response.json();
-  
+
       if (response.ok) {
         console.log("✅ 로그인 성공:", result);
   
-        // 🔹 토큰 저장
-        await saveUserData(result.token, result.user.userId, result.user.email, password);
+        // 🔹 토큰 저장 후 fetchUserData 실행
+        await saveUserData(result.token, result.user.userId);
   
         console.log("🚀 토큰 저장 완료, 사용자 데이터 로드 시작");
-        await fetchUserData();
+        await fetchUserData(); // 🚀 저장된 후 실행되도록 수정
   
-        // ✅ Custom Token 으로 Firebase 로그인
-        try {
-          if (result.firebaseToken) {
-            await signInWithCustomToken(auth, result.firebaseToken);
-            console.log("✅ Firebase 커스텀 토큰 로그인 성공");
-          } else {
-            console.warn("⚠️ firebaseToken 없음 → Firebase 로그인 생략");
-          }
-        } catch (firebaseError) {
-          console.error("❌ Firebase 커스텀 로그인 실패:", firebaseError);
-        }
-  
-        navigation.replace("Main");
+        navigation.replace("Main"); // 로그인 성공 시 홈 화면으로 이동
       } else {
         Alert.alert("로그인 실패", result.message);
       }
     } catch (error) {
       console.error("❌ 로그인 중 오류 발생:", error);
       Alert.alert("서버 오류", "잠시 후 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -154,7 +160,7 @@ const LoginScreen = ({ navigation }) => {
             />
 
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[styles.loginButton, loading && styles.disabledButton]}
               onPress={handleLogin}
               disabled={loading}
             >
@@ -190,7 +196,7 @@ const LoginScreen = ({ navigation }) => {
             />
 
             <TouchableOpacity
-              style={styles.resetButton}
+              style={[styles.resetButton, loading && styles.disabledButton]}
               onPress={handleResetPassword}
               disabled={loading}
             >
@@ -241,6 +247,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
     marginTop: 10,
+  },
+  disabledButton: {
+    backgroundColor: "#A0C4FF",
   },
   loginButtonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   footerContainer: { flexDirection: "row", marginTop: 15 },

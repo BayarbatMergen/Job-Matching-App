@@ -12,19 +12,18 @@ import { auth } from "../config/firebase";
 import jwt_decode from "jwt-decode";
 
 // ✅ 로그인 후 토큰, userId, email, password 저장
-export const saveUserData = async (token, userId, email, password) => {
+export const saveUserData = async (token, userId, email) => {
   try {
     console.log("🔹 [saveUserData] 저장할 데이터 → 토큰:", token, "| userId:", userId, "| email:", email, "| password:", password);
     await SecureStore.setItemAsync("token", token);
     await SecureStore.setItemAsync("userId", userId);
-    await SecureStore.setItemAsync("userEmail", email);
-    await SecureStore.setItemAsync("userPassword", password);
+    await SecureStore.setItemAsync("userEmail", email);  // ✅ email도 저장
 
-    // 확인용 로그
-    console.log("✅ 저장된 토큰 확인 (저장 후):", await SecureStore.getItemAsync("token"));
-    console.log("✅ 저장된 userId 확인 (저장 후):", await SecureStore.getItemAsync("userId"));
-    console.log("✅ 저장된 userEmail 확인 (저장 후):", await SecureStore.getItemAsync("userEmail"));
-    console.log("✅ 저장된 userPassword 확인 (저장 후):", await SecureStore.getItemAsync("userPassword"));
+    const storedToken = await SecureStore.getItemAsync("token");
+    const storedUserId = await SecureStore.getItemAsync("userId");
+    const storedEmail = await SecureStore.getItemAsync("userEmail");
+
+    console.log("✅ SecureStore 저장 완료");
   } catch (error) {
     console.error("❌ 저장 오류:", error);
   }

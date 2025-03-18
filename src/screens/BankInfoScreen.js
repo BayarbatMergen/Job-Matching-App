@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { db } from '../config/firebase';
 import { fetchUserData } from '../services/authService';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';  // ✅ 중요: Firestore 함수 임포트
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export default function BankInfoScreen() {
   const [existingBankInfo, setExistingBankInfo] = useState({ bankName: '', accountNumber: '' });
@@ -22,8 +22,8 @@ export default function BankInfoScreen() {
           return;
         }
 
-        const userDocRef = doc(db, 'users', uid);   // ✅ doc() 사용
-        const userDocSnap = await getDoc(userDocRef); // ✅ getDoc() 사용
+        const userDocRef = doc(db, 'users', uid);
+        const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
@@ -50,8 +50,8 @@ export default function BankInfoScreen() {
     }
 
     try {
-      const userDocRef = doc(db, 'users', userId); // ✅ doc() 사용
-      await updateDoc(userDocRef, {                // ✅ updateDoc() 사용
+      const userDocRef = doc(db, 'users', userId);
+      await updateDoc(userDocRef, {
         bank: newBankName,
         accountNumber: newAccountNumber,
       });
