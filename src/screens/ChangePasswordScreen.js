@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { auth } from '../config/firebase';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import * as SecureStore from 'expo-secure-store';
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -30,14 +29,7 @@ export default function ChangePasswordScreen() {
         return;
       }
 
-      // ✅ 저장된 이메일 가져오기
-      const storedEmail = await SecureStore.getItemAsync('userId'); 
-      if (!storedEmail) {
-        Alert.alert('오류', '사용자 정보를 찾을 수 없습니다.');
-        return;
-      }
-
-      // ✅ reauthenticate 시 email 가져오기
+      // ✅ reauthenticate 시 user.email 사용
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
 
