@@ -12,12 +12,13 @@ import { auth } from "../config/firebase";
 import jwt_decode from "jwt-decode";
 
 // ✅ 로그인 후 토큰, userId, email, password 저장
-export const saveUserData = async (token, userId, email) => {
+export const saveUserData = async (token, userId, email, password) => {
   try {
     console.log("🔹 [saveUserData] 저장할 데이터 → 토큰:", token, "| userId:", userId, "| email:", email, "| password:", password);
     await SecureStore.setItemAsync("token", token);
     await SecureStore.setItemAsync("userId", userId);
     await SecureStore.setItemAsync("userEmail", email);  // ✅ email도 저장
+    await SecureStore.setItemAsync("userPassword", password);
 
     const storedToken = await SecureStore.getItemAsync("token");
     const storedUserId = await SecureStore.getItemAsync("userId");
