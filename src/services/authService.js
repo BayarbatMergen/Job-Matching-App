@@ -1,4 +1,5 @@
 import {
+  signInWithCustomToken,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -14,25 +15,21 @@ import jwt_decode from "jwt-decode";
 export const saveUserData = async (token, userId, email, password) => {
   try {
     console.log("🔹 [saveUserData] 저장할 데이터 → 토큰:", token, "| userId:", userId, "| email:", email, "| password:", password);
+    await SecureStore.setItemAsync("token", token);
+    await SecureStore.setItemAsync("userId", userId);
+    await SecureStore.setItemAsync("userEmail", email);
+    await SecureStore.setItemAsync("userPassword", password);
 
-    await SecureStore.setItemAsync("token", token || "");
-    await SecureStore.setItemAsync("userId", userId || "");
-    await SecureStore.setItemAsync("userEmail", email || "");
-    await SecureStore.setItemAsync("userPassword", password || ""); // 비밀번호 저장 추가 (필요 시)
-
-    const storedToken = await SecureStore.getItemAsync("token");
-    const storedUserId = await SecureStore.getItemAsync("userId");
-    const storedUserEmail = await SecureStore.getItemAsync("userEmail");
-    const storedPassword = await SecureStore.getItemAsync("userPassword");
-
-    console.log("✅ 저장된 토큰 확인 (저장 후):", storedToken);
-    console.log("✅ 저장된 userId 확인 (저장 후):", storedUserId);
-    console.log("✅ 저장된 userEmail 확인 (저장 후):", storedUserEmail);
-    console.log("✅ 저장된 비밀번호 확인 (저장 후):", storedPassword);
+    // 확인용 로그
+    console.log("✅ 저장된 토큰 확인 (저장 후):", await SecureStore.getItemAsync("token"));
+    console.log("✅ 저장된 userId 확인 (저장 후):", await SecureStore.getItemAsync("userId"));
+    console.log("✅ 저장된 userEmail 확인 (저장 후):", await SecureStore.getItemAsync("userEmail"));
+    console.log("✅ 저장된 userPassword 확인 (저장 후):", await SecureStore.getItemAsync("userPassword"));
   } catch (error) {
-    console.error("❌ 사용자 데이터 저장 오류:", error);
+    console.error("❌ 저장 오류:", error);
   }
 };
+
 
 // ✅ 백엔드 로그인 및 Firebase 세션 동기화
 export const loginWithBackend = async (email, password) => {
@@ -52,12 +49,13 @@ export const loginWithBackend = async (email, password) => {
 
     const decodedToken = jwt_decode(result.token);
     const uid = decodedToken.userId;
-    const userEmail = result.user?.email || email; // result.user.email을 우선 사용, 없으면 매개변수 email 사용
+    const userEmail = result.user?.email || email;
 
-    // ✅ Firebase 세션도 로그인
-    await signInWithEmailAndPassword(auth, userEmail, password);
+    // ✅ 🔥 Firebase Custom Token 로그인 시도
+    await signInWithCustomToken(auth, result.firebaseToken);
 
-    await saveUserData(result.token, uid, userEmail, password); // userEmail 사용
+    // ✅ SecureStore에 저장
+    await saveUserData(result.token, uid, userEmail, password);
 
     return result;
   } catch (error) {
@@ -131,7 +129,7 @@ export const authStateListener = (callback) => {
   });
 };
 
-// ✅ Firebase 자동 로그인 함수 (앱 실행 시 호출)
+/* ✅ Firebase 자동 로그인 함수 (앱 실행 시 호출)
 export const firebaseAutoLogin = async () => {
   try {
     const storedEmail = await SecureStore.getItemAsync('userEmail');
@@ -150,6 +148,7 @@ export const firebaseAutoLogin = async () => {
     console.error("❌ Firebase 자동 로그인 오류:", error);
   }
 };
+*/
 
 // ✅ 로그인된 사용자 userId 가져오기
 export const fetchUserData = async () => {

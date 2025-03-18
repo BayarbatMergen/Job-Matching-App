@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { db } from '../config/firebase';
+import * as SecureStore from 'expo-secure-store';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 export default function CustomerSupportScreen() {
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
-    if (!message) {
+  const handleSend = async () => {
+    if (!message.trim()) {
       Alert.alert('입력 오류', '문의 내용을 입력해주세요.');
       return;
     }
-    Alert.alert('문의 완료', '고객센터에 문의가 접수되었습니다.');
-    setMessage('');
+
+    try {
+      setLoading(true);
+      const userEmail = await SecureStore.getItemAsync('userEmail') || '비회원';
+      await addDoc(collection(db, 'customerInquiries'), {
+        email: userEmail,
+        message,
+        createdAt: Timestamp.now(),
+      });
+      Alert.alert('문의 완료', '고객센터에 문의가 접수되었습니다.');
+      setMessage('');
+    } catch (error) {
+      console.error('❌ 문의 저장 오류:', error);
+      Alert.alert('오류', '문의 전송 중 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,8 +44,12 @@ export default function CustomerSupportScreen() {
         placeholder="문의 내용을 입력하세요"
       />
 
-      <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-        <Text style={styles.sendButtonText}>보내기</Text>
+      <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.sendButtonText}>보내기</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

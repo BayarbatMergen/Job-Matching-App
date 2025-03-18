@@ -15,6 +15,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginWithBackend, resetPasswordWithBackend } from "../services/authService";
 import { fetchUserData } from "../services/authService";
 import { saveUserData } from "../services/authService";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../config/firebase";
+import { signInWithCustomToken } from "firebase/auth";
+
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -51,6 +55,7 @@ const LoginScreen = ({ navigation }) => {
   }, []); */
 
   // ✅ 로그인 처리 함수
+
   const handleLogin = async () => {
     try {
       const response = await fetch("http://192.168.0.6:5000/api/auth/login", {
@@ -64,13 +69,25 @@ const LoginScreen = ({ navigation }) => {
       if (response.ok) {
         console.log("✅ 로그인 성공:", result);
   
-        // 🔹 토큰 저장 후 fetchUserData 실행
-        await saveUserData(result.token, result.user.userId);
+        // 🔹 토큰 저장
+        await saveUserData(result.token, result.user.userId, result.user.email, password);
   
         console.log("🚀 토큰 저장 완료, 사용자 데이터 로드 시작");
-        await fetchUserData(); // 🚀 저장된 후 실행되도록 수정
+        await fetchUserData();
   
-        navigation.replace("Main"); // 로그인 성공 시 홈 화면으로 이동
+        // ✅ Custom Token 으로 Firebase 로그인
+        try {
+          if (result.firebaseToken) {
+            await signInWithCustomToken(auth, result.firebaseToken);
+            console.log("✅ Firebase 커스텀 토큰 로그인 성공");
+          } else {
+            console.warn("⚠️ firebaseToken 없음 → Firebase 로그인 생략");
+          }
+        } catch (firebaseError) {
+          console.error("❌ Firebase 커스텀 로그인 실패:", firebaseError);
+        }
+  
+        navigation.replace("Main");
       } else {
         Alert.alert("로그인 실패", result.message);
       }

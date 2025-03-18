@@ -128,7 +128,7 @@ router.post('/login', async (req, res) => {
 
     const userDoc = userQuery.docs[0];
     const userData = userDoc.data();
-    const userId = userData.userId; // UID 사용
+    const userId = userData.userId;
 
     const isMatch = await bcrypt.compare(password, userData.password);
     if (!isMatch) {
@@ -136,17 +136,22 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
     }
 
+    // ✅ JWT 생성
     const token = jwt.sign(
       { userId, email: userData.email, role: userData.role },
       SECRET_KEY,
       { expiresIn: '7d' }
     );
 
+    // ✅ Firebase Custom Token 생성 추가!
+    const firebaseToken = await admin.auth().createCustomToken(userId);
+
     console.log("✅ 로그인 성공! userId:", userId);
     res.status(200).json({
       message: "✅ 로그인 성공!",
       user: { userId, email: userData.email, name: userData.name, role: userData.role },
-      token,
+      token,                 // 기존 JWT 토큰
+      firebaseToken,         // 🔥 여기 Firebase 커스텀 토큰도 반환
     });
   } catch (error) {
     console.error("❌ 로그인 오류:", error);
@@ -297,30 +302,45 @@ router.get("/me", verifyToken, async (req, res) => {
   }
 });
 
-// 비밀번호 변경 API (POST 방식으로도 가능)
+// 비밀번호 변경 API (보안 강화)
 router.post('/change-password', verifyToken, async (req, res) => {
   try {
-    const { newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
 
-    if (!newPassword) {
-      return res.status(400).json({ message: "⚠️ 새 비밀번호를 입력하세요." });
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "⚠️ 현재 비밀번호와 새 비밀번호를 입력하세요." });
     }
 
     const userId = req.user.userId;
 
-    // 1️⃣ Firebase Admin을 통해 비밀번호 변경
+    // Firestore에서 유저 정보 가져오기
+    const userRef = db.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
+    }
+
+    const userData = userSnap.data();
+
+    // 🔎 현재 비밀번호 검증
+    const isMatch = await bcrypt.compare(currentPassword, userData.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "❌ 현재 비밀번호가 올바르지 않습니다." });
+    }
+
+    // ✅ 비밀번호 변경 진행
     await admin.auth().updateUser(userId, { password: newPassword });
 
-    // 2️⃣ Firestore에 저장된 비밀번호도 해시 처리 후 업데이트
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.collection('users').doc(userId).update({ password: hashedPassword });
+    await userRef.update({ password: hashedPassword });
 
     res.status(200).json({ message: "✅ 비밀번호 변경 완료!" });
   } catch (error) {
-    console.error("❌ 비밀번호 변경 실패:", error);
+    console.error("❌ 비밀번호 변경 오류:", error);
     res.status(500).json({ message: "❌ 비밀번호 변경 중 오류 발생" });
   }
 });
+
 
 console.log("✅ authRoutes.js 로드 완료");
 

@@ -98,7 +98,7 @@ export default function MyPageScreen({ navigation }) {
           <Text style={styles.menuText}>계좌 정보 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword')}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword', { email: userData.email })}        >
           <Ionicons name="key-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>비밀번호 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
@@ -172,7 +172,68 @@ const styles = StyleSheet.create({
   logoutButton: { backgroundColor: '#FF3B30', padding: 15, borderRadius: 10, alignItems: 'center', marginVertical: 30, marginHorizontal: 20 },
   logoutText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
 
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContainer: { width: '80%', padding: 20, backgroundColor: '#fff', borderRadius: 15, alignItems: 'center', elevation: 5 },
+  modalOverlay: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(0,0,0,0.4)' 
+  },
+  modalContainer: { 
+    width: '80%', 
+    padding: 20, 
+    backgroundColor: '#fff', 
+    borderRadius: 20, 
+    alignItems: 'center', 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.3, 
+    shadowRadius: 5, 
+    elevation: 10 
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginTop: 15, 
+    color: '#333', 
+    textAlign: 'center' 
+  },
+  modalText: { 
+    fontSize: 16, 
+    color: '#666', 
+    textAlign: 'center', 
+    marginVertical: 10 
+  },
+  buttonRow: { 
+    flexDirection: 'row', 
+    marginTop: 20, 
+    justifyContent: 'space-between', 
+    width: '100%' 
+  },
+  cancelButton: { 
+    flex: 1, 
+    backgroundColor: '#ddd', 
+    paddingVertical: 12, 
+    borderRadius: 10, 
+    marginRight: 10, 
+    alignItems: 'center' 
+  },
+  cancelButtonText: { 
+    color: '#333', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  confirmButton: { 
+    flex: 1, 
+    backgroundColor: '#FF3B30', 
+    paddingVertical: 12, 
+    borderRadius: 10, 
+    marginLeft: 10, 
+    alignItems: 'center' 
+  },
+  confirmButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  }
 });
 

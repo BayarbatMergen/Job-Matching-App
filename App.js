@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { firebaseAutoLogin, testAsyncStorage } from './src/services/authService';  // ✅ 가져오기
+import { testAsyncStorage } from './src/services/authService';  // ✅ 가져오기
 
 // ✅ 기본 인증 화면
 import LoginScreen from './src/screens/LoginScreen';
@@ -16,6 +16,7 @@ import UserManagementScreen from './src/screens/UserManagementScreen';
 import AdminPasswordChangeScreen from './src/screens/AdminPasswordChangeScreen';
 import NoticeWriteScreen from './src/screens/NoticeWriteScreen';
 import CustomerInquiryScreen from './src/screens/CustomerInquiryScreen';
+import NoticeDetailScreen from './src/screens/NoticeDetailScreen';
 
 // ✅ 사용자 기능
 import BankInfoScreen from './src/screens/BankInfoScreen';
@@ -34,7 +35,7 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    firebaseAutoLogin();  // ✅ 자동 Firebase 로그인 실행
+    //firebaseAutoLogin();  // ✅ 자동 Firebase 로그인 실행
     testAsyncStorage();   // (선택) 저장된 값 디버깅 확인
   }, []);
 
@@ -54,7 +55,7 @@ export default function App() {
         <Stack.Screen name="AdminPasswordChangeScreen" component={AdminPasswordChangeScreen} options={{ headerShown: true, title: '비밀번호 변경' }} />
         <Stack.Screen name="NoticeWriteScreen" component={NoticeWriteScreen} options={{ headerShown: true, title: '공지사항 작성' }} />
         <Stack.Screen name="CustomerInquiryScreen" component={CustomerInquiryScreen} options={{ headerShown: true, title: '고객 문의 관리' }} />
-
+        <Stack.Screen name="NoticeDetailScreen" component={NoticeDetailScreen} options={{ headerShown: true, title: '공지사항 상세' }} />
         {/* 사용자 기능 */}
         <Stack.Screen name="BankInfo" component={BankInfoScreen} options={{ headerShown: true, title: '계좌 정보 변경' }} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: '비밀번호 변경' }} />

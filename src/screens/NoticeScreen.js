@@ -1,23 +1,51 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { db } from '../config/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
-const notices = [
-  { id: '1', title: '신규 기능 업데이트', date: '2025-02-10' },
-  { id: '2', title: '서버 점검 안내', date: '2025-02-12' },
-  { id: '3', title: '보안 업데이트', date: '2025-02-15' },
-];
+export default function NoticeScreen({ navigation }) {
+  const [notices, setNotices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-export default function NoticeScreen() {
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'notices'));
+        const fetchedNotices = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setNotices(fetchedNotices);
+      } catch (error) {
+        console.error('공지사항 가져오기 오류:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotices();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
         data={notices}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.noticeItem}>
+          <TouchableOpacity
+            style={styles.noticeItem}
+            onPress={() => navigation.navigate('NoticeDetailScreen', { noticeId: item.id })}
+          >
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.date}>{item.date}</Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -26,6 +54,7 @@ export default function NoticeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   noticeItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#ddd' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
   date: { fontSize: 14, color: 'gray' },
