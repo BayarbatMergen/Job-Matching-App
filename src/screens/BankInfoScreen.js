@@ -1,45 +1,82 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { db } from '../config/firebase';
+import { fetchUserData } from '../services/authService';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';  // ✅ 중요: Firestore 함수 임포트
 
 export default function BankInfoScreen() {
-  // ✅ 기존 계좌 정보 (초기값)
   const [existingBankInfo, setExistingBankInfo] = useState({ bankName: '', accountNumber: '' });
-
-  // ✅ 새 계좌 정보 (입력값)
   const [newBankName, setNewBankName] = useState('');
   const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [userId, setUserId] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // 📌 기존 계좌 정보를 불러오는 useEffect
   useEffect(() => {
-    // 📝 예제: 기존 계좌 정보 (Firebase 또는 API에서 가져오는 부분 대체 가능)
-    const fetchedBankInfo = {
-      bankName: '국민은행',
-      accountNumber: '123-4567-8910',
+    const loadUserBankInfo = async () => {
+      try {
+        const uid = await fetchUserData();
+        setUserId(uid);
+
+        if (!uid) {
+          Alert.alert("인증 오류", "로그인이 필요합니다.");
+          return;
+        }
+
+        const userDocRef = doc(db, 'users', uid);   // ✅ doc() 사용
+        const userDocSnap = await getDoc(userDocRef); // ✅ getDoc() 사용
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setExistingBankInfo({
+            bankName: userData.bank || '',
+            accountNumber: userData.accountNumber || '',
+          });
+        }
+      } catch (error) {
+        console.error("❌ 계좌 정보 불러오기 오류:", error);
+        Alert.alert("오류", "계좌 정보를 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setExistingBankInfo(fetchedBankInfo);
+    loadUserBankInfo();
   }, []);
 
-  // 📌 새 계좌 정보 저장
-  const handleSaveNewAccount = () => {
+  const handleSaveNewAccount = async () => {
     if (!newBankName || !newAccountNumber) {
       Alert.alert('입력 오류', '새 계좌 정보를 모두 입력해주세요.');
       return;
     }
 
-    Alert.alert('저장 완료', `새 계좌 정보가 등록되었습니다.\n은행: ${newBankName}\n계좌번호: ${newAccountNumber}`);
+    try {
+      const userDocRef = doc(db, 'users', userId); // ✅ doc() 사용
+      await updateDoc(userDocRef, {                // ✅ updateDoc() 사용
+        bank: newBankName,
+        accountNumber: newAccountNumber,
+      });
 
-    // ✅ 기존 계좌 정보 업데이트
-    setExistingBankInfo({ bankName: newBankName, accountNumber: newAccountNumber });
+      setExistingBankInfo({ bankName: newBankName, accountNumber: newAccountNumber });
+      setNewBankName('');
+      setNewAccountNumber('');
 
-    // ✅ 입력 필드 초기화
-    setNewBankName('');
-    setNewAccountNumber('');
+      Alert.alert('✅ 저장 완료', `은행: ${newBankName}\n계좌번호: ${newAccountNumber}`);
+    } catch (error) {
+      console.error("❌ 계좌 저장 오류:", error);
+      Alert.alert('오류', '계좌 정보 저장에 실패했습니다.');
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* ✅ 기존 계좌 정보 표시 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>기존 등록된 계좌</Text>
         <View style={styles.infoBox}>
@@ -51,7 +88,6 @@ export default function BankInfoScreen() {
         </View>
       </View>
 
-      {/* ✅ 새로운 계좌 정보 입력 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>새 계좌 등록</Text>
         <TextInput
@@ -60,7 +96,6 @@ export default function BankInfoScreen() {
           onChangeText={setNewBankName}
           placeholder="새 은행명을 입력하세요"
         />
-
         <TextInput
           style={styles.input}
           value={newAccountNumber}
@@ -68,7 +103,6 @@ export default function BankInfoScreen() {
           placeholder="새 계좌번호를 입력하세요"
           keyboardType="numeric"
         />
-
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveNewAccount}>
           <Text style={styles.saveButtonText}>새 계좌 저장</Text>
         </TouchableOpacity>
@@ -79,6 +113,7 @@ export default function BankInfoScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   section: { marginBottom: 20, padding: 15, backgroundColor: '#F8F8F8', borderRadius: 10, elevation: 2 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' },

@@ -23,6 +23,25 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const userId = req.user.userId; // JWT에서 추출된 userId
+
+    if (!newPassword) {
+      return res.status(400).json({ message: "새 비밀번호를 입력하세요." });
+    }
+
+    // Firebase Admin SDK로 비밀번호 변경
+    await admin.auth().updateUser(userId, { password: newPassword });
+
+    res.status(200).json({ message: "비밀번호 변경 완료!" });
+  } catch (error) {
+    console.error("❌ 비밀번호 변경 실패:", error);
+    res.status(500).json({ message: "비밀번호 변경 실패" });
+  }
+};
+
 // ✅ 토큰 유효성 검사
 const validateToken = async (req, res) => {
   try {
@@ -55,4 +74,4 @@ const validateToken = async (req, res) => {
 };
 
 // ✅ 올바른 내보내기 방식 유지
-module.exports = { getUserProfile, validateToken };
+module.exports = { getUserProfile, validateToken, changePassword, };

@@ -297,6 +297,31 @@ router.get("/me", verifyToken, async (req, res) => {
   }
 });
 
+// 비밀번호 변경 API (POST 방식으로도 가능)
+router.post('/change-password', verifyToken, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({ message: "⚠️ 새 비밀번호를 입력하세요." });
+    }
+
+    const userId = req.user.userId;
+
+    // 1️⃣ Firebase Admin을 통해 비밀번호 변경
+    await admin.auth().updateUser(userId, { password: newPassword });
+
+    // 2️⃣ Firestore에 저장된 비밀번호도 해시 처리 후 업데이트
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.collection('users').doc(userId).update({ password: hashedPassword });
+
+    res.status(200).json({ message: "✅ 비밀번호 변경 완료!" });
+  } catch (error) {
+    console.error("❌ 비밀번호 변경 실패:", error);
+    res.status(500).json({ message: "❌ 비밀번호 변경 중 오류 발생" });
+  }
+});
+
 console.log("✅ authRoutes.js 로드 완료");
 
 module.exports = router;
