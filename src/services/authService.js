@@ -11,29 +11,17 @@ import { auth } from "../config/firebase";
 import jwt_decode from "jwt-decode";
 
 // ✅ 로그인 후 토큰, userId, email, password 저장
-export const saveUserData = async (token, userId, email) => {
+export const saveUserData = async (token, userId, email, password) => {
   try {
     console.log("🔹 [saveUserData] 저장할 데이터 → 토큰:", token, "| userId:", userId, "| email:", email);
-    
-    if (!token || !userId || !email) {
-      console.warn("⚠️ 일부 필드가 누락됨. 저장 시도 중단:", { token, userId, email });
-      throw new Error("All fields (token, userId, email) must be provided and non-null");
-    }
+    await SecureStore.setItemAsync("token", token);
+    await SecureStore.setItemAsync("userId", userId);
+    await SecureStore.setItemAsync("userEmail", email);
+    await SecureStore.setItemAsync("userPassword", password);
 
-    await SecureStore.setItemAsync("token", String(token));
-    await SecureStore.setItemAsync("userId", String(userId));
-    await SecureStore.setItemAsync("userEmail", String(email));
-
-    const storedToken = await SecureStore.getItemAsync("token");
-    const storedUserId = await SecureStore.getItemAsync("userId");
-    const storedEmail = await SecureStore.getItemAsync("userEmail");
-
-    console.log("✅ 저장된 토큰 확인:", storedToken);
-    console.log("✅ 저장된 userId 확인:", storedUserId);
-    console.log("✅ 저장된 email 확인:", storedEmail);
+    console.log("✅ SecureStore 저장 완료");
   } catch (error) {
     console.error("❌ 사용자 데이터 저장 오류:", error);
-    throw error;
   }
 };
 
@@ -56,13 +44,10 @@ export const loginWithBackend = async (email, password) => {
     const decodedToken = jwt_decode(result.token);
     const uid = decodedToken.userId;
 
+    // ✅ Firebase 세션도 로그인
     await signInWithEmailAndPassword(auth, email, password);
 
-    console.log("🔍 [loginWithBackend] 저장 직전 email 값:", email);
-    if (!email) {
-      throw new Error("email 값이 정의되지 않았습니다!");
-    }
-    await saveUserData(result.token, uid, email);
+    await saveUserData(result.token, uid, email, password);
 
     return result;
   } catch (error) {
