@@ -111,51 +111,37 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
 // 🔥 로그인 API 수정 (Firebase Custom Token 사용)
 router.post('/login', async (req, res) => {
   try {
-    console.log("🔥 [로그인 요청 데이터]:", req.body);
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: "⚠️ 이메일과 비밀번호를 입력하세요." });
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "⚠️ 이�메일과 비밀번호를 입력하세요." });
-    }
+    const userQuery = await db.collection('users').where('email', '==', email).get();
+    if (userQuery.empty) return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
 
-    // Firebase Authentication으로 사용자 확인
-    const userRecord = await admin.auth().getUserByEmail(email);
-    const userId = userRecord.uid;
-
-    // 비밀번호 확인 (Firebase Authentication에서 관리)
-    // 여기서는 Firebase가 비밀번호를 검증하므로 별도 비교 생략 가능
-    // 단, 클라이언트에서 이미 비밀번호를 보냈다면 서버에서 추가 검증 필요 시 아래 주석 해제
-    /*
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-    const userId = userData.userId; // UID 사용
-
+    const userData = userQuery.docs[0].data();
     const isMatch = await bcrypt.compare(password, userData.password);
-    if (!isMatch) {
-      console.warn("❌ 비밀번호 불일치: email =", email);
-      return res.status(400).json({ message: "⚠️ 이�메일 또는 비밀번호가 잘못되었습니다." });
-    }
+    if (!isMatch) return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
 
     const token = jwt.sign(
-      { userId, email: userData.email, role: userData.role },
+      { userId: userData.userId, email: userData.email, role: userData.role },
       SECRET_KEY,
       { expiresIn: '7d' }
     );
 
-    console.log("✅ 로그인 성공! userId:", userId);
+    const firebaseToken = await admin.auth().createCustomToken(userData.userId);
+
+    console.log("✅ 로그인 성공! userId:", userData.userId);
     res.status(200).json({
       message: "✅ 로그인 성공!",
-      user: { userId, email: userData.email, name: userData.name, role: userData.role },
-      token,
+      user: { userId: userData.userId, email: userData.email, name: userData.name, role: userData.role },
+      token,                 
+      firebaseToken         
     });
   } catch (error) {
     console.error("❌ 로그인 오류:", error);
-    if (error.code === 'auth/user-not-found') {
-      return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
-    }
     res.status(500).json({ message: "❌ 서버 오류" });
   }
 });
+
 
 router.get('/me', verifyToken, async (req, res) => {
   try {
@@ -277,7 +263,7 @@ router.post("/validate-token", (req, res) => {
   });
 });
 
-<<<<<<< HEAD
+
 router.get("/me", verifyToken, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -337,9 +323,6 @@ router.post('/change-password', verifyToken, async (req, res) => {
   }
 });
 
-
-=======
->>>>>>> 590074db38f0058a7a98f5eb32f76e0bed2fa9e3
 console.log("✅ authRoutes.js 로드 완료");
 
 module.exports = router;
