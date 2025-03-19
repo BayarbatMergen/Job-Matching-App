@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { testAsyncStorage } from './src/services/authService';  // ✅ 가져오기
+import MainScreen from './src/screens/MainScreen'; // ✅ MainScreen 추가
 
 // ✅ 기본 인증 화면
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 
 // ✅ 사용자 및 관리자 네비게이션
-import BottomTabNavigator from './src/navigation/BottomTabNavigator';
+//import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import AdminBottomTabNavigator from './src/navigation/AdminBottomTabNavigator';
 
 // ✅ 관리자 기능
@@ -48,7 +49,8 @@ export default function App() {
         <Stack.Screen name="Register" component={RegisterScreen} />
 
         {/* 사용자 & 관리자 메인 */}
-        <Stack.Screen name="Main" component={BottomTabNavigator} />
+        <Stack.Screen name="Main" component={MainScreen} />
+        
         <Stack.Screen name="AdminMain" component={AdminBottomTabNavigator} />
 
         {/* 관리자 기능 */}

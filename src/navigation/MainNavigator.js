@@ -1,39 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import AdminBottomTabNavigator from './AdminBottomTabNavigator';
 import BottomTabNavigator from './BottomTabNavigator';
-import AuthNavigator from './AuthNavigator';
-import SplashScreen from '../screens/SplashScreen';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+
+const Stack = createNativeStackNavigator();
 
 const MainNavigator = () => {
-  const [userData, setUserData] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const data = await AsyncStorage.getItem('userData');
-      if (data) {
-        setUserData(JSON.parse(data));
+    const checkRole = async () => {
+      try {
+        const storedRole = await SecureStore.getItemAsync('userRole');
+        console.log('✅ MainNavigator에서 불러온 userRole:', storedRole);
+        setUserRole(storedRole);
+      } catch (error) {
+        console.error('❌ SecureStore 가져오기 오류:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchUserData();
+    checkRole();
   }, []);
 
   if (loading) {
-    return <SplashScreen />;
+    return null; // splash 제거 후 null 처리
   }
 
-  if (!userData) {
-    return <AuthNavigator />;
-  }
-
-  if (userData?.role === 'admin') {
+  if (userRole === 'admin') {
     return <AdminBottomTabNavigator />;
-  } else {
+  } else if (userRole === 'user') {
     return <BottomTabNavigator />;
+  } else {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+      </Stack.Navigator>
+    );
   }
 };
 
