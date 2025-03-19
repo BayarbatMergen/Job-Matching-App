@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db, auth } = require('../config/firebase'); // ✅ 올바른 경로로 변경
 const bcrypt = require('bcrypt');
+const { verifyToken } = require('../middlewares/authMiddleware');
 
 // ✅ 관리자 로그인 API
 router.post('/login', async (req, res) => {
@@ -91,5 +92,58 @@ router.get('/notifications', async (req, res) => {
   }
 });
 
+// ✅ 모든 사용자(글로벌) 알림 생성 API
+router.post('/global-notifications', verifyToken, async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ message: '알림 메시지를 입력해주세요.' });
+    }
+
+    const newNotification = {
+      message,
+      createdAt: new Date(),
+    };
+
+    const docRef = await db.collection('globalNotifications').add(newNotification);
+
+    res.status(201).json({
+      message: '✅ 글로벌 알림이 추가되었습니다!',
+      docId: docRef.id,
+      data: newNotification,
+    });
+  } catch (error) {
+    console.error('❌ 글로벌 알림 추가 오류:', error);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
+// ✅ 특정 사용자에게 알림 전송 API
+router.post('/user-notifications', verifyToken, async (req, res) => {
+  try {
+    const { userId, message } = req.body;
+
+    if (!userId || !message) {
+      return res.status(400).json({ message: 'userId와 message를 입력해주세요.' });
+    }
+
+    const newNotification = {
+      message,
+      createdAt: new Date(),
+      read: false,
+    };
+
+    await db.collection('notifications').doc(userId).collection('userNotifications').add(newNotification);
+
+    res.status(201).json({
+      message: `✅ ${userId} 에게 알림이 전송되었습니다.`,
+      data: newNotification,
+    });
+  } catch (error) {
+    console.error('❌ 사용자 알림 전송 오류:', error);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
 
 module.exports = router;
