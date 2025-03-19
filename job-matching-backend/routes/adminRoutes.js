@@ -1,33 +1,46 @@
 const express = require('express');
 const router = express.Router();
-const { db, auth } = require('../config/firebase'); // ✅ 올바른 경로로 변경
+const { db } = require('../config/firebase');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { verifyToken } = require('../middlewares/authMiddleware');
+const adminOnlyMiddleware = require('../middlewares/adminOnlyMiddleware');
 
-// ✅ 관리자 로그인 API
+// ✅ 관리자 로그인 API (users 컬렉션 사용)
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const adminRef = db.collection('admins').doc(email);
-    const adminSnap = await adminRef.get();
+    const userQuery = await db.collection('users').where('email', '==', email).where('role', '==', 'admin').get();
 
-    if (!adminSnap.exists) {
-      return res.status(400).json({ message: '관리자 계정이 없습니다.' });
+    if (userQuery.empty) {
+      return res.status(400).json({ message: '관리자 계정을 찾을 수 없습니다.' });
     }
 
-    const adminData = adminSnap.data();
+    const adminData = userQuery.docs[0].data();
     const isMatch = await bcrypt.compare(password, adminData.password);
 
     if (!isMatch) {
       return res.status(400).json({ message: '비밀번호가 잘못되었습니다.' });
     }
 
-    res.status(200).json({ message: '로그인 성공!', admin: { email: adminData.email, name: adminData.name } });
+    const token = jwt.sign(
+      { userId: adminData.userId, email: adminData.email, role: adminData.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(200).json({
+      message: '✅ 관리자 로그인 성공!',
+      admin: { email: adminData.email, name: adminData.name },
+      token
+    });
   } catch (error) {
+    console.error("❌ 관리자 로그인 오류:", error);
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
+
 
 // ✅ 모든 구직자 조회 API
 router.get('/jobseekers', async (req, res) => {

@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
 
-// ✅ 로그인 함수 추가
+// ✅ 로그인 함수 개선
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -10,7 +10,12 @@ const login = async (req, res) => {
     }
 
     // Firestore에서 사용자 찾기
-    const userQuery = await admin.firestore().collection("users").where("email", "==", email).get();
+    const userQuery = await admin
+      .firestore()
+      .collection("users")
+      .where("email", "==", email)
+      .get();
+
     if (userQuery.empty) {
       return res.status(401).json({ message: "사용자를 찾을 수 없습니다." });
     }
@@ -24,9 +29,13 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "비밀번호가 일치하지 않습니다." });
     }
 
-    // ✅ JWT 토큰 생성
+    // ✅ JWT 토큰 생성 - role과 함께 전달
     const token = jwt.sign(
-      { userId: userId, email: user.email, role: user.role || "user" },
+      {
+        userId: userId,
+        email: user.email,
+        role: user.role === "admin" ? "admin" : "user",
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -36,13 +45,13 @@ const login = async (req, res) => {
 
     res.json({
       message: "✅ 로그인 성공!",
-      token, // 기존 JWT 토큰
-      firebaseToken: firebaseCustomToken, // ✅ Firebase Custom Token 추가
+      token, // JWT 토큰
+      firebaseToken: firebaseCustomToken, // Firebase Custom Token
       user: {
         userId,
         email: user.email,
         name: user.name,
-        role: user.role || "user",
+        role: user.role === "admin" ? "admin" : "user",
       },
     });
   } catch (error) {
@@ -51,7 +60,6 @@ const login = async (req, res) => {
   }
 };
 
-// ✅ 기존 함수들 유지
 const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -108,7 +116,7 @@ const validateToken = async (req, res) => {
     return res.json({
       valid: true,
       userId: decoded.userId,
-      role: decoded.role || "user",
+      role: decoded.role === "admin" ? "admin" : "user",
     });
   } catch (error) {
     console.error("❌ [validateToken] 오류 발생:", error);
@@ -116,5 +124,4 @@ const validateToken = async (req, res) => {
   }
 };
 
-// ✅ 내보내기
 module.exports = { login, getUserProfile, validateToken, changePassword };
