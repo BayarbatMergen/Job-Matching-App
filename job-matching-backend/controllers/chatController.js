@@ -1,4 +1,5 @@
 const { db } = require("../config/firebase");
+const admin = require('firebase-admin');
 
 // ✅ 특정 채팅방의 모든 메시지 가져오기
 const getChatMessages = async (req, res) => {
@@ -16,11 +17,6 @@ const getChatMessages = async (req, res) => {
       .collection("messages")
       .orderBy("createdAt", "asc")
       .get();
-
-    if (messagesSnapshot.empty) {
-      console.warn("⚠️ 해당 채팅방에 메시지가 없습니다.");
-      return res.status(200).json([]);
-    }
 
     const messages = messagesSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -43,19 +39,23 @@ const addMessageToChat = async (req, res) => {
     const senderId = req.user.userId;
 
     if (!roomId || !text) {
-      return res.status(400).json({ message: "⚠️ chatRoomId와 text가 필요합니다." });
+      return res.status(400).json({ message: "⚠️ roomId와 text가 필요합니다." });
     }
 
     const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
+    const createdAt = admin.firestore.Timestamp.now(); // ✅ Firebase Timestamp 사용
     const newMessage = {
       text,
       senderId,
-      createdAt: new Date(),
+      createdAt,
     };
 
     await messageRef.set(newMessage);
 
-    res.status(200).json({ message: "✅ 메시지 추가 성공!", data: newMessage });
+    res.status(200).json({
+      message: "✅ 메시지 추가 성공!",
+      data: { id: messageRef.id, ...newMessage },
+    });
   } catch (error) {
     console.error("❌ 메시지 추가 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
@@ -68,10 +68,6 @@ const getChatRooms = async (req, res) => {
     console.log("📡 채팅방 목록 요청 받음...");
 
     const chatRoomsSnapshot = await db.collection("chats").get();
-    if (chatRoomsSnapshot.empty) {
-      return res.status(200).json({ message: "채팅방이 없습니다." });
-    }
-
     const chatRooms = chatRoomsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -85,5 +81,46 @@ const getChatRooms = async (req, res) => {
   }
 };
 
-// ✅ `module.exports` 설정
-module.exports = { addMessageToChat, getChatMessages, getChatRooms };
+// ✅ 관리자 채팅방 생성 또는 반환
+const createOrGetAdminChatRoom = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    const adminUid = process.env.ADMIN_UID;
+
+    if (!adminUid) {
+      return res.status(500).json({ message: "❌ ADMIN_UID 환경 변수가 설정되지 않았습니다." });
+    }
+
+    // 이미 존재하는지 확인
+    const existingRoomSnapshot = await db.collection("chats")
+      .where("type", "==", "admin")
+      .where("participants", "array-contains", userId)
+      .get();
+
+    if (!existingRoomSnapshot.empty) {
+      const existingRoom = existingRoomSnapshot.docs[0];
+      return res.status(200).json({ roomId: existingRoom.id, name: '관리자 상담' });
+    }
+
+    // 신규 생성
+    const newRoom = {
+      name: '관리자 상담',
+      participants: [userId, adminUid],
+      createdAt: admin.firestore.Timestamp.now(),
+      type: 'admin',
+    };
+
+    const roomRef = await db.collection("chats").add(newRoom);
+    return res.status(201).json({ roomId: roomRef.id, name: '관리자 상담' });
+  } catch (error) {
+    console.error("❌ 관리자 채팅방 생성 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+};
+
+module.exports = {
+  addMessageToChat,
+  getChatMessages,
+  getChatRooms,
+  createOrGetAdminChatRoom,
+};

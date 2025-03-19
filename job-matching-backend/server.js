@@ -4,6 +4,7 @@ const cors = require("cors");
 const nodemailer = require("nodemailer");
 const bodyParser = require("body-parser");
 const admin = require("firebase-admin");
+const ADMIN_UID = process.env.ADMIN_UID;
 
 
 
@@ -37,6 +38,7 @@ if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
 console.log("✅ SMTP 설정 확인");
 console.log("✅ SMTP_USER:", process.env.SMTP_USER);
 console.log("✅ ADMIN_EMAIL:", process.env.ADMIN_EMAIL || "❌ 없음");
+console.log("✅ ADMIN_UID:", process.env.ADMIN_UID || "❌ 없음");
 
 // ✅ Nodemailer SMTP 설정
 const transporter = nodemailer.createTransport({

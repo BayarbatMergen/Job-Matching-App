@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
@@ -8,31 +17,35 @@ export default function ChatScreen({ route }) {
   const { roomId, roomName } = route.params;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [messageText, setMessageText] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
+  const flatListRef = useRef();
 
   useEffect(() => {
+    const loadUserId = async () => {
+      const userId = await SecureStore.getItemAsync("userId");
+      setCurrentUserId(userId);
+    };
+
+    loadUserId();
+
     const fetchMessages = async () => {
       try {
-        console.log(`📡 채팅 메시지 요청 중... (채팅방: ${roomId})`);
         const token = await SecureStore.getItemAsync("token");
-        if (!token) {
-          console.warn("🚨 인증 토큰이 없습니다.");
-          return;
-        }
+        if (!token) return;
 
-        const response = await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
-        }
+        const response = await fetch(
+          `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         const data = await response.json();
-        console.log("✅ 채팅 메시지 불러오기 성공:", data);
         setMessages(data);
       } catch (error) {
         console.error("❌ 채팅 메시지 가져오기 실패:", error);
@@ -43,6 +56,39 @@ export default function ChatScreen({ route }) {
 
     fetchMessages();
   }, [roomId]);
+
+  useEffect(() => {
+    if (flatListRef.current && messages.length > 0) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (messageText.trim() === "") return;
+
+    try {
+      const token = await SecureStore.getItemAsync("token");
+      const response = await fetch(
+        `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: messageText }),
+        }
+      );
+
+      if (response.ok) {
+        setMessageText("");
+        const newMessage = await response.json();
+        setMessages((prev) => [...prev, newMessage.data]);
+      }
+    } catch (error) {
+      console.error("❌ 메시지 전송 실패:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -55,27 +101,42 @@ export default function ChatScreen({ route }) {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <FlatList
+        ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.messageBubble}>
+          <View
+            style={[
+              styles.messageBubble,
+              item.senderId === currentUserId
+                ? styles.myMessageBubble
+                : styles.otherMessageBubble,
+            ]}
+          >
             <Text style={styles.messageText}>{item.text}</Text>
-            <Text style={styles.timestamp}>{new Date(item.createdAt._seconds * 1000).toLocaleTimeString()}</Text>
+            <Text style={styles.timestamp}>
+              {item.createdAt && item.createdAt._seconds
+                ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
+                : ""}
+            </Text>
           </View>
         )}
         contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* 🔻 하단 채팅 입력 바 (입력 비활성화) */}
       <View style={styles.chatInputContainer}>
-        <TextInput 
-          style={styles.chatInput} 
-          placeholder="관리자만 메시지를 보낼 수 있습니다." 
-          editable={false} // ✅ 입력 비활성화
+        <TextInput
+          style={styles.chatInput}
+          placeholder="메시지를 입력하세요..."
+          value={messageText}
+          onChangeText={setMessageText}
         />
-        <TouchableOpacity style={styles.disabledSendButton} disabled>
-          <Ionicons name="send" size={24} color="#999" />
+        <TouchableOpacity
+          onPress={sendMessage}
+          style={styles.sendButton}
+        >
+          <Ionicons name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -83,46 +144,49 @@ export default function ChatScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: '#fff' },
-
-  // 📜 메시지 스타일
+  safeContainer: { flex: 1, backgroundColor: "#fff" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   messageBubble: {
     padding: 12,
-    backgroundColor: '#E3F2FD',
     borderRadius: 10,
     marginVertical: 5,
-    maxWidth: '85%', // 메시지 박스 크기 조정
-    alignSelf: 'flex-start', // 왼쪽 정렬
-    marginLeft: 15, // ✅ 왼쪽 여백 추가
+    maxWidth: "85%",
   },
-  messageText: { fontSize: 16, color: '#333' },
-  timestamp: { fontSize: 12, color: '#777', marginTop: 5, textAlign: 'right' },
-
-  // 🔻 하단 채팅 입력 바
+  myMessageBubble: {
+    alignSelf: "flex-end",
+    backgroundColor: "#A3D8FF", // 내 메시지는 더 선명한 하늘색
+    marginRight: 15,
+  },
+  otherMessageBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: "#F1F0F0", // 상대 메시지는 연회색
+    marginLeft: 15,
+  },
+  messageText: { fontSize: 16, color: "#333" },
+  timestamp: { fontSize: 12, color: "#777", marginTop: 5, textAlign: "right" },
   chatInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: '#ddd',
+    borderTopColor: "#ddd",
     paddingVertical: 10,
     paddingHorizontal: 15,
-    backgroundColor: '#fff',
-    position: 'absolute',
+    backgroundColor: "#fff",
+    position: "absolute",
     bottom: 0,
-    width: '100%',
+    width: "100%",
   },
   chatInput: {
     flex: 1,
     height: 40,
-    backgroundColor: '#F1F1F1',
+    backgroundColor: "#F1F1F1",
     borderRadius: 20,
     paddingHorizontal: 15,
-    color: '#999', // 비활성화된 상태
   },
-  disabledSendButton: {
+  sendButton: {
     marginLeft: 10,
     padding: 10,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#007AFF",
     borderRadius: 20,
   },
 });

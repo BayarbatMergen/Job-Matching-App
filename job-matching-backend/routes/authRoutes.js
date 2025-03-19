@@ -231,7 +231,7 @@ router.put('/change-password', verifyToken, async (req, res) => {
   }
 });
 
-// 🔥 채팅 메시지 추가 API (서버를 통해 Firestore에 추가)
+/* 🔥 채팅 메시지 추가 API (서버를 통해 Firestore에 추가)
 router.post("/add-message", verifyToken, async (req, res) => {
   try {
     const { chatRoomId, text } = req.body;
@@ -251,6 +251,7 @@ router.post("/add-message", verifyToken, async (req, res) => {
     res.status(500).json({ message: "❌ 서버 오류" });
   }
 });
+*/
 
 // ✅ 토큰 검증 API
 router.post("/validate-token", (req, res) => {

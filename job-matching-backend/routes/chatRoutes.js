@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { addMessageToChat, getChatMessages, getChatRooms } = require("../controllers/chatController");
+const { addMessageToChat, getChatMessages, getChatRooms, createOrGetAdminChatRoom } = require("../controllers/chatController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 
 console.log("📌 addMessageToChat 존재 여부:", typeof addMessageToChat);
@@ -15,6 +15,8 @@ router.get("/rooms/:roomId/messages", verifyToken, getChatMessages);
 
 // ✅ 특정 채팅방에 메시지 추가
 router.post("/rooms/:roomId/messages", verifyToken, addMessageToChat);
+// 관리자 채팅방 생성 또는 가져오기
+router.post("/admin-room", verifyToken, createOrGetAdminChatRoom);
 
 console.log("✅ chatRoutes.js 로드 완료");
 
