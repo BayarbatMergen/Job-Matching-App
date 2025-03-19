@@ -30,7 +30,7 @@ const MainNavigator = () => {
     return <AuthNavigator />;
   }
 
-  if (userData.role === 'admin') {
+  if (userData?.role === 'admin') {
     return <AdminBottomTabNavigator />;
   } else {
     return <BottomTabNavigator />;

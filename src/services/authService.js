@@ -12,24 +12,24 @@ import { auth } from "../config/firebase";
 import jwt_decode from "jwt-decode";
 
 // ✅ 로그인 후 토큰, userId, email, password 저장
-export const saveUserData = async (token, userId, email, password) => {
+// ✅ 로그인 후 데이터 저장 함수
+export const saveUserData = async (token, userId, email, password, role) => {
   try {
-    console.log("🔹 [saveUserData] 저장할 데이터 → 토큰:", token, "| userId:", userId, "| email:", email, "| password:", password);
+    console.log("🛠 saveUserData() 호출됨! 넘겨받은 role 파라미터:", role);
+
     await SecureStore.setItemAsync("token", token);
     await SecureStore.setItemAsync("userId", userId);
-    await SecureStore.setItemAsync("userEmail", email);  // ✅ email도 저장
+    await SecureStore.setItemAsync("userEmail", email);
     await SecureStore.setItemAsync("userPassword", password);
+    await SecureStore.setItemAsync("userRole", String(role));
 
-    const storedToken = await SecureStore.getItemAsync("token");
-    const storedUserId = await SecureStore.getItemAsync("userId");
-    const storedEmail = await SecureStore.getItemAsync("userEmail");
-
-    console.log("✅ SecureStore 저장 완료");
+    // 저장된 값 확인
+    const storedRole = await SecureStore.getItemAsync("userRole");
+    console.log("✅ SecureStore 에 저장된 userRole:", storedRole);
   } catch (error) {
-    console.error("❌ 저장 오류:", error);
+    console.error("❌ saveUserData 저장 오류:", error);
   }
 };
-
 
 // ✅ 백엔드 로그인 및 Firebase 세션 동기화
 export const loginWithBackend = async (email, password) => {
@@ -45,22 +45,47 @@ export const loginWithBackend = async (email, password) => {
     if (!response.ok) throw new Error("백엔드 로그인 실패");
 
     const result = await response.json();
-    console.log("✅ 백엔드 로그인 응답:", result);
+    console.log("✅ 백엔드 응답 전체:", JSON.stringify(result, null, 2));
+    console.log("✅ result.user.role 값:", result.user?.role);
 
-    const decodedToken = jwt_decode(result.token);
-    const uid = decodedToken.userId;
-    const userEmail = result.user?.email || email;
-
-    // ✅ 🔥 Firebase Custom Token 로그인 시도
+    // Firebase 커스텀 토큰으로 로그인
     await signInWithCustomToken(auth, result.firebaseToken);
+    console.log("🔥 result.user.role BEFORE SAVE:", result.user.role);
 
-    // ✅ SecureStore에 저장
-    await saveUserData(result.token, uid, userEmail, password);
+    // ✅ 저장 호출 (role 반드시 result.user.role로!)
+    await saveUserData(
+      result.token,
+      result.user.userId,
+      result.user.email,
+      password,
+      result.user.role
+    );
 
     return result;
   } catch (error) {
-    console.error("❌ 로그인 오류:", error.message);
+    console.error("❌ loginWithBackend 오류:", error.message);
     throw error;
+  }
+};
+
+export const fetchUserData = async () => {
+  try {
+    console.log("🚀 [fetchUserData] 실행 중...");
+    const token = await SecureStore.getItemAsync("token");
+    const userId = await SecureStore.getItemAsync("userId");
+    const email = await SecureStore.getItemAsync("userEmail");
+    const role = await SecureStore.getItemAsync("userRole");
+
+    if (!userId || !role) {
+      console.warn("⚠️ 저장된 userId 또는 role 없음, 로그인 필요");
+      return null;
+    }
+
+    console.log("✅ 가져온 사용자 데이터:", { token, userId, email, role });
+    return { token, userId, email, role };
+  } catch (error) {
+    console.error("❌ fetchUserData 오류:", error);
+    return null;
   }
 };
 
@@ -116,6 +141,7 @@ export const logout = async () => {
     await SecureStore.deleteItemAsync("userId");
     await SecureStore.deleteItemAsync("userEmail");
     await SecureStore.deleteItemAsync("userPassword");
+    await SecureStore.deleteItemAsync("userRole");
     console.log("✅ 로그아웃 및 SecureStore 초기화 완료");
   } catch (error) {
     console.error("❌ 로그아웃 오류:", error.message);
@@ -150,21 +176,6 @@ export const firebaseAutoLogin = async () => {
 };
 */
 
-// ✅ 로그인된 사용자 userId 가져오기
-export const fetchUserData = async () => {
-  try {
-    console.log("🚀 [fetchUserData] 실행 중...");
-    const userId = await SecureStore.getItemAsync("userId");
-    if (!userId) {
-      console.warn("⚠️ userId 저장 없음, 로그인 필요");
-      return null;
-    }
-    return userId;
-  } catch (error) {
-    console.error("❌ fetchUserData 오류:", error);
-    return null;
-  }
-};
 
 // ✅ 디버깅용 SecureStore 값 확인
 export const testAsyncStorage = async () => {

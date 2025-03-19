@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
 
-// ✅ 로그인 함수 개선
+// ✅ 로그인 함수 (최종 수정)
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -24,34 +24,35 @@ const login = async (req, res) => {
     const user = userDoc.data();
     const userId = userDoc.id;
 
-    // 비밀번호 검증 (단순 비교 — 실서비스에선 암호화 확인 필요)
+    // 비밀번호 검증 (실제 서비스에서는 반드시 해시 비교 필요)
     if (user.password !== password) {
       return res.status(401).json({ message: "비밀번호가 일치하지 않습니다." });
     }
 
-    // ✅ JWT 토큰 생성 - role과 함께 전달
+    // JWT 토큰 생성 (role 포함)
     const token = jwt.sign(
       {
-        userId: userId,
+        userId,
         email: user.email,
-        role: user.role === "admin" ? "admin" : "user",
+        role: user.role?.toLowerCase() === "admin" ? "admin" : "user",
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // ✅ Firebase Custom Token 생성
-    const firebaseCustomToken = await admin.auth().createCustomToken(userId);
+    // Firebase Custom Token 생성
+    const customToken = await admin.auth().createCustomToken(userId);
 
+    // ✅ 최종 응답
     res.json({
       message: "✅ 로그인 성공!",
-      token, // JWT 토큰
-      firebaseToken: firebaseCustomToken, // Firebase Custom Token
+      token,
+      firebaseToken: customToken,   // 🔥 여기서 customToken 사용!
       user: {
         userId,
         email: user.email,
         name: user.name,
-        role: user.role === "admin" ? "admin" : "user",
+        role: user.role?.toLowerCase() === "admin" ? "admin" : "user",
       },
     });
   } catch (error) {
