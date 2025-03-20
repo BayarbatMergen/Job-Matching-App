@@ -159,4 +159,34 @@ router.post('/user-notifications', verifyToken, async (req, res) => {
   }
 });
 
+router.post('/approve/:applicationId', async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+    const applicationRef = db.collection('applications').doc(applicationId);
+    const applicationDoc = await applicationRef.get();
+
+    if (!applicationDoc.exists) {
+      return res.status(404).json({ message: '지원 내역을 찾을 수 없습니다.' });
+    }
+
+    const applicationData = applicationDoc.data();
+
+    // 지원 정보를 바탕으로 schedule에 추가
+    await db.collection('schedules').add({
+      userId: applicationData.userId,
+      date: applicationData.workDate, // application 제출 시 날짜 필드를 함께 받는 게 좋음!
+      name: applicationData.jobTitle,
+      wage: applicationData.wage,
+    });
+
+    // 승인 완료 시 상태 변경
+    await applicationRef.update({ status: 'approved' });
+
+    res.status(200).json({ message: '승인 및 스케줄 반영 완료' });
+  } catch (err) {
+    console.error('승인 처리 오류:', err);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
 module.exports = router;
