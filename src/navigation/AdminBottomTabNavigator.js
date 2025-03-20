@@ -9,9 +9,10 @@ import AdminJobListScreen from '../screens/AdminJobListScreen';
 import AdminJobDetailScreen from '../screens/AdminJobDetailScreen';
 import AdminJobFormScreen from '../screens/AdminJobFormScreen';
 import AdminScheduleScreen from '../screens/AdminScheduleScreen';
-import AdminChatListScreen from '../screens/AdminChatListScreen'; // ✅ 추가: 관리자용 채팅 목록 화면
+import AdminChatListScreen from '../screens/AdminChatListScreen';
 import AdminChatScreen from '../screens/AdminChatScreen';
 import AdminMyPageScreen from '../screens/AdminMyPageScreen';
+import ApprovalScreen from '../screens/ApprovalScreen'; // ✅ 경로에 맞게 import 추가
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -42,6 +43,8 @@ function AdminHomeStack() {
       />
       <Stack.Screen name="AdminJobDetail" component={AdminJobDetailScreen} options={{ headerTitle: '공고 상세' }} />
       <Stack.Screen name="AdminJobForm" component={AdminJobFormScreen} options={{ headerTitle: '공고 등록' }} />
+      <Stack.Screen name="ApprovalScreen" component={ApprovalScreen} options={{ headerTitle: '승인 대기 목록' }} />
+
     </Stack.Navigator>
   );
 }

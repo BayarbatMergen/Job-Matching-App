@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, Text, FlatList, TouchableOpacity, 
+import {
+  View, Text, FlatList, TouchableOpacity,
   StyleSheet, SafeAreaView, Alert, ActivityIndicator, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +24,7 @@ export default function AdminJobListScreen({ navigation }) {
         console.error("❌ 관리자 확인 오류:", error);
       }
     };
-  
+
     checkAdminStatus();
   }, []);
 
@@ -87,89 +87,104 @@ export default function AdminJobListScreen({ navigation }) {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <FlatList
-          data={jobListings}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.jobCard}>
-              <TouchableOpacity
-                style={styles.jobContent}
-                onPress={() =>
-                  navigation.navigate('AdminJobDetail', {
-                    job: item,
-                    updateJob: (updatedJob) => {
-                      setJobListings((prevJobs) =>
-                        prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
-                      );
-                    },
-                  })
-                }
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.date}>
-                  {item.startDate && item.endDate ? `${item.startDate} ~ ${item.endDate}` : '날짜 정보 없음'}
-                  </Text>
-                  <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.deleteButton} 
-                onPress={() => deleteJob(item.id)}
-                disabled={!isAdmin}
-              >
-                <Ionicons name="trash-outline" size={24} color={isAdmin ? "red" : "gray"} />
-              </TouchableOpacity>
-            </View>
-          )}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        />
-
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => navigation.navigate('AdminJobForm')}
-        >
-          <Ionicons name="add-circle-outline" size={28} color="white" />
-          <Text style={styles.addButtonText}> 공고 등록</Text>
-        </TouchableOpacity>
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>관리자 공고 목록</Text>
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.approvalButton}
+            onPress={() => navigation.navigate('ApprovalScreen')}
+          >
+            <Ionicons name="checkmark-done-outline" size={24} color="white" />
+            <Text style={styles.approvalButtonText}>승인 관리</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      <FlatList
+        data={jobListings}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.jobCard}>
+            <TouchableOpacity
+              style={styles.jobContent}
+              onPress={() =>
+                navigation.navigate('AdminJobDetail', {
+                  job: item,
+                  updateJob: (updatedJob) => {
+                    setJobListings((prevJobs) =>
+                      prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
+                    );
+                  },
+                })
+              }
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.date}>
+                  {item.startDate && item.endDate ? `${item.startDate} ~ ${item.endDate}` : '날짜 정보 없음'}
+                </Text>
+                <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => deleteJob(item.id)}
+              disabled={!isAdmin}
+            >
+              <Ionicons name="trash-outline" size={24} color={isAdmin ? "red" : "gray"} />
+            </TouchableOpacity>
+          </View>
+        )}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
+
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => navigation.navigate('AdminJobForm')}
+      >
+        <Ionicons name="add-circle-outline" size={28} color="white" />
+        <Text style={styles.addButtonText}> 공고 등록</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold' },
+  approvalButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  approvalButtonText: { color: 'white', marginLeft: 5, fontSize: 14, fontWeight: 'bold' },
   container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  jobCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#F8F8F8', 
-    padding: 15, 
-    marginBottom: 15, 
-    borderRadius: 10, 
-    borderWidth: 1, 
-    borderColor: '#ccc' 
+  jobCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F8F8',
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ccc'
   },
   jobContent: { flex: 1 },
   title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },
   date: { fontSize: 14, color: '#555', marginBottom: 5 },
   wage: { fontSize: 16, color: 'red', marginBottom: 5 },
   deleteButton: { padding: 8, borderRadius: 5, alignItems: 'center' },
-  addButton: { 
-    position: 'absolute', 
-    bottom: 20, 
-    alignSelf: 'center', 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#007AFF', 
-    paddingVertical: 12, 
-    paddingHorizontal: 20, 
-    borderRadius: 30 
+  addButton: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30
   },
   addButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
 });

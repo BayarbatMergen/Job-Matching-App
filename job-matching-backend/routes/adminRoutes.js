@@ -189,4 +189,24 @@ router.post('/approve/:applicationId', async (req, res) => {
   }
 });
 
+// ✅ 승인 대기 중인 지원 내역 가져오기
+router.get('/applications/pending', async (req, res) => {
+  try {
+    const pendingAppsSnapshot = await db.collection('applications')
+      .where('status', '==', 'pending')
+      .get();
+
+    const pendingApplications = pendingAppsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.status(200).json(pendingApplications);
+  } catch (err) {
+    console.error('❌ 승인 대기 지원 내역 가져오기 오류:', err);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
+
 module.exports = router;

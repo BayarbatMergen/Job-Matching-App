@@ -147,12 +147,23 @@ router.post('/apply', async (req, res) => {
 
     const jobData = jobSnap.data();
 
+    // ✅ userId 가져오기
+    const userQuery = await db.collection('users').where('email', '==', userEmail).get();
+    if (userQuery.empty) {
+      return res.status(404).json({ message: '❌ 해당 이메일을 가진 사용자를 찾을 수 없습니다.' });
+    }
+    const userId = userQuery.docs[0].data().userId;
+
     const applicationRef = db.collection('applications').doc();
     await applicationRef.set({
-      jobId,
+      userId,
       userEmail,
+      jobId,
+      jobTitle: jobData.title,
+      wage: jobData.wage,
+      workDate: jobData.startDate,  // ✅ startDate 또는 endDate 중 적절히 선택
       appliedAt: new Date(),
-      status: '지원 완료',
+      status: 'pending'
     });
 
     const mailOptions = {
@@ -168,7 +179,7 @@ router.post('/apply', async (req, res) => {
     res.status(200).json({ message: '✅ 지원 요청이 완료되었습니다.' });
   } catch (error) {
     console.error('❌ 지원 요청 오류:', error.message);
-    res.status(500).json({ message: '❌ 서버 오류 발생' });
+    res.status(500).json({ message: '❌ 서버 오류 발생', error: error.message });
   }
 });
 
