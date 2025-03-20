@@ -59,44 +59,52 @@ export default function ScheduleScreen({ navigation }) {
   const fetchSchedules = async (uid) => {
     try {
       const schedulesArray = await fetchUserSchedules(uid);
-      const marks = {};
+      const formattedSchedules = {};
       let totalWageSum = 0;
   
       schedulesArray.forEach((schedule) => {
-        if (schedule.startDate && schedule.endDate) {
-          const start = new Date(schedule.startDate);
-          const end = new Date(schedule.endDate);
-          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            const dateStr = d.toISOString().split('T')[0];
-            if (!marks[dateStr]) {
-              marks[dateStr] = {
-                customStyles: {
-                  container: { backgroundColor: '#4CAF50', borderRadius: 5 },
-                  text: { color: '#fff', fontWeight: 'bold' },
-                },
-              };
-            }
+        // 달력에 표시용 정리
+        for (let d = new Date(schedule.startDate); d <= new Date(schedule.endDate); d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          if (!formattedSchedules[dateStr]) {
+            formattedSchedules[dateStr] = [];
           }
-          totalWageSum += Number(schedule.wage) || 0;
+          formattedSchedules[dateStr].push(schedule);
         }
+  
+        // 총급여 계산 (일수 × 일당)
+        const start = new Date(schedule.startDate);
+        const end = new Date(schedule.endDate);
+        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        totalWageSum += (Number(schedule.wage) || 0) * diffDays;
       });
   
-      setScheduleData(schedulesArray);  // 그냥 배열 형태로 저장
+      setScheduleData(formattedSchedules);
       setAllTotalWage(totalWageSum);
-      setMarkedDates(marks);
   
+      const marks = {};
+      Object.keys(formattedSchedules).forEach(date => {
+        marks[date] = {
+          customStyles: {
+            container: { backgroundColor: '#4CAF50', borderRadius: 5 },
+            text: { color: '#fff', fontWeight: 'bold' },
+          },
+        };
+      });
+      setMarkedDates(marks);
     } catch (error) {
       console.error("❌ 일정 데이터 로딩 오류:", error);
     }
   };
+  
   
 
   const handleDayPress = (day) => {
     const selected = day.dateString;
     setSelectedDate(selected);
   
-    // 선택한 날짜가 startDate ~ endDate 범위에 포함되는 스케줄 필터링
-    const filteredSchedules = scheduleData.filter((schedule) => {
+    // 선택한 날짜가 포함된 일정들 가져오기
+    const filteredSchedules = Object.values(scheduleData).flat().filter((schedule) => {
       const start = new Date(schedule.startDate);
       const end = new Date(schedule.endDate);
       const checkDate = new Date(selected);
@@ -105,9 +113,11 @@ export default function ScheduleScreen({ navigation }) {
   
     setSelectedSchedules(filteredSchedules);
   
+    // 해당 날짜에 포함된 일정의 하루 급여 합산
     const total = filteredSchedules.reduce((sum, s) => sum + (Number(s.wage) || 0), 0);
     setTotalWage(total);
   };
+  
   
 
   const handleSettlementRequest = async () => {

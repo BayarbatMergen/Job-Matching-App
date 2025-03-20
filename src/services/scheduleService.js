@@ -22,7 +22,6 @@ export const fetchUserSchedules = async () => {
       return [];
     }
 
-    // ✅ API URL이 정상적으로 설정되었는지 확인
     const requestUrl = `${API_BASE_URL}/schedules/user/${userId}`;
     console.log(`📌 Firestore에서 일정 가져오는 중... 요청 URL: ${requestUrl}`);
 
@@ -33,6 +32,11 @@ export const fetchUserSchedules = async () => {
         Authorization: `Bearer ${token}`,
       },
     });
+
+    if (response.status === 404) {
+      console.warn("⚠️ 가져올 일정이 없습니다.");
+      return [];
+    }
 
     if (!response.ok) {
       throw new Error(`🔥 API 요청 실패: ${response.status}`);
