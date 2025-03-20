@@ -56,7 +56,11 @@ function AdminScheduleStack() {
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen name="AdminSchedule" component={AdminScheduleScreen} options={{ headerTitle: '일정 확인' }} />
+      <Stack.Screen 
+        name="AdminScheduleScreen" // ✅ 고유한 이름으로 변경
+        component={AdminScheduleScreen} 
+        options={{ headerTitle: '일정 확인' }} 
+      />
     </Stack.Navigator>
   );
 }

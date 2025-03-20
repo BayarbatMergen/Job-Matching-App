@@ -1,62 +1,54 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../config/firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
-import React, { useEffect, useState, useCallback } from 'react';
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      const userId = await SecureStore.getItemAsync('userId');
-      if (!userId) return;
+  const fetchNotifications = async () => {
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!userId) return;
 
+    try {
       // 개인 알림 가져오기
       const personalQuery = query(
         collection(db, 'notifications', userId, 'userNotifications'),
         orderBy('createdAt', 'desc')
       );
-      const unsubscribePersonal = onSnapshot(personalQuery, (snapshot) => {
-        const personalNotifs = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          source: 'personal',
-        }));
-        mergeNotifications(personalNotifs);
-      });
+      const personalSnapshot = await getDocs(personalQuery);
+      const personalNotifs = personalSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'personal',
+      }));
 
       // 글로벌 알림 가져오기
       const globalQuery = query(
         collection(db, 'globalNotifications'),
         orderBy('createdAt', 'desc')
       );
-      const unsubscribeGlobal = onSnapshot(globalQuery, (snapshot) => {
-        const globalNotifs = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          source: 'global',
-        }));
-        mergeNotifications(globalNotifs, true);
-      });
+      const globalSnapshot = await getDocs(globalQuery);
+      const globalNotifs = globalSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        source: 'global',
+      }));
 
-      return () => {
-        unsubscribePersonal();
-        unsubscribeGlobal();
-      };
-    };
+      // 병합 및 정렬
+      const combined = [...personalNotifs, ...globalNotifs].sort(
+        (a, b) => b.createdAt.seconds - a.createdAt.seconds
+      );
+      setNotifications(combined);
+    } catch (error) {
+      console.error('알림 가져오기 오류:', error);
+    }
+  };
 
-    const mergeNotifications = (newData, isGlobal = false) => {
-      setNotifications((prev) => {
-        const filtered = prev.filter((item) => item.source !== (isGlobal ? 'global' : 'personal'));
-        const combined = [...newData, ...filtered];
-        return combined.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-      });
-    };
-
+  useEffect(() => {
     fetchNotifications();
   }, []);
 
@@ -64,16 +56,14 @@ export default function NotificationScreen() {
     setRefreshing(true);
     await fetchNotifications();
     setRefreshing(false);
-  }, [fetchNotifications]);
+  }, []);
 
   const markAsRead = async (id) => {
     const userId = await SecureStore.getItemAsync('userId');
     if (!userId) return;
     await updateDoc(doc(db, 'notifications', userId, 'userNotifications', id), { read: true });
     setNotifications((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, read: true } : item
-      )
+      prev.map((item) => (item.id === id ? { ...item, read: true } : item))
     );
   };
 
@@ -91,12 +81,14 @@ export default function NotificationScreen() {
       }}
     >
       <Ionicons
-        name={item.source === 'personal' && !item.read ? 'notifications' : 'checkmark-done-outline'}
+        name={
+          item.source === 'personal' && !item.read
+            ? 'notifications'
+            : 'checkmark-done-outline'
+        }
         size={24}
         color={
-          item.source === 'personal' && !item.read
-            ? '#007AFF' // 파란색
-            : '#666' // 읽음 or 글로벌은 회색
+          item.source === 'personal' && !item.read ? '#007AFF' : '#666'
         }
         style={styles.icon}
       />
@@ -129,6 +121,9 @@ export default function NotificationScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          alwaysBounceVertical={true}
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
         />
       ) : (
         <View style={styles.emptyContainer}>
@@ -154,12 +149,12 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 1,
   },
-  personalUnreadCard: { backgroundColor: '#EAF5FF' }, // 연파란색 배경
-  personalReadCard: { backgroundColor: '#B3D9FF' }, // 읽음 시 하얀색
+  personalUnreadCard: { backgroundColor: '#EAF5FF' },
+  personalReadCard: { backgroundColor: '#B3D9FF' },
   icon: { marginRight: 12 },
   textContainer: { flex: 1 },
   message: { fontSize: 16 },
-  personalUnreadText: { fontWeight: 'bold', color: '#007AFF' }, // 파란색 글자
+  personalUnreadText: { fontWeight: 'bold', color: '#007AFF' },
   personalReadText: { color: '#000000' },
   time: { fontSize: 12, color: '#000000', marginTop: 5 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },

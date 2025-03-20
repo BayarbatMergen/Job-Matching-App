@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback} from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl} from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import * as SecureStore from 'expo-secure-store';
 import { fetchUserData } from '../services/authService';
-import { fetchUserSchedules } from "../services/scheduleService"; // ✅ 불러오기
+import { fetchUserSchedules } from "../services/scheduleService";
 import API_BASE_URL from "../config/apiConfig";
 
 // 📆 한국어 캘린더 설정
@@ -26,7 +26,8 @@ export default function ScheduleScreen({ navigation }) {
   const [userId, setUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ 사용자 데이터 초기화
+  const [refreshing, setRefreshing] = useState(false); // ✅ 새로고침 상태 추가
+
   useEffect(() => {
     const initializeUser = async () => {
       try {
@@ -165,7 +166,6 @@ export default function ScheduleScreen({ navigation }) {
   
       if (response.ok) {
         Alert.alert("정산 요청 완료", `총 급여 ${totalWage.toLocaleString()}원 정산 요청을 보냈습니다.`);
-        console.log(`📌 [정산 요청] 총 급여: ${totalWage.toLocaleString()}원`);
       } else {
         console.error("❌ 정산 요청 실패:", result.message);
         Alert.alert("정산 요청 실패", result.message || "서버 오류");
@@ -175,7 +175,15 @@ export default function ScheduleScreen({ navigation }) {
       Alert.alert("정산 요청 실패", "서버 오류 발생");
     }
   };
-  
+
+  // ✅ 스크롤 새로고침 함수
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    if (userId) {
+      await fetchSchedules(userId);
+    }
+    setRefreshing(false);
+  }, [userId]);
   
   if (isLoading) {
     return (
@@ -186,7 +194,13 @@ export default function ScheduleScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView
+      style={styles.scrollContainer}
+      contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={  // ✅ 여기 추가!
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.container}>
         {/* 📆 캘린더 */}
         <Calendar

@@ -100,30 +100,33 @@ export default function ChatScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageBubble,
-              item.senderId === currentUserId
-                ? styles.myMessageBubble
-                : styles.otherMessageBubble,
-            ]}
-          >
-            <Text style={styles.messageText}>{item.text}</Text>
-            <Text style={styles.timestamp}>
-              {item.createdAt && item.createdAt._seconds
-                ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
-                : ""}
-            </Text>
-          </View>
-        )}
-        contentContainerStyle={{ paddingBottom: 80 }}
-        showsVerticalScrollIndicator={false}
-      />
+<FlatList
+  ref={flatListRef}
+  data={messages}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item }) => (
+    <View
+      style={[
+        styles.messageBubble,
+        item.senderId === currentUserId
+          ? styles.myMessageBubble
+          : styles.otherMessageBubble,
+      ]}
+    >
+      <Text style={styles.messageText}>{item.text}</Text>
+      <Text style={styles.timestamp}>
+        {item.createdAt && item.createdAt._seconds
+          ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
+          : ""}
+      </Text>
+    </View>
+  )}
+  contentContainerStyle={{ paddingBottom: 80 }}
+  showsVerticalScrollIndicator={false}
+  onContentSizeChange={() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }}
+/>
 
       <View style={styles.chatInputContainer}>
         <TextInput

@@ -14,17 +14,18 @@ const transporter = nodemailer.createTransport({
 });
 
 // ✅ 1️⃣ 구인 공고 등록 API
+// ✅ 구인 공고 등록 API (startDate, endDate 분리 버전)
 router.post('/add', async (req, res) => {
   try {
-    let { title, company, location, wage, workdays, employmentType, date } = req.body;
+    let { title, company, location, wage, workdays, employmentType, startDate, endDate } = req.body;
 
-    if (!title || !company || !location || !wage || !workdays || !employmentType) {
+    if (!title || !company || !location || !wage || !workdays || !employmentType || !startDate || !endDate) {
       return res.status(400).json({ message: '모든 필드를 입력하세요.' });
     }
 
     // ✅ workdays가 문자열로 들어올 경우 배열로 변환
     if (typeof workdays === 'string') {
-      workdays = workdays.split(',').map(day => day.trim()); // "금, 토" → ["금", "토"]
+      workdays = workdays.split(',').map(day => day.trim());
     }
 
     const jobRef = db.collection('jobs').doc();
@@ -33,9 +34,10 @@ router.post('/add', async (req, res) => {
       company,
       location,
       wage,
-      workdays, // ✅ Firestore에 배열로 저장
+      workdays, 
       employmentType,
-      date, // ✅ 근무 기간 필드 추가
+      startDate,   // ✅ 시작일
+      endDate,     // ✅ 종료일
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -46,7 +48,6 @@ router.post('/add', async (req, res) => {
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
-
 
 // ✅ 2️⃣ 구인 공고 목록 조회 API
 router.get('/list', async (req, res) => {

@@ -1,28 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { db } from '../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function NoticeScreen({ navigation }) {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // ✅ 새로고침 상태 추가
+
+  const fetchNotices = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'notices'));
+      const fetchedNotices = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setNotices(fetchedNotices);
+    } catch (error) {
+      console.error('공지사항 가져오기 오류:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchNotices = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'notices'));
-        const fetchedNotices = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setNotices(fetchedNotices);
-      } catch (error) {
-        console.error('공지사항 가져오기 오류:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchNotices();
+  }, []);
+
+  // ✅ 새로고침 함수
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotices();
+    setRefreshing(false);
   }, []);
 
   if (loading) {
@@ -47,6 +56,9 @@ export default function NoticeScreen({ navigation }) {
             <Text style={styles.date}>{item.date}</Text>
           </TouchableOpacity>
         )}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        } // ✅ 여기 추가
       />
     </View>
   );

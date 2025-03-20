@@ -14,15 +14,15 @@ export default function BankInfoScreen() {
   useEffect(() => {
     const loadUserBankInfo = async () => {
       try {
-        const uid = await fetchUserData();
-        setUserId(uid);
-
-        if (!uid) {
+        const userData = await fetchUserData();
+        if (!userData || !userData.userId) {
           Alert.alert("인증 오류", "로그인이 필요합니다.");
           return;
         }
+        setUserId(userData.userId);
+        
 
-        const userDocRef = doc(db, 'users', uid);
+        const userDocRef = doc(db, 'users', userData.userId);
         const userDocSnap = await getDoc(userDocRef);
 
         if (userDocSnap.exists()) {

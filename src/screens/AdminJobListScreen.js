@@ -1,67 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, FlatList, TouchableOpacity, 
-  StyleSheet, SafeAreaView, Alert, ActivityIndicator 
+  StyleSheet, SafeAreaView, Alert, ActivityIndicator, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 export default function AdminJobListScreen({ navigation }) {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ 로그인한 사용자의 관리자 여부 확인
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const role = await AsyncStorage.getItem('userRole');
-        console.log("📌 저장된 userRole:", role); // 디버깅용
-        setIsAdmin(role === 'admin'); // ✅ 불러온 role이 "admin"이면 true
+        const role = await SecureStore.getItemAsync('userRole');
+        console.log("📌 저장된 userRole:", role);
+        setIsAdmin(role === 'admin');
       } catch (error) {
         console.error("❌ 관리자 확인 오류:", error);
       }
     };
-
+  
     checkAdminStatus();
   }, []);
 
-  // 📌 Firestore에서 공고 목록 가져오기
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'jobs'));
-        const jobs = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setJobListings(jobs);
-      } catch (error) {
-        console.error("❌ 모집 공고 불러오기 오류:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchJobs = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'jobs'));
+      const jobs = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setJobListings(jobs);
+    } catch (error) {
+      console.error("❌ 모집 공고 불러오기 오류:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchJobs();
   }, []);
 
-  // ❌ 공고 삭제 함수
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchJobs();
+    setRefreshing(false);
+  };
+
   const deleteJob = async (jobId) => {
     if (!isAdmin) {
       Alert.alert('권한 오류', '관리자만 공고를 삭제할 수 있습니다.');
       return;
     }
-  
     Alert.alert('삭제 확인', '정말로 이 공고를 삭제하시겠습니까?', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
         onPress: async () => {
           try {
-            console.log("🚀 관리자 이메일 확인:", request.auth.token.email);
             await deleteDoc(doc(db, 'jobs', jobId));
             setJobListings((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
             Alert.alert('삭제 완료', '공고가 삭제되었습니다.');
@@ -73,7 +75,7 @@ export default function AdminJobListScreen({ navigation }) {
       },
     ]);
   };
-  
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -106,25 +108,28 @@ export default function AdminJobListScreen({ navigation }) {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.date}>{item.date}</Text>
-                  <Text style={styles.wage}>{item.wage}</Text>
+                  <Text style={styles.date}>
+                  {item.startDate && item.endDate ? `${item.startDate} ~ ${item.endDate}` : '날짜 정보 없음'}
+                  </Text>
+                  <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
                 </View>
               </TouchableOpacity>
 
-              {/* ❌ 삭제 버튼 (관리자만 활성화) */}
               <TouchableOpacity 
                 style={styles.deleteButton} 
                 onPress={() => deleteJob(item.id)}
-                disabled={!isAdmin} // ✅ 관리자만 삭제 가능
+                disabled={!isAdmin}
               >
                 <Ionicons name="trash-outline" size={24} color={isAdmin ? "red" : "gray"} />
               </TouchableOpacity>
             </View>
           )}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
 
-        {/* 📌 하단 공고 등록 버튼 */}
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => navigation.navigate('AdminJobForm')}
