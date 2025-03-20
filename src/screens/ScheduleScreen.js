@@ -59,44 +59,56 @@ export default function ScheduleScreen({ navigation }) {
   const fetchSchedules = async (uid) => {
     try {
       const schedulesArray = await fetchUserSchedules(uid);
-      const formattedSchedules = {};
-      let totalWageSum = 0;
-
-      schedulesArray.forEach((schedule) => {
-        if (!schedule.date) return;
-        if (!formattedSchedules[schedule.date]) {
-          formattedSchedules[schedule.date] = [];
-        }
-        formattedSchedules[schedule.date].push(schedule);
-        totalWageSum += Number(schedule.wage) || 0;
-      });
-
-      setScheduleData(formattedSchedules);
-      setAllTotalWage(totalWageSum);
-
       const marks = {};
-      Object.keys(formattedSchedules).forEach(date => {
-        marks[date] = {
-          customStyles: {
-            container: { backgroundColor: '#4CAF50', borderRadius: 5 },
-            text: { color: '#fff', fontWeight: 'bold' },
-          },
-        };
+      let totalWageSum = 0;
+  
+      schedulesArray.forEach((schedule) => {
+        if (schedule.startDate && schedule.endDate) {
+          const start = new Date(schedule.startDate);
+          const end = new Date(schedule.endDate);
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            if (!marks[dateStr]) {
+              marks[dateStr] = {
+                customStyles: {
+                  container: { backgroundColor: '#4CAF50', borderRadius: 5 },
+                  text: { color: '#fff', fontWeight: 'bold' },
+                },
+              };
+            }
+          }
+          totalWageSum += Number(schedule.wage) || 0;
+        }
       });
+  
+      setScheduleData(schedulesArray);  // 그냥 배열 형태로 저장
+      setAllTotalWage(totalWageSum);
       setMarkedDates(marks);
-
+  
     } catch (error) {
       console.error("❌ 일정 데이터 로딩 오류:", error);
     }
   };
+  
 
   const handleDayPress = (day) => {
     const selected = day.dateString;
     setSelectedDate(selected);
-    setSelectedSchedules(scheduleData[selected] || []);
-    const total = (scheduleData[selected] || []).reduce((sum, s) => sum + Number(s.wage) || 0, 0);
+  
+    // 선택한 날짜가 startDate ~ endDate 범위에 포함되는 스케줄 필터링
+    const filteredSchedules = scheduleData.filter((schedule) => {
+      const start = new Date(schedule.startDate);
+      const end = new Date(schedule.endDate);
+      const checkDate = new Date(selected);
+      return checkDate >= start && checkDate <= end;
+    });
+  
+    setSelectedSchedules(filteredSchedules);
+  
+    const total = filteredSchedules.reduce((sum, s) => sum + (Number(s.wage) || 0), 0);
     setTotalWage(total);
   };
+  
 
   const handleSettlementRequest = async () => {
     if (allTotalWage === 0) {

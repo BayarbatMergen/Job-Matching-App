@@ -52,24 +52,33 @@ export default function ApprovalScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={applications}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>{item.jobTitle}</Text>
-            <Text>지원자: {item.userEmail}</Text>
-            <Text>지원일: {item.appliedAt?.split('T')[0]}</Text>
-            <TouchableOpacity
-              style={styles.approveButton}
-              onPress={() => handleApprove(item.id)}
-            >
-              <Ionicons name="checkmark-done-outline" size={20} color="white" />
-              <Text style={styles.approveButtonText}> 승인하기</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+<FlatList
+  data={applications}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item }) => (
+    <View style={styles.card}>
+      <Text style={styles.title}>지원자: {item.userEmail}</Text>
+      <Text>공고 ID: {item.jobTitle}</Text>
+      <Text>상태: {item.status}</Text>
+      <Text>
+  지원일:{" "}
+  {item.appliedAt
+    ? (item.appliedAt._seconds 
+        ? new Date(item.appliedAt._seconds * 1000).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })
+        : new Date(item.appliedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })
+      )
+    : "날짜 없음"}
+</Text>
+
+      <TouchableOpacity
+        style={styles.approveButton}
+        onPress={() => handleApprove(item.id)}
+      >
+        <Text style={styles.approveButtonText}>승인하기</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+/>
     </View>
   );
 }

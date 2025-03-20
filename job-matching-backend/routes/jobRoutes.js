@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../config/firebase');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+const admin = require('firebase-admin');
 
 // ✅ Nodemailer 설정 (이메일 알림 전송)
 const transporter = nodemailer.createTransport({
@@ -128,57 +129,65 @@ router.delete('/:jobId', async (req, res) => {
 // ✅ 6️⃣ 지원 요청 API (구직자가 "지원하기" 클릭 시 실행)
 router.post('/apply', async (req, res) => {
   const { jobId, userEmail } = req.body;
-
-  console.log("📌 [POST /api/jobs/apply] 수신 데이터:", req.body);
+  console.log("📌 [POST /api/jobs/apply] 요청 수신:", req.body);
 
   if (!jobId || !userEmail) {
-    console.warn("⚠️ 필수 정보 누락:", { jobId, userEmail });
     return res.status(400).json({ message: '⚠️ 필수 정보를 입력하세요.' });
   }
 
   try {
+    // 공고 가져오기
     const jobRef = db.collection('jobs').doc(jobId);
     const jobSnap = await jobRef.get();
-
     if (!jobSnap.exists) {
-      console.warn("❌ 공고 없음:", jobId);
       return res.status(404).json({ message: '❌ 해당 공고를 찾을 수 없습니다.' });
     }
-
     const jobData = jobSnap.data();
 
-    // ✅ userId 가져오기
+    // 사용자 정보 가져오기
     const userQuery = await db.collection('users').where('email', '==', userEmail).get();
     if (userQuery.empty) {
-      return res.status(404).json({ message: '❌ 해당 이메일을 가진 사용자를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: '❌ 해당 이메일의 사용자를 찾을 수 없습니다.' });
     }
-    const userId = userQuery.docs[0].data().userId;
+    const userDoc = userQuery.docs[0];
+    const userId = userDoc.id;
 
-    const applicationRef = db.collection('applications').doc();
-    await applicationRef.set({
+    // workDate 계산
+    let workDate;
+    if (jobData.startDate) {
+      workDate = jobData.startDate; // startDate 가 있으면 그것 사용
+    } else {
+      // 없으면 지원 시각을 YYYY-MM-DD 로 포맷
+      const appliedDate = new Date();
+      workDate = appliedDate.toISOString().split('T')[0];
+    }
+
+    // 지원 내역 저장
+    await db.collection('applications').add({
       userId,
       userEmail,
       jobId,
       jobTitle: jobData.title,
       wage: jobData.wage,
-      workDate: jobData.startDate,  // ✅ startDate 또는 endDate 중 적절히 선택
-      appliedAt: new Date(),
+      startDate: jobData.startDate,   // ✅ 이렇게
+      endDate: jobData.endDate,       // ✅ 이렇게
+      appliedAt: admin.firestore.Timestamp.now(),
       status: 'pending'
     });
 
+    // 이메일 알림
     const mailOptions = {
       from: `"Job Matching Support" <${process.env.SMTP_USER}>`,
       to: process.env.ADMIN_EMAIL,
       subject: '새로운 구직 지원 알림',
-      text: `📢 새로운 구직 지원 요청이 있습니다.\n\n📌 지원자: ${userEmail}\n📌 지원한 공고: ${jobData.title}`,
+      text: `📢 지원자: ${userEmail} 가 ${jobData.title} 공고에 지원했습니다.`
     };
-
     await transporter.sendMail(mailOptions);
 
-    console.log("✅ 지원 요청 완료:", { jobId, userEmail });
+    console.log("✅ 지원 요청 및 저장 완료!");
     res.status(200).json({ message: '✅ 지원 요청이 완료되었습니다.' });
   } catch (error) {
-    console.error('❌ 지원 요청 오류:', error.message);
+    console.error('❌ 지원 요청 처리 중 오류:', error.message);
     res.status(500).json({ message: '❌ 서버 오류 발생', error: error.message });
   }
 });
