@@ -1,30 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
-import { db } from '../config/firebase'; // Firestore 가져오기
+import { db } from '../config/firebase';
 import { collection, getDocs } from 'firebase/firestore'; 
 
 export default function JobListScreen({ navigation }) {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ Firestore에서 공고 목록 가져오기
+  const fetchJobs = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'jobs'));
+      const jobs = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setJobListings(jobs);
+    } catch (error) {
+      console.error("❌ 모집 공고 불러오기 오류:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'jobs'));
-        const jobs = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setJobListings(jobs);
-      } catch (error) {
-        console.error("❌ 모집 공고 불러오기 오류:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchJobs();
+  }, []);
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
     fetchJobs();
   }, []);
 
@@ -54,6 +60,9 @@ export default function JobListScreen({ navigation }) {
         data={jobListings}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 20 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#007AFF']} />
+        }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.jobCard}

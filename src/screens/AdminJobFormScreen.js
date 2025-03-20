@@ -16,7 +16,7 @@ export default function AdminJobFormScreen({ navigation }) {
   const [form, setForm] = useState({
     title: "",
     wage: "",
-    workPeriod: "",
+    date: "",
     workDays: "",
     workHours: "",
     industry: "",
@@ -83,8 +83,8 @@ export default function AdminJobFormScreen({ navigation }) {
       <Text style={styles.label}>근무 기간</Text>
       <TextInput
         style={styles.input}
-        value={form.workPeriod}
-        onChangeText={(text) => setForm({ ...form, workPeriod: text })}
+        value={form.date}
+        onChangeText={(text) => setForm({ ...form, date: text })}
         placeholder="YYYY-MM-DD ~ YYYY-MM-DD"
       />
 

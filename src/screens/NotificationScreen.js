@@ -4,9 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { db } from '../config/firebase';
 import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
+import React, { useEffect, useState, useCallback } from 'react';
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -57,6 +59,12 @@ export default function NotificationScreen() {
 
     fetchNotifications();
   }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchNotifications();
+    setRefreshing(false);
+  }, [fetchNotifications]);
 
   const markAsRead = async (id) => {
     const userId = await SecureStore.getItemAsync('userId');
@@ -118,6 +126,9 @@ export default function NotificationScreen() {
           data={notifications}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
         />
       ) : (
         <View style={styles.emptyContainer}>

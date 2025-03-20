@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 // ✅ 1️⃣ 구인 공고 등록 API
 router.post('/add', async (req, res) => {
   try {
-    let { title, company, location, wage, workdays, employmentType } = req.body;
+    let { title, company, location, wage, workdays, employmentType, date } = req.body;
 
     if (!title || !company || !location || !wage || !workdays || !employmentType) {
       return res.status(400).json({ message: '모든 필드를 입력하세요.' });
