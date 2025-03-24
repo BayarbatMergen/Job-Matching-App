@@ -74,6 +74,7 @@ export default function ChatListScreen({ navigation }) {
         navigation.navigate("ChatScreen", {
           roomId: result.roomId,
           roomName: "관리자와의 채팅",
+          roomType: item.roomType, // 꼭 넘기고 있어야 함!
         });
       } else {
         Alert.alert("오류", result.message || "관리자 채팅방 생성 실패");
@@ -111,8 +112,9 @@ export default function ChatListScreen({ navigation }) {
                 navigation.navigate("ChatScreen", {
                   roomId: item.id,
                   roomName: item.name || "채팅방",
+                  roomType: item.roomType || "inquiry", // 안전하게 기본값도 넣어줌
                 })
-              }
+              }              
             >
               <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
               <Text style={styles.roomName}>{item.name || "채팅방"}</Text>

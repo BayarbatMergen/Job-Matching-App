@@ -63,18 +63,21 @@ export default function ScheduleScreen({ navigation }) {
       let totalWageSum = 0;
   
       schedulesArray.forEach((schedule) => {
-        // 달력에 표시용 정리
-        for (let d = new Date(schedule.startDate); d <= new Date(schedule.endDate); d.setDate(d.getDate() + 1)) {
+        const start = new Date(schedule.startDate);
+        const end = new Date(schedule.endDate);
+      
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
           if (!formattedSchedules[dateStr]) {
             formattedSchedules[dateStr] = [];
           }
-          formattedSchedules[dateStr].push(schedule);
+          formattedSchedules[dateStr].push({
+            name: schedule.name,
+            wage: schedule.wage,
+            date: dateStr,
+          });
         }
-  
-        // 총급여 계산 (일수 × 일당)
-        const start = new Date(schedule.startDate);
-        const end = new Date(schedule.endDate);
+      
         const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
         totalWageSum += (Number(schedule.wage) || 0) * diffDays;
       });
@@ -103,17 +106,11 @@ export default function ScheduleScreen({ navigation }) {
     const selected = day.dateString;
     setSelectedDate(selected);
   
-    // 선택한 날짜가 포함된 일정들 가져오기
-    const filteredSchedules = Object.values(scheduleData).flat().filter((schedule) => {
-      const start = new Date(schedule.startDate);
-      const end = new Date(schedule.endDate);
-      const checkDate = new Date(selected);
-      return checkDate >= start && checkDate <= end;
-    });
+    // 이제는 dateStr로 바로 가져오기!
+    const filteredSchedules = scheduleData[selected] || [];
   
     setSelectedSchedules(filteredSchedules);
   
-    // 해당 날짜에 포함된 일정의 하루 급여 합산
     const total = filteredSchedules.reduce((sum, s) => sum + (Number(s.wage) || 0), 0);
     setTotalWage(total);
   };

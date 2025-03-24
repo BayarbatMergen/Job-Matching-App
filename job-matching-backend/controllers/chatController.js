@@ -42,8 +42,16 @@ const addMessageToChat = async (req, res) => {
       return res.status(400).json({ message: "⚠️ roomId와 text가 필요합니다." });
     }
 
+    const roomDoc = await db.collection("chats").doc(roomId).get();
+    const roomData = roomDoc.data();
+
+    // 공지방이라면 메시지 전송 금지
+    if (roomData && roomData.roomType === "notice") {
+      return res.status(403).json({ message: "공지방에는 메시지를 보낼 수 없습니다." });
+    }
+
     const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
-    const createdAt = admin.firestore.Timestamp.now(); // ✅ Firebase Timestamp 사용
+    const createdAt = admin.firestore.Timestamp.now();
     const newMessage = {
       text,
       senderId,
@@ -62,7 +70,7 @@ const addMessageToChat = async (req, res) => {
   }
 };
 
-// ✅ 모든 채팅방 목록 가져오기
+// ✅ 모든 채팅방 목록 가져오기 (roomType 포함 반환)
 const getChatRooms = async (req, res) => {
   try {
     console.log("📡 채팅방 목록 요청 받음...");
@@ -81,7 +89,7 @@ const getChatRooms = async (req, res) => {
   }
 };
 
-// ✅ 관리자 채팅방 생성 또는 반환
+// ✅ 관리자 채팅방 생성 또는 반환 (roomType: admin)
 const createOrGetAdminChatRoom = async (req, res) => {
   try {
     const { userId } = req.user;
@@ -99,7 +107,11 @@ const createOrGetAdminChatRoom = async (req, res) => {
 
     if (!existingRoomSnapshot.empty) {
       const existingRoom = existingRoomSnapshot.docs[0];
-      return res.status(200).json({ roomId: existingRoom.id, name: '관리자 상담' });
+      return res.status(200).json({ 
+        roomId: existingRoom.id, 
+        name: '관리자 상담', 
+        roomType: existingRoom.data().roomType || 'admin' 
+      });
     }
 
     // 신규 생성
@@ -108,12 +120,38 @@ const createOrGetAdminChatRoom = async (req, res) => {
       participants: [userId, adminUid],
       createdAt: admin.firestore.Timestamp.now(),
       type: 'admin',
+      roomType: 'admin',   // ✅ roomType 필드 추가
     };
 
     const roomRef = await db.collection("chats").add(newRoom);
-    return res.status(201).json({ roomId: roomRef.id, name: '관리자 상담' });
+    return res.status(201).json({ roomId: roomRef.id, name: '관리자 상담', roomType: 'admin' });
   } catch (error) {
     console.error("❌ 관리자 채팅방 생성 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+};
+
+// ✅ 공지방 생성 함수 (필요 시)
+const createNoticeRoom = async (req, res) => {
+  try {
+    const { name, participants } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ message: "⚠️ 방 이름이 필요합니다." });
+    }
+
+    const newRoom = {
+      name,
+      participants,
+      createdAt: admin.firestore.Timestamp.now(),
+      type: 'notice',
+      roomType: 'notice', // ✅ 공지방
+    };
+
+    const roomRef = await db.collection("chats").add(newRoom);
+    return res.status(201).json({ roomId: roomRef.id, name, roomType: 'notice' });
+  } catch (error) {
+    console.error("❌ 공지방 생성 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
   }
 };
@@ -123,4 +161,5 @@ module.exports = {
   getChatMessages,
   getChatRooms,
   createOrGetAdminChatRoom,
+  createNoticeRoom,   // ✅ 필요 시 export
 };

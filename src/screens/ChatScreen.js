@@ -14,7 +14,7 @@ import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
 
 export default function ChatScreen({ route }) {
-  const { roomId, roomName } = route.params;
+  const { roomId, roomName, roomType } = route.params;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState("");
@@ -64,6 +64,7 @@ export default function ChatScreen({ route }) {
   }, [messages]);
 
   const sendMessage = async () => {
+    if (roomType === "notice") return;
     if (messageText.trim() === "") return;
 
     try {
@@ -100,48 +101,51 @@ export default function ChatScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-<FlatList
-  ref={flatListRef}
-  data={messages}
-  keyExtractor={(item) => item.id}
-  renderItem={({ item }) => (
-    <View
-      style={[
-        styles.messageBubble,
-        item.senderId === currentUserId
-          ? styles.myMessageBubble
-          : styles.otherMessageBubble,
-      ]}
-    >
-      <Text style={styles.messageText}>{item.text}</Text>
-      <Text style={styles.timestamp}>
-        {item.createdAt && item.createdAt._seconds
-          ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
-          : ""}
-      </Text>
-    </View>
-  )}
-  contentContainerStyle={{ paddingBottom: 80 }}
-  showsVerticalScrollIndicator={false}
-  onContentSizeChange={() => {
-    flatListRef.current?.scrollToEnd({ animated: true });
-  }}
-/>
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.messageBubble,
+              item.senderId === currentUserId
+                ? styles.myMessageBubble
+                : styles.otherMessageBubble,
+            ]}
+          >
+            <Text style={styles.messageText}>{item.text}</Text>
+            <Text style={styles.timestamp}>
+              {item.createdAt && item.createdAt._seconds
+                ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
+                : ""}
+            </Text>
+          </View>
+        )}
+        contentContainerStyle={{ paddingBottom: 80 }}
+        showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }}
+      />
 
-      <View style={styles.chatInputContainer}>
-        <TextInput
-          style={styles.chatInput}
-          placeholder="메시지를 입력하세요..."
-          value={messageText}
-          onChangeText={setMessageText}
-        />
-        <TouchableOpacity
-          onPress={sendMessage}
-          style={styles.sendButton}
-        >
-          <Ionicons name="send" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      {roomType === "notice" ? (
+        <View style={styles.noticeBanner}>
+          <Text style={styles.noticeText}>관리자만 메시지를 보낼 수 있습니다.</Text>
+        </View>
+      ) : (
+        <View style={styles.chatInputContainer}>
+          <TextInput
+            style={styles.chatInput}
+            placeholder="메시지를 입력하세요..."
+            value={messageText}
+            onChangeText={setMessageText}
+          />
+          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <Ionicons name="send" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -157,12 +161,12 @@ const styles = StyleSheet.create({
   },
   myMessageBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "#A3D8FF", // 내 메시지는 더 선명한 하늘색
+    backgroundColor: "#A3D8FF",
     marginRight: 15,
   },
   otherMessageBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#F1F0F0", // 상대 메시지는 연회색
+    backgroundColor: "#F1F0F0",
     marginLeft: 15,
   },
   messageText: { fontSize: 16, color: "#333" },
@@ -191,5 +195,20 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#007AFF",
     borderRadius: 20,
+  },
+  noticeBanner: {
+    padding: 15,
+    backgroundColor: "#f8d7da",
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+    alignItems: "center",
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+  },
+  noticeText: {
+    color: "#721c24",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
