@@ -219,4 +219,31 @@ router.get('/applications/pending', async (req, res) => {
 });
 
 
+// ✅ 관리자 채팅방 목록 가져오기 API
+router.get('/chats/admin-rooms', async (req, res) => {
+  try {
+    console.log("📡 관리자 채팅방 목록 요청 수신");
+
+    const adminUid = process.env.ADMIN_UID; 
+    const chatRoomsSnap = await db.collection('chats')
+      .where('participants', 'array-contains', adminUid)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const chatRooms = chatRoomsSnap.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name || doc.id, // 이름 없으면 ID 표시
+      roomType: doc.data().roomType || "inquiry",
+      createdAt: doc.data().createdAt,
+      ...doc.data(),
+    }));
+
+    console.log("✅ 관리자 채팅방 목록 조회 성공:", chatRooms);
+    res.status(200).json(chatRooms);
+  } catch (error) {
+    console.error('❌ 관리자 채팅방 목록 가져오기 오류:', error);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
 module.exports = router;

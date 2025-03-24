@@ -7,12 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as SecureStore from 'expo-secure-store';
+import { useIsFocused } from '@react-navigation/native';
 
 export default function AdminJobListScreen({ navigation }) {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -44,8 +46,10 @@ export default function AdminJobListScreen({ navigation }) {
   };
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    if (isFocused) {
+      fetchJobs();
+    }
+  }, [isFocused]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -109,12 +113,7 @@ export default function AdminJobListScreen({ navigation }) {
               style={styles.jobContent}
               onPress={() =>
                 navigation.navigate('AdminJobDetail', {
-                  job: item,
-                  updateJob: (updatedJob) => {
-                    setJobListings((prevJobs) =>
-                      prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
-                    );
-                  },
+                  job: item, // 함수 전달 대신 데이터만 넘기기
                 })
               }
             >
@@ -158,7 +157,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold' },
   approvalButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
   approvalButtonText: { color: 'white', marginLeft: 5, fontSize: 14, fontWeight: 'bold' },
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   jobCard: {
     flexDirection: 'row',
