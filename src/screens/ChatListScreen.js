@@ -22,13 +22,14 @@ export default function ChatListScreen({ navigation }) {
       console.log("📡 채팅방 목록 요청 중...");
 
       const token = await SecureStore.getItemAsync("token");
-      if (!token) {
+      const userId = await SecureStore.getItemAsync("userId");
+      if (!token || !userId) {
         Alert.alert("인증 오류", "로그인이 필요합니다.");
         navigation.replace("Login");
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/chats/rooms`, {
+      const response = await fetch(`${API_BASE_URL}/chats/rooms?userId=${userId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -74,7 +75,7 @@ export default function ChatListScreen({ navigation }) {
         navigation.navigate("ChatScreen", {
           roomId: result.roomId,
           roomName: "관리자와의 채팅",
-          roomType: item.roomType, // 꼭 넘기고 있어야 함!
+          roomType: "inquiry", // 직접 고정 전달
         });
       } else {
         Alert.alert("오류", result.message || "관리자 채팅방 생성 실패");
@@ -100,7 +101,7 @@ export default function ChatListScreen({ navigation }) {
       </TouchableOpacity>
 
       {chatRooms.length === 0 ? (
-        <Text style={styles.noChatText}>참여할 채팅방이 없습니다.</Text>
+        <Text style={styles.noChatText}>참여 중인 채팅방이 없습니다.</Text>
       ) : (
         <FlatList
           data={chatRooms}
@@ -112,9 +113,9 @@ export default function ChatListScreen({ navigation }) {
                 navigation.navigate("ChatScreen", {
                   roomId: item.id,
                   roomName: item.name || "채팅방",
-                  roomType: item.roomType || "inquiry", // 안전하게 기본값도 넣어줌
+                  roomType: item.roomType || "inquiry",
                 })
-              }              
+              }
             >
               <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
               <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
@@ -155,3 +156,4 @@ const styles = StyleSheet.create({
   },
   adminChatText: { color: "#fff", marginLeft: 8, fontSize: 16, fontWeight: "bold" },
 });
+

@@ -77,16 +77,20 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
       return res.status(400).json({ message: "❌ 올바른 전화번호 형식이 아닙니다." });
     }
 
+    // ✅ Firebase Authentication에 사용자 생성
     const userRecord = await admin.auth().createUser({
       email,
-      password,
+      password, // Firebase Auth 내부에서 안전하게 암호화됨
       displayName: name,
       phoneNumber: formattedPhone,
     });
 
     let imageUrl = 'https://your-default-profile-url.com';
-    if (req.file) imageUrl = await uploadToCloudinary(req.file.buffer);
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.buffer);
+    }
 
+    // ✅ Firestore에 저장 (password는 절대 저장 X)
     const userData = {
       userId: userRecord.uid,
       name,
@@ -100,7 +104,8 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
       createdAt: new Date(),
     };
 
-    await db.collection('users').doc(userRecord.uid).set(userData); // UID로 저장, password 제외
+    await db.collection('users').doc(userRecord.uid).set(userData);
+
     res.status(201).json({ message: "✅ 회원가입 성공!", userId: userRecord.uid });
   } catch (error) {
     console.error("❌ 회원가입 중 오류 발생:", error);
@@ -112,33 +117,62 @@ router.post('/register', upload.single('idImage'), async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "⚠️ 이메일과 비밀번호를 입력하세요." });
+    if (!email || !password) {
+      return res.status(400).json({ message: '이메일과 비밀번호를 입력하세요.' });
+    }
 
-    const userQuery = await db.collection('users').where('email', '==', email).get();
-    if (userQuery.empty) return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
+    // 👉 Firebase Auth 인증 시도
+    const firebaseAuth = require('firebase/auth');
+    const firebaseApp = require('../config/firebaseClient'); // 클라이언트 Firebase 인스턴스 import
+    const auth = firebaseAuth.getAuth(firebaseApp);
 
-    const userData = userQuery.docs[0].data();
-    const isMatch = await bcrypt.compare(password, userData.password);
-    if (!isMatch) return res.status(400).json({ message: "⚠️ 이메일 또는 비밀번호가 잘못되었습니다." });
+    try {
+      const userCredential = await firebaseAuth.signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      console.log('✅ Firebase 로그인 성공:', firebaseUser.uid);
 
-    const token = jwt.sign(
-      { userId: userData.userId, email: userData.email, role: userData.role },
-      SECRET_KEY,
-      { expiresIn: '7d' }
-    );
+      // Firestore에서 해당 유저 정보 가져오기
+      const userDoc = await admin.firestore().collection('users').doc(firebaseUser.uid).get();
+      if (!userDoc.exists) {
+        return res.status(404).json({ message: '사용자 정보를 찾을 수 없습니다.' });
+      }
 
-    const firebaseToken = await admin.auth().createCustomToken(userData.userId);
+      const user = userDoc.data();
 
-    console.log("✅ 로그인 성공! userId:", userData.userId);
-    res.status(200).json({
-      message: "✅ 로그인 성공!",
-      user: { userId: userData.userId, email: userData.email, name: userData.name, role: userData.role },
-      token,                 
-      firebaseToken         
-    });
+      // JWT 발급
+      const token = jwt.sign(
+        {
+          userId: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: user.role || 'user',
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      // Firebase Custom Token 생성 (필요하면)
+      const customToken = await admin.auth().createCustomToken(firebaseUser.uid);
+
+      res.json({
+        message: '✅ 로그인 성공!',
+        token,
+        firebaseToken: customToken,
+        user: {
+          userId: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: user.name,
+          role: user.role || 'user',
+        },
+      });
+
+    } catch (error) {
+      console.error('❌ Firebase 로그인 실패:', error);
+      return res.status(401).json({ message: '이메일 또는 비밀번호가 잘못되었습니다.' });
+    }
+
   } catch (error) {
-    console.error("❌ 로그인 오류:", error);
-    res.status(500).json({ message: "❌ 서버 오류" });
+    console.error('❌ 로그인 처리 오류:', error);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });
 

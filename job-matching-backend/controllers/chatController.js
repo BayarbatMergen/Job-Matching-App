@@ -73,19 +73,45 @@ const addMessageToChat = async (req, res) => {
 };
 
 
-// ✅ 모든 채팅방 목록 가져오기 (roomType 포함 반환)
+// ✅ 로그인한 사용자의 채팅방 목록만 가져오도록 수정
 const getChatRooms = async (req, res) => {
   try {
     console.log("📡 채팅방 목록 요청 받음...");
 
-    const chatRoomsSnapshot = await db.collection("chats").get();
-    const chatRooms = chatRoomsSnapshot.docs.map((doc) => ({
+    const { userId } = req.user;
+    if (!userId) {
+      return res.status(401).json({ message: "❌ 사용자 인증 필요" });
+    }
+
+    // 사용자가 속한 방 가져오기
+    const participantRoomsSnapshot = await db
+      .collection("chats")
+      .where("participants", "array-contains", userId)
+      .get();
+
+    const participantRooms = participantRoomsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    console.log(`✅ 채팅방 개수: ${chatRooms.length}`);
-    res.status(200).json(chatRooms);
+    // 공지방(roomType === "notice") 가져오기
+    const noticeRoomsSnapshot = await db
+      .collection("chats")
+      .where("roomType", "==", "notice")
+      .get();
+
+    const noticeRooms = noticeRoomsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // 둘 합치기 (중복 제거)
+    const allRooms = [...participantRooms, ...noticeRooms.filter(
+      (notice) => !participantRooms.some((room) => room.id === notice.id)
+    )];
+
+    console.log(`✅ [${userId}] 채팅방 및 공지방 포함: ${allRooms.length}`);
+    res.status(200).json(allRooms);
   } catch (error) {
     console.error("❌ 채팅방 목록 불러오기 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
