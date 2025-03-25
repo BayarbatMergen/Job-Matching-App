@@ -1,19 +1,38 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
-export default function AdminPasswordChangeScreen() {
+const API_BASE_URL = 'http://192.168.0.6:5000';
+
+export default function AdminPasswordChangeScreen({ navigation }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleChangePassword = () => {
+  useEffect(() => {
+    const fetchEmail = async () => {
+      const storedEmail = await SecureStore.getItemAsync('userEmail');
+      setEmail(storedEmail);
+    };
+    fetchEmail();
+  }, []);
+
+  // 비밀번호 조건 검사 함수
+  const validatePassword = (password) => {
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    return password.length >= 6 && specialCharRegex.test(password);
+  };
+
+  const handleChangePassword = async () => {
     if (!currentPassword) {
       Alert.alert('오류', '현재 비밀번호를 입력해주세요.');
       return;
     }
 
-    if (newPassword.length < 6) {
-      Alert.alert('오류', '새 비밀번호는 최소 6자 이상이어야 합니다.');
+    if (!validatePassword(newPassword)) {
+      Alert.alert('오류', '새 비밀번호는 6자 이상이며 특수문자를 포함해야 합니다.');
       return;
     }
 
@@ -22,15 +41,39 @@ export default function AdminPasswordChangeScreen() {
       return;
     }
 
-    // 🔐 실제 비밀번호 변경 로직 추가 필요 (예: Firebase Auth, DB 업데이트)
-    Alert.alert('완료', '비밀번호가 성공적으로 변경되었습니다.');
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/admin/change-password`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('경고', result.message);  // 경고창으로 표시
+        return;
+      }
+
+      Alert.alert('완료', '비밀번호가 성공적으로 변경되었습니다.');
+      navigation.goBack();
+    } catch (error) {
+      console.error('❌ 비밀번호 변경 실패:', error);
+      Alert.alert('오류', '비밀번호 변경 중 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>비밀번호 변경</Text>
 
-      {/* 🔹 현재 비밀번호 입력 */}
       <Text style={styles.label}>현재 비밀번호</Text>
       <TextInput
         style={styles.input}
@@ -40,17 +83,15 @@ export default function AdminPasswordChangeScreen() {
         onChangeText={setCurrentPassword}
       />
 
-      {/* 🔹 새 비밀번호 입력 */}
       <Text style={styles.label}>새 비밀번호</Text>
       <TextInput
         style={styles.input}
-        placeholder="새 비밀번호 입력"
+        placeholder="새 비밀번호 입력 (6자 이상 & 특수문자 포함)"
         secureTextEntry
         value={newPassword}
         onChangeText={setNewPassword}
       />
 
-      {/* 🔹 비밀번호 확인 입력 */}
       <Text style={styles.label}>새 비밀번호 확인</Text>
       <TextInput
         style={styles.input}
@@ -60,9 +101,8 @@ export default function AdminPasswordChangeScreen() {
         onChangeText={setConfirmPassword}
       />
 
-      {/* 🔹 비밀번호 변경 버튼 */}
-      <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
-        <Text style={styles.buttonText}>변경하기</Text>
+      <TouchableOpacity style={styles.button} onPress={handleChangePassword} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>변경하기</Text>}
       </TouchableOpacity>
     </View>
   );

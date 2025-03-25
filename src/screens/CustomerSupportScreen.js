@@ -13,15 +13,20 @@ export default function CustomerSupportScreen() {
       Alert.alert('입력 오류', '문의 내용을 입력해주세요.');
       return;
     }
-
+  
     try {
       setLoading(true);
       const userEmail = await SecureStore.getItemAsync('userEmail') || '비회원';
+      const userName = await SecureStore.getItemAsync('userName') || '비회원';
+  
       await addDoc(collection(db, 'customerInquiries'), {
         email: userEmail,
+        user: userName, // ✅ 사용자 이름 추가 저장
         message,
+        reply: '',      // ✅ reply 필드 초기화
         createdAt: Timestamp.now(),
       });
+  
       Alert.alert('문의 완료', '고객센터에 문의가 접수되었습니다.');
       setMessage('');
     } catch (error) {
@@ -31,7 +36,7 @@ export default function CustomerSupportScreen() {
       setLoading(false);
     }
   };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.label}>문의 내용</Text>

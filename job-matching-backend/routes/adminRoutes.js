@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { verifyToken } = require('../middlewares/authMiddleware');
 const adminOnlyMiddleware = require('../middlewares/adminOnlyMiddleware');
+const admin = require("firebase-admin");
 
 // ✅ 관리자 로그인 API (users 컬렉션 사용)
 router.post('/login', async (req, res) => {
@@ -238,6 +239,98 @@ router.get('/chats/all-rooms', async (req, res) => {
   }
 });
 
+router.get("/users", async (req, res) => {
+  try {
+    const snapshot = await admin.firestore().collection("users").get();
+    let users = snapshot.docs.map(doc => ({ userId: doc.id, ...doc.data() }));
 
+    // 관리자 계정을 최상단에 오도록 정렬
+    users = users.sort((a, b) =>
+      a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0
+    );
+
+    res.json(users);
+  } catch (error) {
+    console.error("❌ 사용자 목록 가져오기 오류:", error);
+    res.status(500).json({ message: "사용자 목록 가져오기 실패" });
+  }
+});
+
+
+// ✅ 특정 사용자 상세 정보 가져오기 API
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const userRef = admin.firestore().collection('users').doc(userId);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const userData = userSnap.data();
+
+    // ✅ password 필드 제거
+    const { password, ...safeData } = userData;
+
+    res.status(200).json(safeData);
+  } catch (error) {
+    console.error('❌ 사용자 상세 조회 오류:', error);
+    res.status(500).json({ message: '사용자 정보 가져오기 실패' });
+  }
+});
+
+router.patch('/change-password', async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+    const userSnapshot = await admin.firestore().collection('users').where('email', '==', email).get();
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    const bcrypt = require('bcryptjs');
+    const isMatch = await bcrypt.compare(currentPassword, userData.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: '현재 비밀번호가 일치하지 않습니다.' });
+    }
+
+    // 비밀번호 조건 검사
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+    if (newPassword.length < 6 || !specialCharRegex.test(newPassword)) {
+      return res.status(400).json({ message: '비밀번호는 6자 이상이며 특수문자를 포함해야 합니다.' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await userDoc.ref.update({ password: hashedNewPassword });
+
+    res.status(200).json({ message: '비밀번호 변경 완료' });
+  } catch (error) {
+    console.error('❌ 비밀번호 변경 실패:', error);
+    res.status(500).json({ message: '서버 오류로 비밀번호 변경에 실패했습니다.' });
+  }
+});
+
+router.post('/notice', async (req, res) => {
+  try {
+    const { title, content, author } = req.body;
+    const createdAt = new Date(); // 현재 시간
+
+    await admin.firestore().collection('notices').add({
+      title,
+      content,
+      author,
+      createdAt,
+    });
+
+    res.status(200).json({ message: '공지사항 등록 성공' });
+  } catch (error) {
+    console.error('❌ 공지사항 등록 실패:', error);
+    res.status(500).json({ message: '공지사항 등록 실패' });
+  }
+});
 
 module.exports = router;

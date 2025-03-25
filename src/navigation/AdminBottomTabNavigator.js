@@ -12,24 +12,29 @@ import AdminScheduleScreen from '../screens/AdminScheduleScreen';
 import AdminChatListScreen from '../screens/AdminChatListScreen';
 import AdminChatScreen from '../screens/AdminChatScreen';
 import AdminMyPageScreen from '../screens/AdminMyPageScreen';
-import ApprovalScreen from '../screens/ApprovalScreen'; // ✅ 경로에 맞게 import 추가
+import ApprovalScreen from '../screens/ApprovalScreen';
+import UserManagementScreen from '../screens/UserManagementScreen';
+import UserDetailScreen from '../screens/UserDetailScreen';
+import NoticeWriteScreen from '../screens/NoticeWriteScreen';
+import AdminPasswordChangeScreen from '../screens/AdminPasswordChangeScreen';
+import CustomerInquiryScreen from '../screens/CustomerInquiryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// 📌 모집 공고 (홈) 네비게이터
+// 📌 모집 공고 관리 스택
 function AdminHomeStack() {
   return (
-    <Stack.Navigator 
-      screenOptions={{ 
+    <Stack.Navigator
+      screenOptions={{
         headerStyle: { backgroundColor: '#007AFF' },
         headerTintColor: '#fff',
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen 
-        name="AdminJobList" 
-        component={AdminJobListScreen} 
+      <Stack.Screen
+        name="AdminJobList"
+        component={AdminJobListScreen}
         options={({ navigation }) => ({
           headerTitle: '모집 공고',
           headerRight: () => (
@@ -44,78 +49,70 @@ function AdminHomeStack() {
       <Stack.Screen name="AdminJobDetail" component={AdminJobDetailScreen} options={{ headerTitle: '공고 상세' }} />
       <Stack.Screen name="AdminJobForm" component={AdminJobFormScreen} options={{ headerTitle: '공고 등록' }} />
       <Stack.Screen name="ApprovalScreen" component={ApprovalScreen} options={{ headerTitle: '승인 대기 목록' }} />
-
     </Stack.Navigator>
   );
 }
 
-// 📌 일정 확인 네비게이터
+// 📌 일정 관리 스택
 function AdminScheduleStack() {
   return (
-    <Stack.Navigator 
-      screenOptions={{ 
+    <Stack.Navigator
+      screenOptions={{
         headerStyle: { backgroundColor: '#007AFF' },
         headerTintColor: '#fff',
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen 
-        name="AdminScheduleScreen" // ✅ 고유한 이름으로 변경
-        component={AdminScheduleScreen} 
-        options={{ headerTitle: '일정 확인' }} 
-      />
+      <Stack.Screen name="AdminScheduleScreen" component={AdminScheduleScreen} options={{ headerTitle: '일정 관리' }} />
     </Stack.Navigator>
   );
 }
 
-// 📌 관리자 채팅 네비게이터
+// 📌 채팅 스택
 function AdminChatStack() {
   return (
-    <Stack.Navigator 
-      screenOptions={{ 
+    <Stack.Navigator
+      screenOptions={{
         headerStyle: { backgroundColor: '#007AFF' },
         headerTintColor: '#fff',
         headerTitleAlign: 'center'
       }}
     >
-      {/* ✅ 관리자 채팅방 목록 (기본 화면) */}
-      <Stack.Screen 
-        name="AdminChatList" 
-        component={AdminChatListScreen} 
-        options={{ headerTitle: '관리자 채팅방 목록' }} 
+      <Stack.Screen
+        name="AdminChatList"
+        component={AdminChatListScreen}
+        options={{ headerTitle: '채팅 목록' }}
       />
-
-      {/* ✅ 선택한 채팅방 내부 화면 */}
-      <Stack.Screen 
-        name="AdminChatScreen" 
-        component={AdminChatScreen} 
-        options={({ route }) => ({ headerTitle: route.params?.roomName || '관리자 채팅' })} 
+      <Stack.Screen
+        name="AdminChatScreen"
+        component={AdminChatScreen}
+        options={({ route }) => ({ headerTitle: route.params?.roomName || '채팅방' })}
       />
     </Stack.Navigator>
   );
 }
 
-// 📌 마이페이지 네비게이터
+// 📌 마이페이지 스택 (추가 페이지 연결)
 function AdminMyPageStack() {
   return (
-    <Stack.Navigator 
-      screenOptions={{ 
+    <Stack.Navigator
+      screenOptions={{
         headerStyle: { backgroundColor: '#007AFF' },
         headerTintColor: '#fff',
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen 
-        name="AdminMyPageMain"  // ✅ 이름 변경!
-        component={AdminMyPageScreen} 
-        options={{ headerTitle: '마이페이지' }} 
-      />
-      {/* 나중에 마이페이지 내 다른 화면 추가 시에는 이름 다르게 작성 */}
+      <Stack.Screen name="AdminMyPageMain" component={AdminMyPageScreen} options={{ headerTitle: '마이페이지' }} />
+      <Stack.Screen name="UserManagementScreen" component={UserManagementScreen} options={{ headerTitle: '전체 사용자 관리' }} />
+      <Stack.Screen name="UserDetailScreen" component={UserDetailScreen} options={{ headerTitle: '사용자 상세 정보' }} />
+      <Stack.Screen name="NoticeWriteScreen" component={NoticeWriteScreen} options={{ headerTitle: '공지사항 작성' }} />
+      <Stack.Screen name="CustomerInquiryScreen" component={CustomerInquiryScreen} options={{ headerTitle: '고객센터 문의 확인' }} />
+      <Stack.Screen name="AdminPasswordChangeScreen" component={AdminPasswordChangeScreen} options={{ headerTitle: '비밀번호 변경' }} />
     </Stack.Navigator>
   );
 }
 
-// 📌 바텀 탭 네비게이션 (관리자용)
+// 📌 바텀 탭 네비게이터
 export default function AdminBottomTabNavigator() {
   return (
     <Tab.Navigator
