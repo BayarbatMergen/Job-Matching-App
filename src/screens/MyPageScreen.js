@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert, ActivityIndicator 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store'; // AsyncStorage 대신 SecureStore 사용
+import * as SecureStore from 'expo-secure-store';
 import { logout } from "../services/authService";
 
 const API_BASE_URL = 'http://192.168.0.6:5000';
@@ -18,8 +18,6 @@ export default function MyPageScreen({ navigation }) {
       console.log("🚀 MyPageScreen useEffect 실행됨!");
       try {
         const token = await SecureStore.getItemAsync("token");
-        console.log("✅ 저장된 토큰:", token);
-  
         if (!token) {
           console.warn("🚨 토큰 없음 → 로그인 화면 이동");
           Alert.alert("인증 오류", "로그인이 필요합니다.", [
@@ -27,7 +25,7 @@ export default function MyPageScreen({ navigation }) {
           ]);
           return;
         }
-  
+
         const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           method: "GET",
           headers: {
@@ -35,16 +33,13 @@ export default function MyPageScreen({ navigation }) {
             "Content-Type": "application/json",
           },
         });
-  
-        console.log("📌 서버 응답 상태:", response.status, response.statusText);
-        const errorData = await response.text(); // JSON 대신 텍스트로 먼저 확인
-        console.log("📌 서버 응답 데이터:", errorData);
-  
+
+        const errorData = await response.text();
         if (!response.ok) {
           throw new Error(JSON.parse(errorData).message || "서버 오류");
         }
-  
-        const userInfo = JSON.parse(errorData); // 성공 시 파싱
+
+        const userInfo = JSON.parse(errorData);
         console.log("✅ [서버에서 가져온 사용자 데이터]:", userInfo);
         setUserData(userInfo);
       } catch (error) {
@@ -59,10 +54,9 @@ export default function MyPageScreen({ navigation }) {
     loadUserData();
   }, [navigation]);
 
-  // 로그아웃 처리
   const handleLogout = async () => {
     try {
-      await logout(); // authService의 logout 사용
+      await logout();
       setLogoutModalVisible(false);
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     } catch (error) {
@@ -98,14 +92,14 @@ export default function MyPageScreen({ navigation }) {
           <Text style={styles.menuText}>계좌 정보 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword', { email: userData.email })}        >
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword', { email: userData.email })}>
           <Ionicons name="key-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>비밀번호 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
       </View>
 
-      {/* 공지사항 & 고객센터 */}
+      {/* 공지사항 & 고객센터 & 내 문의 내역 */}
       <View style={styles.section}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Notice')}>
           <Ionicons name="megaphone-outline" size={26} color="#007AFF" />
@@ -114,7 +108,13 @@ export default function MyPageScreen({ navigation }) {
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('CustomerSupport')}>
           <Ionicons name="help-circle-outline" size={26} color="#007AFF" />
-          <Text style={styles.menuText}>고객센터 문의</Text>
+          <Text style={styles.menuText}>고객센터 문의하기</Text>
+          <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
+        </TouchableOpacity>
+        {/* ✅ 내 문의 내역 보기 버튼 추가 */}
+        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('MyInquiriesScreen')}>
+          <Ionicons name="chatbox-ellipses-outline" size={26} color="#007AFF" />
+          <Text style={styles.menuText}>내 문의 내역 보기</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
       </View>
@@ -149,9 +149,7 @@ export default function MyPageScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },
-
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
   profileContainer: {
     alignItems: 'center',
     paddingVertical: 25,
@@ -159,81 +157,21 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
-  profileImage: { 
-    width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#fff', marginBottom: 10 
-  },
+  profileImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#fff', marginBottom: 10 },
   userName: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   userEmail: { fontSize: 16, color: '#E0E0E0' },
-
   section: { backgroundColor: '#fff', marginTop: 15, borderRadius: 12, paddingVertical: 5, elevation: 3 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
   menuText: { fontSize: 17, marginLeft: 15, color: '#333', flex: 1, fontWeight: '500' },
-
   logoutButton: { backgroundColor: '#FF3B30', padding: 15, borderRadius: 10, alignItems: 'center', marginVertical: 30, marginHorizontal: 20 },
   logoutText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-
-  modalOverlay: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.4)' 
-  },
-  modalContainer: { 
-    width: '80%', 
-    padding: 20, 
-    backgroundColor: '#fff', 
-    borderRadius: 20, 
-    alignItems: 'center', 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 2 }, 
-    shadowOpacity: 0.3, 
-    shadowRadius: 5, 
-    elevation: 10 
-  },
-  modalTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    marginTop: 15, 
-    color: '#333', 
-    textAlign: 'center' 
-  },
-  modalText: { 
-    fontSize: 16, 
-    color: '#666', 
-    textAlign: 'center', 
-    marginVertical: 10 
-  },
-  buttonRow: { 
-    flexDirection: 'row', 
-    marginTop: 20, 
-    justifyContent: 'space-between', 
-    width: '100%' 
-  },
-  cancelButton: { 
-    flex: 1, 
-    backgroundColor: '#ddd', 
-    paddingVertical: 12, 
-    borderRadius: 10, 
-    marginRight: 10, 
-    alignItems: 'center' 
-  },
-  cancelButtonText: { 
-    color: '#333', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  },
-  confirmButton: { 
-    flex: 1, 
-    backgroundColor: '#FF3B30', 
-    paddingVertical: 12, 
-    borderRadius: 10, 
-    marginLeft: 10, 
-    alignItems: 'center' 
-  },
-  confirmButtonText: { 
-    color: '#fff', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  }
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalContainer: { width: '80%', padding: 20, backgroundColor: '#fff', borderRadius: 20, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 5, elevation: 10 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 15, color: '#333', textAlign: 'center' },
+  modalText: { fontSize: 16, color: '#666', textAlign: 'center', marginVertical: 10 },
+  buttonRow: { flexDirection: 'row', marginTop: 20, justifyContent: 'space-between', width: '100%' },
+  cancelButton: { flex: 1, backgroundColor: '#ddd', paddingVertical: 12, borderRadius: 10, marginRight: 10, alignItems: 'center' },
+  cancelButtonText: { color: '#333', fontSize: 16, fontWeight: 'bold' },
+  confirmButton: { flex: 1, backgroundColor: '#FF3B30', paddingVertical: 12, borderRadius: 10, marginLeft: 10, alignItems: 'center' },
+  confirmButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
-

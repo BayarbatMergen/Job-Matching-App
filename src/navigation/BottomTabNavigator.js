@@ -11,6 +11,7 @@ import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
 import NotificationScreen from '../screens/NotificationScreen'; // ✅ 알림 화면 추가
 import ScheduleNavigator from './ScheduleNavigator';  // ✅ 중복 선언 제거 후 유지
+import MyInquiriesScreen from '../screens/MyInquiriesScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -46,6 +47,7 @@ function MyPageNavigator() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
       <Stack.Screen name="MyPageScreen" component={MyPageScreen} options={{ headerTitle: '마이페이지' }} />
+      <Stack.Screen name="MyInquiriesScreen" component={MyInquiriesScreen} options={{ headerTitle: '내 문의 내역' }} />
     </Stack.Navigator>
   );
 }

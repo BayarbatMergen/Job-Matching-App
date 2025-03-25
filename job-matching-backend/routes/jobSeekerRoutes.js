@@ -3,7 +3,7 @@ const router = express.Router();
 const { db, auth } = require('../config/firebase'); // ✅ 올바른 경로로 변경
 const bcrypt = require('bcrypt');
 
-// ✅ 1. 구직자 회원가입 API
+/* ✅ 1. 구직자 회원가입 API
 router.post('/register', async (req, res) => {
     try {
       console.log('✅ 요청 바디:', req.body); // <== 여기 추가!
@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
       res.status(500).json({ message: '서버 오류', error: error.message });
     }
   });
-  
+  */
 
 // ✅ 2. 구직자 목록 조회 API
 router.get('/', async (req, res) => {

@@ -47,50 +47,66 @@ export default function MyInquiriesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>내 문의 내역</Text>
       <FlatList
         data={inquiries}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.inquiryBox}>
+            <Text style={styles.label}>문의 내용:</Text>
             <Text style={styles.message}>{item.message}</Text>
+
+            {item.createdAt && (
+              <Text style={styles.date}>
+                {new Date(item.createdAt.seconds * 1000).toLocaleDateString()}
+              </Text>
+            )}
+
             {item.reply ? (
               <View style={styles.replyBox}>
-                <Text style={styles.replyLabel}>답변:</Text>
+                <Text style={styles.replyLabel}>관리자 답변:</Text>
                 <Text style={styles.replyContent}>{item.reply}</Text>
               </View>
             ) : (
-              <Text style={styles.pending}>답변 대기 중...</Text>
+              <Text style={styles.pending}>답변 대기 중입니다.</Text>
             )}
           </View>
         )}
-        ListEmptyComponent={<Text style={{ textAlign: 'center' }}>문의 내역이 없습니다.</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>문의 내역이 없습니다.</Text>}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 20, backgroundColor: '#F9FAFB' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   inquiryBox: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 15,
     marginBottom: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#EEE',
   },
+  label: { fontWeight: 'bold', fontSize: 15, marginBottom: 5, color: '#555' },
   message: { fontSize: 16, color: '#333', marginBottom: 10 },
+  date: { fontSize: 13, color: '#999', marginBottom: 10, textAlign: 'right' },
   replyBox: {
-    backgroundColor: '#E3F2FD',
-    padding: 10,
+    backgroundColor: '#E6F0FD',
+    padding: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#007AFF',
+    marginTop: 10,
   },
   replyLabel: { fontWeight: 'bold', color: '#007AFF', marginBottom: 5 },
   replyContent: { fontSize: 15, color: '#333' },
-  pending: { color: '#999', fontStyle: 'italic' },
+  pending: { color: '#FF8C00', fontStyle: 'italic', marginTop: 10 },
+  emptyText: { textAlign: 'center', color: '#777', marginTop: 30, fontSize: 16 },
 });
