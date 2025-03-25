@@ -27,7 +27,7 @@ export default function AdminChatListScreen({ navigation }) {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/admin/chats/admin-rooms`, {
+      const response = await fetch(`${API_BASE_URL}/admin/chats/all-rooms`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

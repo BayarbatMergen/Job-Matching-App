@@ -1,38 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
 
 export default function AdminMyPageScreen() {
   const navigation = useNavigation();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
 
-  // 로그아웃 처리
-  const handleLogout = () => {
-    setLogoutModalVisible(false);
+  useEffect(() => {
+    const loadAdminData = async () => {
+      const storedEmail = await SecureStore.getItemAsync('userEmail');
+      const storedName = await SecureStore.getItemAsync('userName'); // 관리자로 로그인 시 저장해놓은 이름
+      setAdminEmail(storedEmail || 'admin@example.com');
+      setAdminName(storedName || '관리자');
+    };
+    loadAdminData();
+  }, []);
+
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync("token");
+    await SecureStore.deleteItemAsync("userId");
+    await SecureStore.deleteItemAsync("userEmail");
+    await SecureStore.deleteItemAsync("userName");
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],  // ✅ 로그인 화면으로 이동 (뒤로 가기 방지)
+      routes: [{ name: 'Login' }],
     });
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
       {/* 📌 프로필 영역 */}
       <View style={styles.profileContainer}>
         <Image 
-          source={require('../../assets/images/thechingu1.png')}  // ✅ 관리자 프로필 이미지
+          source={require('../../assets/images/thechingu1.png')}  
           style={styles.profileImage} 
         />
-        <Text style={styles.userName}>관리자</Text>
-        <Text style={styles.userEmail}>admin@example.com</Text>
+        <Text style={styles.userName}>{adminName}</Text>
+        <Text style={styles.userEmail}>{adminEmail}</Text>
       </View>
 
-      {/* 🔹 관리자 설정 메뉴 */}
+      {/* 🔹 관리자 메뉴 */}
       <View style={styles.section}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('UserManagementScreen')}>
           <Ionicons name="people-outline" size={26} color="#FF9500" />
-          <Text style={styles.menuText}>총 사용자 정보 관리</Text>
+          <Text style={styles.menuText}>전체 사용자 관리</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AdminPasswordChangeScreen')}>
@@ -40,17 +55,13 @@ export default function AdminMyPageScreen() {
           <Text style={styles.menuText}>비밀번호 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-      </View>
-
-      {/* 📢 공지사항 & 고객센터 */}
-      <View style={styles.section}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('NoticeWriteScreen')}>
           <Ionicons name="megaphone-outline" size={26} color="#FF3B30" />
           <Text style={styles.menuText}>공지사항 작성</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('CustomerInquiryScreen')}>
-          <Ionicons name="chatbubbles-outline" size={26} color="#FF3B30" />
+          <Ionicons name="help-circle-outline" size={26} color="#FF3B30" />
           <Text style={styles.menuText}>고객센터 문의 확인</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
@@ -61,14 +72,13 @@ export default function AdminMyPageScreen() {
         <Text style={styles.logoutText}>로그아웃</Text>
       </TouchableOpacity>
 
-      {/* 🚀 로그아웃 모달 */}
+      {/* 로그아웃 모달 */}
       <Modal visible={logoutModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Ionicons name="log-out-outline" size={40} color="#FF3B30" />
             <Text style={styles.modalTitle}>로그아웃 하시겠습니까?</Text>
             <Text style={styles.modalText}>현재 계정에서 로그아웃합니다.</Text>
-            
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setLogoutModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>취소</Text>
@@ -87,7 +97,6 @@ export default function AdminMyPageScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F8F8' },
 
-  // 🔹 프로필 영역 스타일
   profileContainer: {
     alignItems: 'center',
     paddingVertical: 25,
@@ -96,26 +105,20 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   profileImage: { 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    borderWidth: 2, 
-    borderColor: '#fff', 
-    marginBottom: 10 
+    width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#fff', marginBottom: 10 
   },
   userName: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  userEmail: { fontSize: 16, color: '#E0E0E0' },
+  userEmail: { fontSize: 16, color: '#F0F0F0' },
 
-  // 🔹 메뉴 스타일
   section: { 
     backgroundColor: '#fff', 
     marginTop: 15, 
     borderRadius: 12, 
-    paddingVertical: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    paddingVertical: 5, 
+    shadowColor: '#000', 
+    shadowOpacity: 0.05, 
+    shadowRadius: 3, 
+    elevation: 2 
   },
   menuItem: {
     flexDirection: 'row',
@@ -133,39 +136,73 @@ const styles = StyleSheet.create({
     fontWeight: '500' 
   },
 
-  // 로그아웃 버튼
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginVertical: 30,
-    marginHorizontal: 20
+  logoutButton: { 
+    backgroundColor: '#FF3B30', 
+    padding: 15, 
+    borderRadius: 10, 
+    alignItems: 'center', 
+    marginVertical: 30, 
+    marginHorizontal: 20 
   },
   logoutText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
 
-  // 로그아웃 모달 스타일
   modalOverlay: { 
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.5)' 
+    backgroundColor: 'rgba(0,0,0,0.4)' 
   },
   modalContainer: { 
     width: '80%', 
     padding: 20, 
     backgroundColor: '#fff', 
-    borderRadius: 15, 
-    alignItems: 'center',
-    elevation: 5 
+    borderRadius: 20, 
+    alignItems: 'center', 
+    elevation: 10 
   },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 10 },
-  modalText: { fontSize: 16, color: '#666', marginVertical: 10 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-
-  cancelButton: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', backgroundColor: '#E0E0E0', marginRight: 10 },
-  cancelButtonText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-
-  confirmButton: { flex: 1, padding: 12, borderRadius: 8, alignItems: 'center', backgroundColor: '#FF3B30' },
-  confirmButtonText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginTop: 15, 
+    color: '#333', 
+    textAlign: 'center' 
+  },
+  modalText: { 
+    fontSize: 16, 
+    color: '#666', 
+    textAlign: 'center', 
+    marginVertical: 10 
+  },
+  buttonRow: { 
+    flexDirection: 'row', 
+    marginTop: 20, 
+    justifyContent: 'space-between', 
+    width: '100%' 
+  },
+  cancelButton: { 
+    flex: 1, 
+    backgroundColor: '#ddd', 
+    paddingVertical: 12, 
+    borderRadius: 10, 
+    marginRight: 10, 
+    alignItems: 'center' 
+  },
+  cancelButtonText: { 
+    color: '#333', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  confirmButton: { 
+    flex: 1, 
+    backgroundColor: '#FF3B30', 
+    paddingVertical: 12, 
+    borderRadius: 10, 
+    marginLeft: 10, 
+    alignItems: 'center' 
+  },
+  confirmButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  }
 });

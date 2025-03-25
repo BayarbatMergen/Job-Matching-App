@@ -22,7 +22,7 @@ export const saveUserData = async (token, userId, email, password, role) => {
     await SecureStore.setItemAsync("userEmail", email);
     await SecureStore.setItemAsync("userPassword", password);
     await SecureStore.setItemAsync("userRole", String(role));
-
+    
     // 저장된 값 확인
     const storedRole = await SecureStore.getItemAsync("userRole");
     console.log("✅ SecureStore 에 저장된 userRole:", storedRole);

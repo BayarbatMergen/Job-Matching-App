@@ -105,7 +105,12 @@ function AdminMyPageStack() {
         headerTitleAlign: 'center'
       }}
     >
-      <Stack.Screen name="AdminMyPage" component={AdminMyPageScreen} options={{ headerTitle: '마이페이지' }} />
+      <Stack.Screen 
+        name="AdminMyPageMain"  // ✅ 이름 변경!
+        component={AdminMyPageScreen} 
+        options={{ headerTitle: '마이페이지' }} 
+      />
+      {/* 나중에 마이페이지 내 다른 화면 추가 시에는 이름 다르게 작성 */}
     </Stack.Navigator>
   );
 }

@@ -45,22 +45,24 @@ const addMessageToChat = async (req, res) => {
     const roomDoc = await db.collection("chats").doc(roomId).get();
     const roomData = roomDoc.data();
 
-    // 공지방이라면 메시지 전송 금지
-    if (roomData && roomData.roomType === "notice") {
-      return res.status(403).json({ message: "공지방에는 메시지를 보낼 수 없습니다." });
+    // 공지방 차단 (관리자가 아니면)
+    if (roomData && roomData.roomType === "notice" && senderId !== process.env.ADMIN_UID) {
+      return res.status(403).json({ message: "공지방에는 관리자만 메시지를 보낼 수 있습니다." });
     }
 
-    const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
     const createdAt = admin.firestore.Timestamp.now();
+    const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
     const newMessage = {
       text,
       senderId,
       createdAt,
     };
 
+    // ✅ Firestore에 메시지 저장
     await messageRef.set(newMessage);
 
-    res.status(200).json({
+    // ✅ 저장된 메시지 응답 시 id 포함해서 보내기
+    return res.status(200).json({
       message: "✅ 메시지 추가 성공!",
       data: { id: messageRef.id, ...newMessage },
     });
@@ -69,6 +71,7 @@ const addMessageToChat = async (req, res) => {
     res.status(500).json({ message: "❌ 서버 오류 발생" });
   }
 };
+
 
 // ✅ 모든 채팅방 목록 가져오기 (roomType 포함 반환)
 const getChatRooms = async (req, res) => {
