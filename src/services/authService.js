@@ -13,19 +13,23 @@ import jwt_decode from "jwt-decode";
 
 // ✅ 로그인 후 토큰, userId, email, password 저장
 // ✅ 로그인 후 데이터 저장 함수
-export const saveUserData = async (token, userId, email, password, role) => {
+export const saveUserData = async (token, userId, email, password, role, name) => {
   try {
     console.log("🛠 saveUserData() 호출됨! 넘겨받은 role 파라미터:", role);
+    console.log("🛠 saveUserData() 호출됨! 넘겨받은 name 파라미터:", name);
 
-    await SecureStore.setItemAsync("token", token);
-    await SecureStore.setItemAsync("userId", userId);
-    await SecureStore.setItemAsync("userEmail", email);
-    await SecureStore.setItemAsync("userPassword", password);
+    await SecureStore.setItemAsync("token", String(token));
+    await SecureStore.setItemAsync("userId", String(userId));
+    await SecureStore.setItemAsync("userEmail", String(email));
+    await SecureStore.setItemAsync("userPassword", String(password));
     await SecureStore.setItemAsync("userRole", String(role));
-    
-    // 저장된 값 확인
+    await SecureStore.setItemAsync("userName", String(name)); // ✅ 이름도 문자열로 저장!
+
+    // 확인용 로그
     const storedRole = await SecureStore.getItemAsync("userRole");
-    console.log("✅ SecureStore 에 저장된 userRole:", storedRole);
+    const storedName = await SecureStore.getItemAsync("userName");
+    console.log("✅ SecureStore 저장된 userRole:", storedRole);
+    console.log("✅ SecureStore 저장된 userName:", storedName);
   } catch (error) {
     console.error("❌ saveUserData 저장 오류:", error);
   }
@@ -46,19 +50,22 @@ export const loginWithBackend = async (email, password) => {
 
     const result = await response.json();
     console.log("✅ 백엔드 응답 전체:", JSON.stringify(result, null, 2));
-    console.log("✅ result.user.role 값:", result.user?.role);
 
-    // Firebase 커스텀 토큰으로 로그인
+    // ✅ 여기서 반드시 분리해서 콘솔로 확인!
+    const userName = result.user?.name;
+    console.log("✅ 가져온 userName 값:", userName);
+
+    // Firebase 커스텀 토큰 로그인
     await signInWithCustomToken(auth, result.firebaseToken);
-    console.log("🔥 result.user.role BEFORE SAVE:", result.user.role);
 
-    // ✅ 저장 호출 (role 반드시 result.user.role로!)
+    // ✅ saveUserData에 name 명시적으로 전달
     await saveUserData(
       result.token,
       result.user.userId,
       result.user.email,
       password,
-      result.user.role
+      result.user.role,
+      userName // 🔥 여기!
     );
 
     return result;
@@ -68,6 +75,7 @@ export const loginWithBackend = async (email, password) => {
   }
 };
 
+
 export const fetchUserData = async () => {
   try {
     console.log("🚀 [fetchUserData] 실행 중...");
@@ -75,19 +83,21 @@ export const fetchUserData = async () => {
     const userId = await SecureStore.getItemAsync("userId");
     const email = await SecureStore.getItemAsync("userEmail");
     const role = await SecureStore.getItemAsync("userRole");
+    const name = await SecureStore.getItemAsync("userName"); // ✅ 이름까지 불러오기!
 
     if (!userId || !role) {
       console.warn("⚠️ 저장된 userId 또는 role 없음, 로그인 필요");
       return null;
     }
 
-    console.log("✅ 가져온 사용자 데이터:", { token, userId, email, role });
-    return { token, userId, email, role };
+    console.log("✅ 가져온 사용자 데이터:", { token, userId, email, role, name });
+    return { token, userId, email, role, name }; // ✅ name 포함해서 반환
   } catch (error) {
     console.error("❌ fetchUserData 오류:", error);
     return null;
   }
 };
+
 
 // ✅ Firebase 회원가입
 export const registerWithFirebase = async (email, password) => {

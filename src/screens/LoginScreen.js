@@ -85,7 +85,7 @@ const LoginScreen = ({ navigation }) => {
         console.log("✅ 로그인 성공:", result);
   
         // 🔹 토큰 저장 후 fetchUserData 실행
-        await saveUserData(result.token, result.user.userId, result.user.email, password, result.user.role);
+        await saveUserData(result.token, result.user.userId, result.user.email, password, result.user.role, result.user.name);
   
         console.log("🚀 토큰 저장 완료, 사용자 데이터 로드 시작");
         await fetchUserData(); // 🚀 저장된 후 실행되도록 수정

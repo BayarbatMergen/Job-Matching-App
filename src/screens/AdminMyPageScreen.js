@@ -1,39 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal } from 'react-native';
+import { 
+  View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
+import { logout } from '../services/authService';
 
 export default function AdminMyPageScreen() {
   const navigation = useNavigation();
-  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   useEffect(() => {
     const loadAdminData = async () => {
-      const storedEmail = await SecureStore.getItemAsync('userEmail');
-      const storedName = await SecureStore.getItemAsync('userName'); // 관리자로 로그인 시 저장해놓은 이름
-      setAdminEmail(storedEmail || 'admin@example.com');
-      setAdminName(storedName || '관리자');
+      try {
+        const storedName = await SecureStore.getItemAsync('userName');
+        const storedEmail = await SecureStore.getItemAsync('userEmail');
+        console.log("✅ SecureStore에서 가져온 관리자 이름:", storedName);
+        console.log("✅ SecureStore에서 가져온 관리자 이메일:", storedEmail);
+
+        setAdminName(storedName || '관리자');
+        setAdminEmail(storedEmail || 'admin@example.com');
+      } catch (error) {
+        console.error("❌ 관리자 정보 불러오기 오류:", error);
+      }
     };
+
     loadAdminData();
   }, []);
 
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync("token");
-    await SecureStore.deleteItemAsync("userId");
-    await SecureStore.deleteItemAsync("userEmail");
-    await SecureStore.deleteItemAsync("userName");
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+    try {
+      await logout();
+      setLogoutModalVisible(false);
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    } catch (error) {
+      console.error("❌ 로그아웃 오류:", error);
+      Alert.alert("오류", "로그아웃에 실패했습니다.");
+    }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
-      {/* 📌 프로필 영역 */}
+    <ScrollView style={styles.container}>
+      {/* 관리자 프로필 영역 */}
       <View style={styles.profileContainer}>
         <Image 
           source={require('../../assets/images/thechingu1.png')}  
@@ -43,15 +54,15 @@ export default function AdminMyPageScreen() {
         <Text style={styles.userEmail}>{adminEmail}</Text>
       </View>
 
-      {/* 🔹 관리자 메뉴 */}
+      {/* 관리자 메뉴 */}
       <View style={styles.section}>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('UserManagementScreen')}>
-          <Ionicons name="people-outline" size={26} color="#FF9500" />
+          <Ionicons name="people-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>전체 사용자 관리</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AdminPasswordChangeScreen')}>
-          <Ionicons name="key-outline" size={26} color="#FF9500" />
+          <Ionicons name="key-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>비밀번호 변경</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
@@ -67,7 +78,7 @@ export default function AdminMyPageScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 🔴 로그아웃 버튼 */}
+      {/* 로그아웃 버튼 */}
       <TouchableOpacity style={styles.logoutButton} onPress={() => setLogoutModalVisible(true)}>
         <Text style={styles.logoutText}>로그아웃</Text>
       </TouchableOpacity>
@@ -100,7 +111,7 @@ const styles = StyleSheet.create({
   profileContainer: {
     alignItems: 'center',
     paddingVertical: 25,
-    backgroundColor: '#FF9500',
+    backgroundColor: '#007AFF',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
@@ -108,42 +119,13 @@ const styles = StyleSheet.create({
     width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: '#fff', marginBottom: 10 
   },
   userName: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  userEmail: { fontSize: 16, color: '#F0F0F0' },
+  userEmail: { fontSize: 16, color: '#E0E0E0' },
 
-  section: { 
-    backgroundColor: '#fff', 
-    marginTop: 15, 
-    borderRadius: 12, 
-    paddingVertical: 5, 
-    shadowColor: '#000', 
-    shadowOpacity: 0.05, 
-    shadowRadius: 3, 
-    elevation: 2 
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  menuText: { 
-    fontSize: 17, 
-    marginLeft: 15, 
-    color: '#333', 
-    flex: 1, 
-    fontWeight: '500' 
-  },
+  section: { backgroundColor: '#fff', marginTop: 15, borderRadius: 12, paddingVertical: 5, elevation: 3 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  menuText: { fontSize: 17, marginLeft: 15, color: '#333', flex: 1, fontWeight: '500' },
 
-  logoutButton: { 
-    backgroundColor: '#FF3B30', 
-    padding: 15, 
-    borderRadius: 10, 
-    alignItems: 'center', 
-    marginVertical: 30, 
-    marginHorizontal: 20 
-  },
+  logoutButton: { backgroundColor: '#FF3B30', padding: 15, borderRadius: 10, alignItems: 'center', marginVertical: 30, marginHorizontal: 20 },
   logoutText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
 
   modalOverlay: { 
@@ -158,6 +140,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', 
     borderRadius: 20, 
     alignItems: 'center', 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.3, 
+    shadowRadius: 5, 
     elevation: 10 
   },
   modalTitle: { 
