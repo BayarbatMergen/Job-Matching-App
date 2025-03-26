@@ -18,6 +18,7 @@ import UserDetailScreen from '../screens/UserDetailScreen';
 import NoticeWriteScreen from '../screens/NoticeWriteScreen';
 import AdminPasswordChangeScreen from '../screens/AdminPasswordChangeScreen';
 import CustomerInquiryScreen from '../screens/CustomerInquiryScreen';
+import UserSelectionScreen from '../screens/UserSelectionScreen'; // ✅ 추가!
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -49,6 +50,9 @@ function AdminHomeStack() {
       <Stack.Screen name="AdminJobDetail" component={AdminJobDetailScreen} options={{ headerTitle: '공고 상세' }} />
       <Stack.Screen name="AdminJobForm" component={AdminJobFormScreen} options={{ headerTitle: '공고 등록' }} />
       <Stack.Screen name="ApprovalScreen" component={ApprovalScreen} options={{ headerTitle: '승인 대기 목록' }} />
+
+      {/* ✅ UserSelectionScreen 추가 */}
+      <Stack.Screen name="UserSelectionScreen" component={UserSelectionScreen} options={{ headerTitle: '사용자 선택' }} />
     </Stack.Navigator>
   );
 }
@@ -92,7 +96,7 @@ function AdminChatStack() {
   );
 }
 
-// 📌 마이페이지 스택 (추가 페이지 연결)
+// 📌 마이페이지 스택
 function AdminMyPageStack() {
   return (
     <Stack.Navigator
@@ -112,7 +116,7 @@ function AdminMyPageStack() {
   );
 }
 
-// 📌 바텀 탭 네비게이터
+// 📌 바텀 탭 네비게이터 (관리자용)
 export default function AdminBottomTabNavigator() {
   return (
     <Tab.Navigator
@@ -120,7 +124,7 @@ export default function AdminBottomTabNavigator() {
         tabBarShowLabel: false,
         headerShown: false,
         tabBarStyle: { backgroundColor: '#f8f8f8', height: 60, paddingBottom: 10 },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color }) => {
           let iconName;
           if (route.name === 'AdminHome') iconName = 'briefcase-outline';
           else if (route.name === 'AdminSchedule') iconName = 'calendar-outline';
@@ -132,7 +136,6 @@ export default function AdminBottomTabNavigator() {
     >
       <Tab.Screen name="AdminHome" component={AdminHomeStack} />
       <Tab.Screen name="AdminSchedule" component={AdminScheduleStack} />
-      {/* ✅ 수정된 `AdminChatStack` 반영 */}
       <Tab.Screen name="AdminChat" component={AdminChatStack} />
       <Tab.Screen name="AdminMyPage" component={AdminMyPageStack} />
     </Tab.Navigator>

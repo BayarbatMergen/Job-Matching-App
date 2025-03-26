@@ -11,6 +11,7 @@ import UserDetailScreen from '../screens/UserDetailScreen';
 import NoticeWriteScreen from '../screens/NoticeWriteScreen';
 import CustomerInquiryScreen from '../screens/CustomerInquiryScreen';
 import AdminPasswordChangeScreen from '../screens/AdminPasswordChangeScreen';
+import UserSelectionScreen from '../screens/UserSelectionScreen';
 
 const Stack = createStackNavigator();
 
@@ -20,6 +21,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
       <Stack.Screen name="AdminJobList" component={AdminJobListScreen} />
       <Stack.Screen name="AdminJobDetail" component={AdminJobDetailScreen} />
+      <Stack.Screen name="UserSelectionScreen" component={UserSelectionScreen} />
       <Stack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
       <Stack.Screen name="AdminChat" component={AdminChatScreen} />
       <Stack.Screen name="ApprovalScreen" component={ApprovalScreen} />

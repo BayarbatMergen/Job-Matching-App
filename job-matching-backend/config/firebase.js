@@ -77,4 +77,4 @@ if (!storage) {
 
 console.log('✅ Firestore & Storage 초기화 완료');
 
-module.exports = { db, storage, adminAuth, clientAuth, schedulesCollection };
+module.exports = { admin, db, storage, adminAuth, clientAuth, schedulesCollection };

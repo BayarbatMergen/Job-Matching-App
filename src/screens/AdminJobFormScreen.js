@@ -9,8 +9,9 @@ import {
   ScrollView,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { db } from "../config/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import axios from "axios";
+import API_BASE_URL from "../config/apiConfig";
+import userSelectionStore from "../store/userSelectionStore";
 
 export default function AdminJobFormScreen({ navigation }) {
   const [form, setForm] = useState({
@@ -29,6 +30,9 @@ export default function AdminJobFormScreen({ navigation }) {
     description: "",
   });
 
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [sendToAll, setSendToAll] = useState(false); // ✅ 전체 알림 여부 상태 추가
+
   const handleNumberInput = (key, value) => {
     if (/^\d*$/.test(value)) {
       setForm((prev) => ({ ...prev, [key]: value }));
@@ -42,26 +46,25 @@ export default function AdminJobFormScreen({ navigation }) {
         return;
       }
     }
-
+  
     try {
       const jobData = {
         ...form,
-        startDate: form.startDate,
-        endDate: form.endDate,
         workDays: form.workDays
           .split(",")
           .map((day) => day.trim())
           .filter((day) => day !== ""),
-        wage: form.wage,
-        createdAt: new Date().toISOString(),
+        notifyUsers: sendToAll ? "all" : userSelectionStore.selectedUsers,  // ✅ 여기 수정!
       };
-
-      const docRef = await addDoc(collection(db, "jobs"), jobData);
+  
+      const response = await axios.post(`${API_BASE_URL}/jobs/add`, jobData);
+      console.log("✅ 공고 등록 성공:", response.data);
+  
       Alert.alert("등록 완료", "공고가 성공적으로 등록되었습니다.");
-      console.log("✅ 공고 등록 성공:", docRef.id);
+      userSelectionStore.clearSelectedUsers();  // ✅ 전송 후 store 초기화
       navigation.goBack();
     } catch (error) {
-      console.error("❌ 공고 등록 오류:", error);
+      console.error("❌ 공고 등록 API 오류:", error);
       Alert.alert("등록 실패", "공고 등록 중 오류가 발생했습니다.");
     }
   };
@@ -204,6 +207,32 @@ export default function AdminJobFormScreen({ navigation }) {
         placeholder="업무 내용 및 추가 사항"
       />
 
+      {/* ✅ 전체 알림 또는 특정 사용자 알림 선택 */}
+      <View style={styles.alertTypeContainer}>
+        <TouchableOpacity
+          style={[
+            styles.alertTypeButton,
+            sendToAll && { backgroundColor: "#4CAF50" },
+          ]}
+          onPress={() => setSendToAll(true)}
+        >
+          <Text style={styles.alertTypeButtonText}>모든 사용자에게 알림</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+  style={[
+    styles.alertTypeButton,
+    !sendToAll && { backgroundColor: "#4CAF50" },
+  ]}
+  onPress={() => {
+    setSendToAll(false);
+    navigation.navigate("UserSelectionScreen");
+  }}
+>
+  <Text style={styles.alertTypeButtonText}>특정 사용자 선택</Text>
+</TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>공고 등록</Text>
       </TouchableOpacity>
@@ -243,12 +272,29 @@ const styles = StyleSheet.create({
     marginTop: 5,
     height: 100,
   },
+  alertTypeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 20,
+  },
+  alertTypeButton: {
+    flex: 0.48,
+    backgroundColor: "#ccc",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  alertTypeButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
   submitButton: {
     backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 20,
   },
   submitButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
 });
+

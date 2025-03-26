@@ -3,35 +3,22 @@ const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const bodyParser = require("body-parser");
-const admin = require("firebase-admin");
+const { admin, db, storage } = require("./config/firebaseAdmin");   // ✅ 여기!
+const { verifyToken } = require("./middlewares/authMiddleware");
+
 const ADMIN_UID = process.env.ADMIN_UID;
+const app = express();
 
-
-
-// ✅ Firebase 초기화
-const serviceAccount = require("./config/firebaseServiceAccount.json");
-const { verifyToken } = require("./middlewares/authMiddleware"); // ✅ 인증 미들웨어 불러오기
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: "jobmatchingapp-383da.firebasestorage.app",
-  });
-}
-
-const db = admin.firestore();
-const app = express(); // ✅ Express 앱 초기화
-
-// ✅ 미들웨어 설정
-app.use(bodyParser.json()); // For JSON request bodies
+// ✅ 미들웨어
+app.use(bodyParser.json());
 app.use(cors({ origin: "*" }));
-app.use(express.json()); // ✅ JSON 요청 처리
-app.use(express.urlencoded({ extended: true })); // ✅ URL 인코딩된 데이터 처리
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ✅ 환경 변수 검증 추가
+// ✅ 환경 변수 확인
 if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
   console.error("❌ [오류] SMTP 환경 변수가 설정되지 않았습니다.");
-  process.exit(1); // 🚀 서버 실행 중단 (환경 변수 필수)
+  process.exit(1);
 }
 
 // ✅ SMTP 설정
@@ -40,11 +27,10 @@ console.log("✅ SMTP_USER:", process.env.SMTP_USER);
 console.log("✅ ADMIN_EMAIL:", process.env.ADMIN_EMAIL || "❌ 없음");
 console.log("✅ ADMIN_UID:", process.env.ADMIN_UID || "❌ 없음");
 
-// ✅ Nodemailer SMTP 설정
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: process.env.SMTP_PORT || 587,
-  secure: false, // TLS 사용
+  secure: false,
   requireTLS: true,
   auth: {
     user: process.env.SMTP_USER,
@@ -52,7 +38,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ SMTP 연결 테스트 함수
 async function testSMTP() {
   try {
     await transporter.verify();
@@ -62,23 +47,22 @@ async function testSMTP() {
   }
 }
 
-// ✅ API 라우트 가져오기
+// ✅ 라우터 가져오기
 const authRoutes = require("./routes/authRoutes");
 const jobRoutes = require("./routes/jobRoutes");
 const jobSeekerRoutes = require("./routes/jobSeekerRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const scheduleRoutes = require("./routes/scheduleRoutes"); // ✅ 일정 API 추가
-const chatRoutes = require("./routes/chatRoutes"); // Import chat routes
+const scheduleRoutes = require("./routes/scheduleRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
-// ✅ API 엔드포인트 설정
+// ✅ 라우터 연결
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/jobseekers", jobSeekerRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/schedules", scheduleRoutes); 
-app.use("/api/chats", chatRoutes); 
+app.use("/api/schedules", scheduleRoutes);
+app.use("/api/chats", chatRoutes);
 
-// ✅ 서버 상태 확인 엔드포인트
 app.get("/", (req, res) => {
   res.send("✅ Job Matching Backend 서버가 실행 중입니다!");
 });

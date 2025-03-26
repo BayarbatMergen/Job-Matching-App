@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../config/firebase');
+const { admin, db } = require('../config/firebaseAdmin');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
-const admin = require('firebase-admin');
+
 
 // ✅ Nodemailer 설정 (이메일 알림 전송)
 const transporter = nodemailer.createTransport({
@@ -14,41 +14,59 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ 1️⃣ 구인 공고 등록 API
-// ✅ 구인 공고 등록 API (startDate, endDate 분리 버전)
+// ✅ 구인 공고 등록 API (startDate, endDate 포함 & 특정 유저 알림 전송)
 router.post('/add', async (req, res) => {
   try {
-    let { title, company, location, wage, workdays, employmentType, startDate, endDate } = req.body;
+    const {
+      title, wage, startDate, endDate, workDays, workHours, industry,
+      employmentType, accommodation, maleRecruitment, femaleRecruitment,
+      location, description, notifyUsers  // ✅ 추가: notifyUsers
+    } = req.body;
 
-    if (!title || !company || !location || !wage || !workdays || !employmentType || !startDate || !endDate) {
-      return res.status(400).json({ message: '모든 필드를 입력하세요.' });
-    }
-
-    // ✅ workdays가 문자열로 들어올 경우 배열로 변환
-    if (typeof workdays === 'string') {
-      workdays = workdays.split(',').map(day => day.trim());
+    if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
+      return res.status(400).json({ message: '모든 필수 항목을 입력해주세요.' });
     }
 
     const jobRef = db.collection('jobs').doc();
     await jobRef.set({
-      title,
-      company,
-      location,
-      wage,
-      workdays, 
-      employmentType,
-      startDate,   // ✅ 시작일
-      endDate,     // ✅ 종료일
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      title, wage, startDate, endDate, workDays: Array.isArray(workDays) ? workDays : [],
+      workHours, industry, employmentType, accommodation, maleRecruitment, femaleRecruitment,
+      location, description,
+      createdAt: admin.firestore.Timestamp.now(),
+      updatedAt: admin.firestore.Timestamp.now(),
     });
 
-    res.status(201).json({ message: '구인 공고 등록 성공!', jobId: jobRef.id });
+    console.log(`✅ 공고 등록 성공! [${jobRef.id}] — 알림 처리 시작`);
+
+    // ✅ 알림 전송 처리
+    if (notifyUsers === "all") {
+      // 모든 사용자에게 글로벌 알림 추가
+      await db.collection('globalNotifications').add({
+        title: "새 공고 등록",
+        message: `"${title}" 공고가 새로 등록되었습니다.`,
+        createdAt: admin.firestore.Timestamp.now(),
+      });
+      console.log("✅ 글로벌 알림 전송 완료");
+    } else if (Array.isArray(notifyUsers)) {
+      // 특정 사용자에게 개별 알림 추가
+      for (const userId of notifyUsers) {
+        await db.collection('notifications').doc(userId).collection('userNotifications').add({
+          title: "새 공고 등록",
+          message: `"${title}" 공고가 새로 등록되었습니다.`,
+          read: false,
+          createdAt: admin.firestore.Timestamp.now(),
+        });
+      }
+      console.log(`✅ ${notifyUsers.length}명의 사용자에게 개별 알림 전송 완료`);
+    }
+
+    res.status(201).json({ message: '공고 등록 및 알림 전송 완료', jobId: jobRef.id });
   } catch (error) {
-    console.error('🔥 구인 공고 등록 오류:', error);
+    console.error('🔥 공고 등록 또는 알림 전송 오류:', error.stack);
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
+
 
 // ✅ 2️⃣ 구인 공고 목록 조회 API
 router.get('/list', async (req, res) => {
@@ -180,7 +198,7 @@ router.post('/apply', async (req, res) => {
       from: `"Job Matching Support" <${process.env.SMTP_USER}>`,
       to: process.env.ADMIN_EMAIL,
       subject: '새로운 구직 지원 알림',
-      text: `📢 지원자: ${userEmail} 가 ${jobData.title} 공고에 지원했습니다.`
+      text: `지원자: ${userEmail} 가 ${jobData.title} 공고에 지원했습니다.`
     };
     await transporter.sendMail(mailOptions);
 
