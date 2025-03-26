@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { useNavigation } from '@react-navigation/native'; // ✅ 추가
 
 // 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {
@@ -15,6 +16,7 @@ LocaleConfig.locales['kr'] = {
 LocaleConfig.defaultLocale = 'kr';
 
 export default function AdminScheduleScreen() {
+  const navigation = useNavigation(); // ✅ 추가
   const [markedDates, setMarkedDates] = useState({});
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSchedules, setSelectedSchedules] = useState([]);
@@ -27,7 +29,6 @@ export default function AdminScheduleScreen() {
         const querySnapshot = await getDocs(collection(db, 'jobs'));
         const jobs = querySnapshot.docs.map(doc => doc.data());
 
-        // 날짜별로 표시할 일정 마킹
         const marks = {};
         const scheduleMap = {};
 
@@ -120,6 +121,14 @@ export default function AdminScheduleScreen() {
             )}
           </ScrollView>
         </View>
+
+        {/* ✅ 여기 추가: 승인 관리로 이동 버튼 */}
+        <TouchableOpacity
+          style={styles.approvalButton}
+          onPress={() => navigation.navigate("SettlementApprovalScreen")}
+        >
+          <Text style={styles.approvalButtonText}>정산 승인 관리</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -170,4 +179,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#AAA',
   },
+  approvalButton: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginVertical: 20,
+    marginHorizontal: 20,
+  },
+  approvalButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });

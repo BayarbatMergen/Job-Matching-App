@@ -12,6 +12,7 @@ import NoticeWriteScreen from '../screens/NoticeWriteScreen';
 import CustomerInquiryScreen from '../screens/CustomerInquiryScreen';
 import AdminPasswordChangeScreen from '../screens/AdminPasswordChangeScreen';
 import UserSelectionScreen from '../screens/UserSelectionScreen';
+import SettlementApprovalScreen from '../screens/SettlementApprovalScreen';
 
 const Stack = createStackNavigator();
 
@@ -23,6 +24,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="AdminJobDetail" component={AdminJobDetailScreen} />
       <Stack.Screen name="UserSelectionScreen" component={UserSelectionScreen} />
       <Stack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
+      <Stack.Screen name="SettlementApprovalScreen" component={SettlementApprovalScreen} options={{ headerTitle: '정산 승인 관리' }} />
       <Stack.Screen name="AdminChat" component={AdminChatScreen} />
       <Stack.Screen name="ApprovalScreen" component={ApprovalScreen} />
       <Stack.Screen name="UserManagementScreen" component={UserManagementScreen} />

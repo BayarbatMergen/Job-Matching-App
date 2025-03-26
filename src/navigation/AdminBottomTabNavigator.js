@@ -19,6 +19,7 @@ import NoticeWriteScreen from '../screens/NoticeWriteScreen';
 import AdminPasswordChangeScreen from '../screens/AdminPasswordChangeScreen';
 import CustomerInquiryScreen from '../screens/CustomerInquiryScreen';
 import UserSelectionScreen from '../screens/UserSelectionScreen'; // ✅ 추가!
+import SettlementApprovalScreen from '../screens/SettlementApprovalScreen'; // ✅ 추가!
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -68,6 +69,7 @@ function AdminScheduleStack() {
       }}
     >
       <Stack.Screen name="AdminScheduleScreen" component={AdminScheduleScreen} options={{ headerTitle: '일정 관리' }} />
+      <Stack.Screen name="SettlementApprovalScreen" component={SettlementApprovalScreen} options={{ headerTitle: '정산 승인 관리' }} />
     </Stack.Navigator>
   );
 }

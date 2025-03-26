@@ -4,6 +4,8 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import * as SecureStore from 'expo-secure-store';
 import { fetchUserData } from '../services/authService';
 import { fetchUserSchedules } from '../services/scheduleService';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import API_BASE_URL from '../config/apiConfig';
 
 LocaleConfig.locales['kr'] = {
@@ -25,6 +27,7 @@ export default function ScheduleScreen({ navigation }) {
   const [userId, setUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasPendingSettlement, setHasPendingSettlement] = useState(false);
 
   useEffect(() => {
     const initializeUser = async () => {
@@ -35,7 +38,6 @@ export default function ScheduleScreen({ navigation }) {
           navigation.replace("Login");
           return;
         }
-
         const storedUserId = await fetchUserData();
         setUserId(storedUserId);
       } catch (error) {
@@ -53,19 +55,30 @@ export default function ScheduleScreen({ navigation }) {
   useEffect(() => {
     if (userId) {
       fetchSchedules(userId);
+      checkPendingSettlement(userId);
     }
   }, [userId]);
+
+  const checkPendingSettlement = async (uid) => {
+    try {
+      const snapshot = await getDocs(collection(db, "settlements"));
+      const pending = snapshot.docs.find(doc => doc.data().userId === uid && doc.data().status === "pending");
+      setHasPendingSettlement(!!pending);
+    } catch (error) {
+      console.error("❌ 정산 대기 상태 확인 오류:", error);
+    }
+  };
 
   const fetchSchedules = async (uid) => {
     try {
       const schedulesArray = await fetchUserSchedules(uid);
       const formattedSchedules = {};
       let totalWageSum = 0;
-  
+
       schedulesArray.forEach((schedule) => {
         const start = new Date(schedule.startDate);
         const end = new Date(schedule.endDate);
-      
+
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dateStr = d.toISOString().split('T')[0];
           if (!formattedSchedules[dateStr]) {
@@ -77,14 +90,14 @@ export default function ScheduleScreen({ navigation }) {
             date: dateStr,
           });
         }
-      
+
         const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
         totalWageSum += (Number(schedule.wage) || 0) * diffDays;
       });
-  
+
       setScheduleData(formattedSchedules);
       setAllTotalWage(totalWageSum);
-  
+
       const marks = {};
       Object.keys(formattedSchedules).forEach(date => {
         marks[date] = {
@@ -99,23 +112,15 @@ export default function ScheduleScreen({ navigation }) {
       console.error("❌ 일정 데이터 로딩 오류:", error);
     }
   };
-  
-  
 
   const handleDayPress = (day) => {
     const selected = day.dateString;
     setSelectedDate(selected);
-  
-    // 이제는 dateStr로 바로 가져오기!
     const filteredSchedules = scheduleData[selected] || [];
-  
     setSelectedSchedules(filteredSchedules);
-  
     const total = filteredSchedules.reduce((sum, s) => sum + (Number(s.wage) || 0), 0);
     setTotalWage(total);
   };
-  
-  
 
   const handleSettlementRequest = async () => {
     if (allTotalWage === 0) {
@@ -138,6 +143,7 @@ export default function ScheduleScreen({ navigation }) {
 
       if (response.ok) {
         Alert.alert("정산 요청 완료", `총 급여 ${allTotalWage.toLocaleString()}원 요청 완료.`);
+        setHasPendingSettlement(true);
       } else {
         Alert.alert("정산 요청 실패", result.message || "서버 오류");
       }
@@ -150,6 +156,7 @@ export default function ScheduleScreen({ navigation }) {
     setRefreshing(true);
     if (userId) {
       await fetchSchedules(userId);
+      await checkPendingSettlement(userId);
     }
     setRefreshing(false);
   }, [userId]);
@@ -202,8 +209,17 @@ export default function ScheduleScreen({ navigation }) {
           <Text style={styles.allTotalWageText}>총 급여 합산: {allTotalWage.toLocaleString()}원</Text>
         </View>
 
-        <TouchableOpacity style={styles.settlementButton} onPress={handleSettlementRequest}>
-          <Text style={styles.settlementButtonText}>정산 요청</Text>
+        <TouchableOpacity
+          style={[
+            styles.settlementButton,
+            hasPendingSettlement && { backgroundColor: '#aaa' }
+          ]}
+          onPress={handleSettlementRequest}
+          disabled={hasPendingSettlement}
+        >
+          <Text style={styles.settlementButtonText}>
+            {hasPendingSettlement ? "승인 대기 중" : "정산 요청"}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

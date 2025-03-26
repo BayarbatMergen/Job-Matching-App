@@ -333,4 +333,52 @@ router.post('/notice', async (req, res) => {
   }
 });
 
+router.post('/settlements/request', async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    // 1️⃣ pending 요청 있는지 확인
+    const existingRequest = await db.collection('settlements')
+      .where('userId', '==', userId)
+      .where('status', '==', 'pending')
+      .get();
+
+    if (!existingRequest.empty) {
+      return res.status(400).json({ message: '이미 대기 중인 정산 요청이 있습니다.' });
+    }
+
+    // 2️⃣ 사용자 정보 가져오기
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const userData = userDoc.data();
+    const totalWage = userData.totalWage || 0;
+
+    if (totalWage <= 0) {
+      return res.status(400).json({ message: '요청할 누적 금액이 없습니다.' });
+    }
+
+    // 3️⃣ 정산 요청 생성
+    await db.collection('settlements').add({
+      userId,
+      totalWage,
+      status: 'pending',
+      requestedAt: admin.firestore.Timestamp.now(),
+    });
+
+    // 4️⃣ 누적 금액 초기화
+    await db.collection('users').doc(userId).update({
+      totalWage: 0,
+    });
+
+    return res.status(201).json({ message: '정산 요청이 성공적으로 등록되었습니다.' });
+  } catch (error) {
+    console.error('🔥 정산 요청 중 오류 발생:', error);
+    return res.status(500).json({ message: '서버 오류', error: error.message });
+  }
+});
+
+
 module.exports = router;

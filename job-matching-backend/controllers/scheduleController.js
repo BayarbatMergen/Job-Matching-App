@@ -87,8 +87,7 @@ const getScheduleById = async (req, res) => {
   }
 };
 
-
-// ✅ 정산 요청 처리 함수
+// ✅ 정산 요청 처리 함수 (최종 완성본)
 const requestSettlement = async (req, res) => {
   try {
     console.log("📌 [정산 요청] 요청 받음:", req.body);
@@ -102,13 +101,41 @@ const requestSettlement = async (req, res) => {
 
     console.log(`✅ 정산 요청: userId=${userId}, totalWage=${totalWage.toLocaleString()}원`);
 
-    // Firestore의 "settlements" 컬렉션에 저장
+    // ✅ 1) 마지막 스케줄 종료일 검사
+    const userSchedules = await db.collection('schedules').where('userId', '==', userId).get();
+    let lastEndDate = new Date(0);
+    userSchedules.forEach(doc => {
+      const endDate = new Date(doc.data().endDate);
+      if (endDate > lastEndDate) {
+        lastEndDate = endDate;
+      }
+    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (today <= lastEndDate) {
+      return res.status(400).json({ message: '❗ 모든 스케줄이 종료된 다음 날부터 정산 요청이 가능합니다.' });
+    }
+
+    // ✅ 2) 이미 pending 상태의 요청이 있는지 검사
+    const existingRequests = await db.collection('settlements')
+      .where('userId', '==', userId)
+      .where('status', '==', 'pending')
+      .get();
+
+    if (!existingRequests.empty) {
+      return res.status(400).json({ message: '❗ 승인 대기 중인 정산 요청이 이미 존재합니다.' });
+    }
+
+    // ✅ 3) 정산 요청 저장
     await db.collection("settlements").add({
       userId,
       totalWage,
       status: "pending",
       requestedAt: new Date(),
     });
+
+    // ✅ 4) 관리자 알림 전송
+    await sendAdminNotification(userId, totalWage);
 
     res.status(200).json({ message: "✅ 정산 요청이 관리자에게 전송되었습니다." });
   } catch (error) {
@@ -117,6 +144,36 @@ const requestSettlement = async (req, res) => {
   }
 };
 
+const approveSettlement = async (req, res) => {
+  try {
+    const { settlementId, userId } = req.body;
+
+    if (!settlementId || !userId) {
+      return res.status(400).json({ message: "settlementId와 userId가 필요합니다." });
+    }
+
+    // settlement 상태 변경
+    await db.collection("settlements").doc(settlementId).update({
+      status: "approved",
+      approvedAt: admin.firestore.Timestamp.now(),
+    });
+
+    // 스케줄 삭제
+    const scheduleQuery = db.collection("schedules").where("userId", "==", userId);
+    const snapshot = await scheduleQuery.get();
+
+    const batch = db.batch();
+    snapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    res.status(200).json({ message: "정산 승인 완료 및 스케줄 삭제 완료" });
+  } catch (error) {
+    console.error("🔥 정산 승인 처리 오류:", error);
+    res.status(500).json({ message: "서버 오류 발생", error: error.message });
+  }
+};
 
 // ✅ 정산 요청 처리 함수 (라우트 제거됨, `export`만 유지)
 exports.requestSettlement = async (req, res) => {
@@ -147,9 +204,10 @@ exports.requestSettlement = async (req, res) => {
   }
 };
 
-module.exports = { 
+module.exports = {
+  getAllSchedules,
+  getUserSchedules,
+  getScheduleById,
   requestSettlement,
-  getAllSchedules, 
-  getUserSchedules, 
-  getScheduleById 
-}; // ✅ 올바르게 export
+  approveSettlement,
+};
