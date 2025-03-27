@@ -203,7 +203,7 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
     // 4️⃣ 지원 상태 업데이트
     await applicationRef.update({ status: 'approved' });
 
-    // 5️⃣ 채팅방 조회 및 유저 초대
+    // 5️⃣ 단톡방 조회 및 유저 초대
     const chatRoomSnap = await db.collection('chats')
       .where('jobId', '==', jobId)
       .limit(1)
@@ -213,8 +213,15 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
       const chatRoomDoc = chatRoomSnap.docs[0];
       const chatRef = chatRoomDoc.ref;
       const chatData = chatRoomDoc.data();
-      const currentParticipants = chatData.participants || [];
 
+      // 🛡 participants 필드 안전하게 처리
+      let currentParticipants = chatData.participants;
+      if (!Array.isArray(currentParticipants)) {
+        console.warn(`⚠️ participants 필드가 배열이 아님. chatId: ${chatRoomDoc.id}`);
+        currentParticipants = [];
+      }
+
+      // 🚀 유저 초대
       if (!currentParticipants.includes(userId)) {
         await chatRef.update({
           participants: [...currentParticipants, userId],
@@ -227,6 +234,7 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
       console.warn(`⚠️ jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
     }
 
+    // 6️⃣ 완료 응답
     res.status(200).json({ message: '✅ 승인 완료 및 스케줄/단톡방 처리 완료' });
   } catch (err) {
     console.error('❌ 승인 처리 오류:', err);
