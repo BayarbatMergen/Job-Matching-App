@@ -163,66 +163,73 @@ router.post('/user-notifications', verifyToken, async (req, res) => {
 router.post('/applications/:applicationId/approve', async (req, res) => {
   try {
     const { applicationId } = req.params;
+
+    // 1️⃣ 지원 내역 조회
     const applicationRef = db.collection('applications').doc(applicationId);
     const applicationDoc = await applicationRef.get();
 
     if (!applicationDoc.exists) {
-      return res.status(404).json({ message: '지원 내역을 찾을 수 없습니다.' });
+      return res.status(404).json({ message: '❌ 지원 내역을 찾을 수 없습니다.' });
     }
 
     const applicationData = applicationDoc.data();
+    const { userId, userEmail, jobId, wage } = applicationData;
 
-    // 공고 정보 가져오기 (startDate, endDate 포함)
-    const jobRef = db.collection('jobs').doc(applicationData.jobId);
+    // 2️⃣ 공고 정보 조회
+    const jobRef = db.collection('jobs').doc(jobId);
     const jobDoc = await jobRef.get();
 
     if (!jobDoc.exists) {
-      return res.status(404).json({ message: '공고 정보를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: '❌ 공고 정보를 찾을 수 없습니다.' });
     }
 
     const jobData = jobDoc.data();
+    const { title, location, startDate, endDate } = jobData;
 
-    // 1️⃣ 스케줄 생성
+    // 3️⃣ 스케줄 생성
     await db.collection('schedules').add({
-      userId: applicationData.userId,
-      userEmail: applicationData.userEmail,
-      name: applicationData.jobTitle,
-      wage: applicationData.wage,
-      startDate: jobData.startDate,
-      endDate: jobData.endDate,
+      userId,
+      userEmail,
+      name: title?.trim() || "제목 없음",
+      title,
+      location,
+      jobId,
+      wage,
+      startDate,
+      endDate,
       createdAt: admin.firestore.Timestamp.now(),
     });
 
-    // 2️⃣ 신청 상태 변경
+    // 4️⃣ 지원 상태 업데이트
     await applicationRef.update({ status: 'approved' });
 
-    // 3️⃣ 단톡방에 유저 추가 (jobId 기반으로 방 찾기)
-    const chatsRef = db.collection('chats');
-    const targetChatQuery = await chatsRef
-      .where('jobId', '==', applicationData.jobId)
+    // 5️⃣ 채팅방 조회 및 유저 초대
+    const chatRoomSnap = await db.collection('chats')
+      .where('jobId', '==', jobId)
       .limit(1)
       .get();
 
-    if (!targetChatQuery.empty) {
-      const chatDoc = targetChatQuery.docs[0];
-      const chatId = chatDoc.id;
-      const chatData = chatDoc.data();
-      const participants = chatData.participants || [];
+    if (!chatRoomSnap.empty) {
+      const chatRoomDoc = chatRoomSnap.docs[0];
+      const chatRef = chatRoomDoc.ref;
+      const chatData = chatRoomDoc.data();
+      const currentParticipants = chatData.participants || [];
 
-      // 중복 없이 추가
-      if (!participants.includes(applicationData.userId)) {
-        await chatsRef.doc(chatId).update({
-          participants: [...participants, applicationData.userId],
+      if (!currentParticipants.includes(userId)) {
+        await chatRef.update({
+          participants: [...currentParticipants, userId],
         });
-        console.log(`✅ 사용자 ${applicationData.userId} 단톡방에 초대됨`);
+        console.log(`✅ 사용자 ${userId} 공지 단톡방에 초대 완료`);
+      } else {
+        console.log(`ℹ️ 사용자 ${userId}는 이미 단톡방에 포함되어 있습니다.`);
       }
     } else {
-      console.warn("⚠️ 해당 공고에 대한 단톡방이 존재하지 않습니다.");
+      console.warn(`⚠️ jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
     }
 
-    res.status(200).json({ message: '승인 및 스케줄 반영 완료 (채팅방 초대 포함)' });
+    res.status(200).json({ message: '✅ 승인 완료 및 스케줄/단톡방 처리 완료' });
   } catch (err) {
-    console.error('승인 처리 오류:', err);
+    console.error('❌ 승인 처리 오류:', err);
     res.status(500).json({ message: '❌ 서버 오류 발생', error: err.message });
   }
 });

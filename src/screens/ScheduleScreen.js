@@ -85,7 +85,7 @@ export default function ScheduleScreen({ navigation }) {
             formattedSchedules[dateStr] = [];
           }
           formattedSchedules[dateStr].push({
-            name: schedule.name,
+            name: schedule.name || schedule.title || "제목 없음",
             wage: schedule.wage,
             date: dateStr,
           });

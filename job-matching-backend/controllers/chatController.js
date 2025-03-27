@@ -83,7 +83,6 @@ const getChatRooms = async (req, res) => {
       return res.status(401).json({ message: "❌ 사용자 인증 필요" });
     }
 
-    // 사용자가 속한 방 가져오기
     const participantRoomsSnapshot = await db
       .collection("chats")
       .where("participants", "array-contains", userId)
@@ -94,29 +93,14 @@ const getChatRooms = async (req, res) => {
       ...doc.data(),
     }));
 
-    // 공지방(roomType === "notice") 가져오기
-    const noticeRoomsSnapshot = await db
-      .collection("chats")
-      .where("roomType", "==", "notice")
-      .get();
-
-    const noticeRooms = noticeRoomsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    // 둘 합치기 (중복 제거)
-    const allRooms = [...participantRooms, ...noticeRooms.filter(
-      (notice) => !participantRooms.some((room) => room.id === notice.id)
-    )];
-
-    console.log(`✅ [${userId}] 채팅방 및 공지방 포함: ${allRooms.length}`);
-    res.status(200).json(allRooms);
+    console.log(`✅ [${userId}] 참여 중인 채팅방 수: ${participantRooms.length}`);
+    res.status(200).json(participantRooms);
   } catch (error) {
     console.error("❌ 채팅방 목록 불러오기 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
   }
 };
+
 
 // ✅ 관리자 채팅방 생성 또는 반환 (roomType: admin)
 const createOrGetAdminChatRoom = async (req, res) => {
