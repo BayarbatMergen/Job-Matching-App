@@ -60,6 +60,18 @@ router.post('/add', async (req, res) => {
       console.log(`✅ ${notifyUsers.length}명의 사용자에게 개별 알림 전송 완료`);
     }
 
+      // 공고 등록 후 바로 아래에 추가
+const chatRoomRef = db.collection('chats').doc();
+await chatRoomRef.set({
+  name: `알바생 단톡방 (${title})`,
+  participants: [], // 빈 배열, 나중에 유저 승인되면 추가됨
+  jobId: jobRef.id,
+  createdAt: admin.firestore.Timestamp.now(),
+  roomType: 'notice',
+  type: 'group',
+});
+console.log(`✅ 공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
+
     res.status(201).json({ message: '공고 등록 및 알림 전송 완료', jobId: jobRef.id });
   } catch (error) {
     console.error('🔥 공고 등록 또는 알림 전송 오류:', error.stack);

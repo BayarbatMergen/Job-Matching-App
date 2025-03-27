@@ -182,18 +182,45 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
 
     const jobData = jobDoc.data();
 
+    // 1️⃣ 스케줄 생성
     await db.collection('schedules').add({
       userId: applicationData.userId,
       userEmail: applicationData.userEmail,
       name: applicationData.jobTitle,
       wage: applicationData.wage,
-      startDate: jobData.startDate,   // ✅ 시작일 저장
-      endDate: jobData.endDate,       // ✅ 종료일 저장
+      startDate: jobData.startDate,
+      endDate: jobData.endDate,
+      createdAt: admin.firestore.Timestamp.now(),
     });
 
+    // 2️⃣ 신청 상태 변경
     await applicationRef.update({ status: 'approved' });
 
-    res.status(200).json({ message: '승인 및 스케줄 반영 완료' });
+    // 3️⃣ 단톡방에 유저 추가 (jobId 기반으로 방 찾기)
+    const chatsRef = db.collection('chats');
+    const targetChatQuery = await chatsRef
+      .where('jobId', '==', applicationData.jobId)
+      .limit(1)
+      .get();
+
+    if (!targetChatQuery.empty) {
+      const chatDoc = targetChatQuery.docs[0];
+      const chatId = chatDoc.id;
+      const chatData = chatDoc.data();
+      const participants = chatData.participants || [];
+
+      // 중복 없이 추가
+      if (!participants.includes(applicationData.userId)) {
+        await chatsRef.doc(chatId).update({
+          participants: [...participants, applicationData.userId],
+        });
+        console.log(`✅ 사용자 ${applicationData.userId} 단톡방에 초대됨`);
+      }
+    } else {
+      console.warn("⚠️ 해당 공고에 대한 단톡방이 존재하지 않습니다.");
+    }
+
+    res.status(200).json({ message: '승인 및 스케줄 반영 완료 (채팅방 초대 포함)' });
   } catch (err) {
     console.error('승인 처리 오류:', err);
     res.status(500).json({ message: '❌ 서버 오류 발생', error: err.message });
