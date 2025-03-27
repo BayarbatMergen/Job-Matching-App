@@ -128,7 +128,14 @@ const createOrGetAdminChatRoom = async (req, res) => {
       return res.status(500).json({ message: "❌ ADMIN_UID 환경 변수가 설정되지 않았습니다." });
     }
 
-    // 이미 존재하는지 확인
+    // 🔍 사용자 이름 가져오기
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: "❌ 사용자 정보를 찾을 수 없습니다." });
+    }
+    const userName = userDoc.data().name || "사용자";
+
+    // 🧾 기존 방이 있는지 확인
     const existingRoomSnapshot = await db.collection("chats")
       .where("type", "==", "admin")
       .where("participants", "array-contains", userId)
@@ -136,24 +143,28 @@ const createOrGetAdminChatRoom = async (req, res) => {
 
     if (!existingRoomSnapshot.empty) {
       const existingRoom = existingRoomSnapshot.docs[0];
-      return res.status(200).json({ 
-        roomId: existingRoom.id, 
-        name: '관리자 상담', 
-        roomType: existingRoom.data().roomType || 'admin' 
+      return res.status(200).json({
+        roomId: existingRoom.id,
+        name: existingRoom.data().name || `관리자 상담 (${userName})`,
+        roomType: existingRoom.data().roomType || "admin",
       });
     }
 
-    // 신규 생성
+    // 🆕 새 채팅방 생성
     const newRoom = {
-      name: '관리자 상담',
+      name: `관리자 상담 (${userName})`,
       participants: [userId, adminUid],
       createdAt: admin.firestore.Timestamp.now(),
-      type: 'admin',
-      roomType: 'admin',   // ✅ roomType 필드 추가
+      type: "admin",
+      roomType: "admin",
     };
 
     const roomRef = await db.collection("chats").add(newRoom);
-    return res.status(201).json({ roomId: roomRef.id, name: '관리자 상담', roomType: 'admin' });
+    return res.status(201).json({
+      roomId: roomRef.id,
+      name: newRoom.name,
+      roomType: newRoom.roomType,
+    });
   } catch (error) {
     console.error("❌ 관리자 채팅방 생성 오류:", error);
     res.status(500).json({ message: "❌ 서버 오류 발생" });
