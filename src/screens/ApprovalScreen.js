@@ -15,9 +15,9 @@ import {
   updateDoc,
   deleteDoc,
   addDoc,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
-import { sendUserApplicationApprovalNotification } from "../utils/notificationService";
 
 export default function ApplicationApprovalScreen() {
   const [requests, setRequests] = useState([]);
@@ -50,6 +50,20 @@ export default function ApplicationApprovalScreen() {
     fetchApplicationRequests();
   }, []);
 
+  const sendUserNotification = async (userId, jobTitle) => {
+    try {
+      const notifRef = collection(db, "notifications", userId, "userNotifications");
+      await addDoc(notifRef, {
+        message: `지원하신 '${jobTitle}' 공고가 승인되었습니다.`,
+        status: "unread",
+        createdAt: new Date(),
+      });
+      console.log("✅ 사용자 알림 전송 완료");
+    } catch (error) {
+      console.error("❌ 사용자 알림 전송 오류:", error);
+    }
+  };
+
   const handleApprove = async (id, userEmail, jobTitle, jobId, userId) => {
     if (!userEmail || !jobTitle || !jobId || !userId) {
       Alert.alert("❌ 승인 불가", "필요한 정보가 누락되었습니다.");
@@ -57,22 +71,22 @@ export default function ApplicationApprovalScreen() {
     }
 
     try {
-      // 1. 승인 상태 업데이트
+      // 1. 상태 업데이트
       await updateDoc(doc(db, "applications", id), {
         status: "approved",
         approvedAt: new Date(),
       });
 
-      // 2. 사용자에게 승인 알림 전송
-      await sendUserApplicationApprovalNotification(userEmail, jobTitle);
+      // 2. 사용자 알림 전송
+      await sendUserNotification(userId, jobTitle);
 
-      // 3. 해당 공고 정보 가져오기
-      const jobDoc = await getDocs(collection(db, "jobs"));
-      const job = jobDoc.docs.find((j) => j.id === jobId)?.data();
-
-      if (!job) {
+      // 3. 공고 정보 조회
+      const jobDoc = await getDoc(doc(db, "jobs", jobId));
+      if (!jobDoc.exists()) {
         console.warn("⚠️ 공고 데이터를 찾을 수 없습니다.");
       } else {
+        const job = jobDoc.data();
+
         // 4. 스케줄 생성
         await addDoc(collection(db, "schedules"), {
           userId,
@@ -138,7 +152,13 @@ export default function ApplicationApprovalScreen() {
               <TouchableOpacity
                 style={styles.approveButton}
                 onPress={() =>
-                  handleApprove(item.id, item.userEmail, item.jobTitle, item.jobId, item.userId)
+                  handleApprove(
+                    item.id,
+                    item.userEmail,
+                    item.jobTitle,
+                    item.jobId,
+                    item.userId
+                  )
                 }
               >
                 <Text style={styles.buttonText}>승인하기</Text>
