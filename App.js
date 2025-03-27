@@ -18,6 +18,7 @@ import AdminPasswordChangeScreen from './src/screens/AdminPasswordChangeScreen';
 import NoticeWriteScreen from './src/screens/NoticeWriteScreen';
 import CustomerInquiryScreen from './src/screens/CustomerInquiryScreen';
 import NoticeDetailScreen from './src/screens/NoticeDetailScreen';
+import ApprovedApplicationsScreen from './src/screens/ApprovedApplicationsScreen';
 
 
 // ✅ 사용자 기능
@@ -59,6 +60,7 @@ export default function App() {
         <Stack.Screen name="NoticeWriteScreen" component={NoticeWriteScreen} options={{ headerShown: true, title: '공지사항 작성' }} />
         <Stack.Screen name="CustomerInquiryScreen" component={CustomerInquiryScreen} options={{ headerShown: true, title: '고객 문의 관리' }} />
         <Stack.Screen name="NoticeDetailScreen" component={NoticeDetailScreen} options={{ headerShown: true, title: '공지사항 상세' }} />
+        <Stack.Screen name="ApprovedApplicationsScreen" component={ApprovedApplicationsScreen} options={{ headerShown: true, title:'승인 내역 보기' }} />
         {/* 사용자 기능 */}
         <Stack.Screen name="BankInfo" component={BankInfoScreen} options={{ headerShown: true, title: '계좌 정보 변경' }} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: '비밀번호 변경' }} />

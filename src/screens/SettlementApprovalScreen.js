@@ -1,11 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { collection, getDocs, doc, updateDoc, getDoc, query, where, deleteDoc, writeBatch } from "firebase/firestore";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+} from "react-native";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  getDoc,
+  query,
+  where,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "../config/firebase";
+import { useNavigation } from "@react-navigation/native"; // ✅ 뒤로가기용
 
 export default function SettlementApprovalScreen() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   const fetchSettlementRequests = async () => {
     try {
@@ -15,7 +35,6 @@ export default function SettlementApprovalScreen() {
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
         if (data.status === "pending") {
-          // 사용자 정보 가져오기
           const userDoc = await getDoc(doc(db, "users", data.userId));
           const userData = userDoc.exists() ? userDoc.data() : { name: "알 수 없음" };
 
@@ -43,24 +62,36 @@ export default function SettlementApprovalScreen() {
 
   const handleApprove = async (id, userId) => {
     try {
-      // 상태 변경
-      await updateDoc(doc(db, "settlements", id), { status: "approved" });
-
-      // ✅ 해당 사용자의 schedules 데이터 삭제
+      await updateDoc(doc(db, "settlements", id), {
+        status: "approved",
+        approvedAt: new Date(), // ✅ 승인 날짜 저장
+      });
+  
       const scheduleQuery = query(collection(db, "schedules"), where("userId", "==", userId));
       const scheduleSnapshot = await getDocs(scheduleQuery);
       const batch = writeBatch(db);
-
+  
       scheduleSnapshot.forEach((scheduleDoc) => {
         batch.delete(scheduleDoc.ref);
       });
       await batch.commit();
-
+  
       Alert.alert("승인 완료", "정산 요청이 승인되었고, 스케줄 데이터가 삭제되었습니다.");
       fetchSettlementRequests();
     } catch (error) {
-      console.error("❌ 승인 처리 또는 스케줄 삭제 오류:", error);
+      console.error("❌ 승인 처리 오류:", error);
       Alert.alert("오류", "승인 처리 중 문제가 발생했습니다.");
+    }
+  };  
+
+  const handleReject = async (id) => {
+    try {
+      await updateDoc(doc(db, "settlements", id), { status: "rejected" });
+      Alert.alert("거절 완료", "정산 요청이 거절되었습니다.");
+      fetchSettlementRequests();
+    } catch (error) {
+      console.error("❌ 거절 처리 오류:", error);
+      Alert.alert("오류", "거절 처리 중 문제가 발생했습니다.");
     }
   };
 
@@ -74,27 +105,39 @@ export default function SettlementApprovalScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>정산 승인 요청 목록</Text>
-      <FlatList
-        data={requests}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.userName}>{item.userName}</Text>
-            <Text>요청 금액: {Number(item.totalWage).toLocaleString()}원</Text>
-            <Text>요청 날짜: {new Date(item.requestedAt.seconds * 1000).toLocaleDateString()}</Text>
-            <TouchableOpacity
-              style={styles.approveButton}
-              onPress={() => handleApprove(item.id, item.userId)}
-            >
-              <Text style={styles.buttonText}>승인</Text>
-            </TouchableOpacity>
-          </View>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 30 }}>
+      <View style={styles.container}>
+        {/* ✅ 뒤로가기 버튼 */}
+
+        <Text style={styles.header}>정산 승인 요청 목록</Text>
+
+        {requests.length === 0 ? (
+          <Text style={{ textAlign: "center", marginTop: 40 }}>대기 중인 요청이 없습니다.</Text>
+        ) : (
+          requests.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <Text style={styles.userName}>{item.userName}</Text>
+              <Text>요청 금액: {Number(item.totalWage).toLocaleString()}원</Text>
+              <Text>요청 날짜: {new Date(item.requestedAt.seconds * 1000).toLocaleDateString()}</Text>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.approveButton}
+                  onPress={() => handleApprove(item.id, item.userId)}
+                >
+                  <Text style={styles.buttonText}>승인</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.rejectButton}
+                  onPress={() => handleReject(item.id)}
+                >
+                  <Text style={styles.buttonText}>거절</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
         )}
-        ListEmptyComponent={<Text style={{ textAlign: "center", marginTop: 50 }}>대기 중인 요청이 없습니다.</Text>}
-      />
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -109,14 +152,38 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     marginBottom: 10,
   },
-  userName: { fontWeight: "bold", marginBottom: 5, color: "#007AFF" },
+  userInfo: { fontWeight: "bold", marginBottom: 5, color: "#007AFF" },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
   approveButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
     borderRadius: 8,
+    flex: 0.48,
     alignItems: "center",
-    marginTop: 10,
+  },
+  rejectButton: {
+    backgroundColor: "#FF3B30",
+    padding: 10,
+    borderRadius: 8,
+    flex: 0.48,
+    alignItems: "center",
   },
   buttonText: { color: "#fff", fontWeight: "bold" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  headerBar: {
+  backgroundColor: "#007AFF",
+  paddingVertical: 15,
+  alignItems: "center",
+  justifyContent: "center",
+},
+headerText: {
+  color: "#fff",
+  fontSize: 20,
+  fontWeight: "bold",
+},
+
 });
