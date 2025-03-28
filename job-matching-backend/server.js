@@ -3,8 +3,9 @@ const express = require("express");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const bodyParser = require("body-parser");
-const { admin, db, storage } = require("./config/firebaseAdmin");   // ✅ 여기!
+const { admin, db, storage } = require("./config/firebaseAdmin");
 const { verifyToken } = require("./middlewares/authMiddleware");
+const applicationRoutes = require('./routes/applicationRoutes');
 
 const ADMIN_UID = process.env.ADMIN_UID;
 const app = express();
@@ -62,6 +63,7 @@ app.use("/api/jobseekers", jobSeekerRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/chats", chatRoutes);
+app.use('/api', applicationRoutes);
 
 app.get("/", (req, res) => {
   res.send("✅ Job Matching Backend 서버가 실행 중입니다!");

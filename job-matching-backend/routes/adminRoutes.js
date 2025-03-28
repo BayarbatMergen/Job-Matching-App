@@ -199,13 +199,18 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
       endDate,
       createdAt: admin.firestore.Timestamp.now(),
     });
+    console.log(`✅ 스케줄 생성 완료 for userId: ${userId}`);
 
     // 4️⃣ 지원 상태 업데이트
     await applicationRef.update({ status: 'approved' });
+    console.log(`✅ 지원 상태 업데이트 완료: approved`);
 
-    // 5️⃣ 단톡방 조회 및 유저 초대
+    // 5️⃣ 공지 단톡방 찾기 및 유저 초대
+    console.log("📌 [approve] jobId:", jobId, "userId:", userId);
+
     const chatRoomSnap = await db.collection('chats')
       .where('jobId', '==', jobId)
+      .where('roomType', '==', 'notice') // ✅ 명확한 구분을 위해 roomType도 필터링
       .limit(1)
       .get();
 
@@ -214,28 +219,23 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
       const chatRef = chatRoomDoc.ref;
       const chatData = chatRoomDoc.data();
 
-      // 🛡 participants 필드 안전하게 처리
-      let currentParticipants = chatData.participants;
-      if (!Array.isArray(currentParticipants)) {
-        console.warn(`⚠️ participants 필드가 배열이 아님. chatId: ${chatRoomDoc.id}`);
-        currentParticipants = [];
-      }
+      const currentParticipants = chatData.participants || [];
 
-      // 🚀 유저 초대
       if (!currentParticipants.includes(userId)) {
         await chatRef.update({
-          participants: [...currentParticipants, userId],
+          participants: admin.firestore.FieldValue.arrayUnion(userId),
         });
         console.log(`✅ 사용자 ${userId} 공지 단톡방에 초대 완료`);
       } else {
-        console.log(`ℹ️ 사용자 ${userId}는 이미 단톡방에 포함되어 있습니다.`);
+        console.log(`ℹ️ 사용자 ${userId}는 이미 단톡방에 포함되어 있음`);
       }
     } else {
-      console.warn(`⚠️ jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
+      console.warn(`⚠️ jobId: ${jobId} 에 해당하는 공지 단톡방이 존재하지 않습니다.`);
     }
 
     // 6️⃣ 완료 응답
     res.status(200).json({ message: '✅ 승인 완료 및 스케줄/단톡방 처리 완료' });
+
   } catch (err) {
     console.error('❌ 승인 처리 오류:', err);
     res.status(500).json({ message: '❌ 서버 오류 발생', error: err.message });

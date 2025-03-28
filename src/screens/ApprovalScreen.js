@@ -8,16 +8,11 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  addDoc,
-  getDoc,
-} from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
+import axios from "axios";
+import API_BASE_URL from "../config/apiConfig"; // ← ✅ default export에 맞는 import 방식
+
 
 export default function ApplicationApprovalScreen() {
   const [requests, setRequests] = useState([]);
@@ -50,62 +45,24 @@ export default function ApplicationApprovalScreen() {
     fetchApplicationRequests();
   }, []);
 
-  const sendUserNotification = async (userId, jobTitle) => {
+  // ✅ 서버 API 호출로 승인 처리
+  const handleApprove = async (applicationId) => {
+    console.log(`${API_BASE_URL}/applications/${applicationId}/approve`);
+    console.log("✅ API_BASE_URL:", API_BASE_URL);
     try {
-      const notifRef = collection(db, "notifications", userId, "userNotifications");
-      await addDoc(notifRef, {
-        message: `지원하신 '${jobTitle}' 공고가 승인되었습니다.`,
-        status: "unread",
-        createdAt: new Date(),
-      });
-      console.log("✅ 사용자 알림 전송 완료");
-    } catch (error) {
-      console.error("❌ 사용자 알림 전송 오류:", error);
-    }
-  };
-
-  const handleApprove = async (id, userEmail, jobTitle, jobId, userId) => {
-    if (!userEmail || !jobTitle || !jobId || !userId) {
-      Alert.alert("❌ 승인 불가", "필요한 정보가 누락되었습니다.");
-      return;
-    }
-
-    try {
-      // 1. 상태 업데이트
-      await updateDoc(doc(db, "applications", id), {
-        status: "approved",
-        approvedAt: new Date(),
-      });
-
-      // 2. 사용자 알림 전송
-      await sendUserNotification(userId, jobTitle);
-
-      // 3. 공고 정보 조회
-      const jobDoc = await getDoc(doc(db, "jobs", jobId));
-      if (!jobDoc.exists()) {
-        console.warn("⚠️ 공고 데이터를 찾을 수 없습니다.");
-      } else {
-        const job = jobDoc.data();
-
-        // 4. 스케줄 생성
-        await addDoc(collection(db, "schedules"), {
-          userId,
-          jobId,
-          title: job.title,
-          wage: job.wage,
-          location: job.location,
-          startDate: job.startDate,
-          endDate: job.endDate,
-          createdAt: new Date(),
-        });
-        console.log("✅ 스케줄 생성 완료");
-      }
-
-      Alert.alert("✅ 승인 완료", "지원 승인 및 스케줄이 등록되었습니다.");
+      const res = await axios.post(`${API_BASE_URL}/applications/${applicationId}/approve`);
+      console.log("✅ 승인 응답:", res.data);
+      Alert.alert("✅ 승인 완료", res.data.message || "승인이 완료되었습니다.");
       fetchApplicationRequests();
     } catch (error) {
-      console.error("❌ 승인 처리 오류:", error);
-      Alert.alert("오류", "승인 중 문제가 발생했습니다.");
+      console.error("❌ 승인 처리 오류:", {
+        message: error.message,
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL,
+        headers: error.config?.headers,
+      });
+      Alert.alert("❌ 승인 실패", error.response?.data?.message || "오류 발생");
     }
   };
 
@@ -151,15 +108,7 @@ export default function ApplicationApprovalScreen() {
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.approveButton}
-                onPress={() =>
-                  handleApprove(
-                    item.id,
-                    item.userEmail,
-                    item.jobTitle,
-                    item.jobId,
-                    item.userId
-                  )
-                }
+                onPress={() => handleApprove(item.id)}
               >
                 <Text style={styles.buttonText}>승인하기</Text>
               </TouchableOpacity>
