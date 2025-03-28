@@ -1,15 +1,11 @@
 const { db } = require("../config/firebase");
 const admin = require('firebase-admin');
 
-// ✅ 특정 채팅방의 모든 메시지 가져오기
+// ✅ 메시지 가져오기
 const getChatMessages = async (req, res) => {
   try {
     const { roomId } = req.params;
-    console.log(`📡 채팅 메시지 요청 받음 (채팅방: ${roomId})`);
-
-    if (!roomId) {
-      return res.status(400).json({ message: "⚠️ 유효한 채팅방 ID가 필요합니다." });
-    }
+    if (!roomId) return res.status(400).json({ message: "⚠️ 유효한 채팅방 ID가 필요합니다." });
 
     const messagesSnapshot = await db
       .collection("chats")
@@ -18,12 +14,7 @@ const getChatMessages = async (req, res) => {
       .orderBy("createdAt", "asc")
       .get();
 
-    const messages = messagesSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    console.log(`✅ [${roomId}] 메시지 개수: ${messages.length}`);
+    const messages = messagesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(messages);
   } catch (error) {
     console.error("❌ 채팅 메시지 불러오기 오류:", error);
@@ -31,7 +22,7 @@ const getChatMessages = async (req, res) => {
   }
 };
 
-// ✅ 특정 채팅방에 메시지 추가
+// ✅ 메시지 추가
 const addMessageToChat = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -45,23 +36,16 @@ const addMessageToChat = async (req, res) => {
     const roomDoc = await db.collection("chats").doc(roomId).get();
     const roomData = roomDoc.data();
 
-    // 공지방 차단 (관리자가 아니면)
     if (roomData && roomData.roomType === "notice" && senderId !== process.env.ADMIN_UID) {
       return res.status(403).json({ message: "공지방에는 관리자만 메시지를 보낼 수 있습니다." });
     }
 
     const createdAt = admin.firestore.Timestamp.now();
     const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
-    const newMessage = {
-      text,
-      senderId,
-      createdAt,
-    };
+    const newMessage = { text, senderId, createdAt };
 
-    // ✅ Firestore에 메시지 저장
     await messageRef.set(newMessage);
 
-    // ✅ 저장된 메시지 응답 시 id 포함해서 보내기
     return res.status(200).json({
       message: "✅ 메시지 추가 성공!",
       data: { id: messageRef.id, ...newMessage },
@@ -72,16 +56,11 @@ const addMessageToChat = async (req, res) => {
   }
 };
 
-
-// ✅ 로그인한 사용자의 채팅방 목록만 가져오도록 수정
+// ✅ 채팅방 목록 가져오기
 const getChatRooms = async (req, res) => {
   try {
-    console.log("📡 채팅방 목록 요청 받음...");
-
     const { userId } = req.user;
-    if (!userId) {
-      return res.status(401).json({ message: "❌ 사용자 인증 필요" });
-    }
+    if (!userId) return res.status(401).json({ message: "❌ 사용자 인증 필요" });
 
     const participantRoomsSnapshot = await db
       .collection("chats")
@@ -93,7 +72,6 @@ const getChatRooms = async (req, res) => {
       ...doc.data(),
     }));
 
-    console.log(`✅ [${userId}] 참여 중인 채팅방 수: ${participantRooms.length}`);
     res.status(200).json(participantRooms);
   } catch (error) {
     console.error("❌ 채팅방 목록 불러오기 오류:", error);
@@ -101,25 +79,16 @@ const getChatRooms = async (req, res) => {
   }
 };
 
-
-// ✅ 관리자 채팅방 생성 또는 반환 (roomType: admin)
+// ✅ 관리자 채팅방 생성
 const createOrGetAdminChatRoom = async (req, res) => {
   try {
     const { userId } = req.user;
     const adminUid = process.env.ADMIN_UID;
 
-    if (!adminUid) {
-      return res.status(500).json({ message: "❌ ADMIN_UID 환경 변수가 설정되지 않았습니다." });
-    }
-
-    // 🔍 사용자 이름 가져오기
     const userDoc = await db.collection("users").doc(userId).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ message: "❌ 사용자 정보를 찾을 수 없습니다." });
-    }
+    if (!userDoc.exists) return res.status(404).json({ message: "❌ 사용자 정보를 찾을 수 없습니다." });
     const userName = userDoc.data().name || "사용자";
 
-    // 🧾 기존 방이 있는지 확인
     const existingRoomSnapshot = await db.collection("chats")
       .where("type", "==", "admin")
       .where("participants", "array-contains", userId)
@@ -134,7 +103,6 @@ const createOrGetAdminChatRoom = async (req, res) => {
       });
     }
 
-    // 🆕 새 채팅방 생성
     const newRoom = {
       name: `관리자 상담 (${userName})`,
       participants: [userId, adminUid],
@@ -155,21 +123,19 @@ const createOrGetAdminChatRoom = async (req, res) => {
   }
 };
 
-// ✅ 공지방 생성 함수 (필요 시)
+// ✅ 공지방 생성
 const createNoticeRoom = async (req, res) => {
   try {
     const { name, participants } = req.body;
 
-    if (!name) {
-      return res.status(400).json({ message: "⚠️ 방 이름이 필요합니다." });
-    }
+    if (!name) return res.status(400).json({ message: "⚠️ 방 이름이 필요합니다." });
 
     const newRoom = {
       name,
       participants,
       createdAt: admin.firestore.Timestamp.now(),
       type: 'notice',
-      roomType: 'notice', // ✅ 공지방
+      roomType: 'notice',
     };
 
     const roomRef = await db.collection("chats").add(newRoom);
@@ -180,10 +146,65 @@ const createNoticeRoom = async (req, res) => {
   }
 };
 
+// ✅ 채팅방에 새 유저 추가 + 입장 메시지 자동 생성
+const addUserToChatRoom = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { userId } = req.body;
+
+    if (!roomId || !userId) {
+      return res.status(400).json({ message: "roomId와 userId가 필요합니다." });
+    }
+
+    const userDoc = await db.collection("users").doc(userId).get();
+    const userName = userDoc.exists ? userDoc.data().name : "사용자";
+
+    const chatRef = db.collection("chats").doc(roomId);
+    await chatRef.update({
+      participants: admin.firestore.FieldValue.arrayUnion(userId),
+    });
+
+    await chatRef.collection("messages").add({
+      text: `📢 ${userName}님이 입장하셨습니다.`,
+      senderId: "system",
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    res.status(200).json({ message: "✅ 유저 추가 및 입장 메시지 전송 완료" });
+  } catch (error) {
+    console.error("❌ 유저 추가 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+};
+
+// ✅ 채팅방 참가자 조회
+const getChatParticipants = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    if (!roomId) return res.status(400).json({ message: "roomId가 필요합니다." });
+
+    const chatDoc = await db.collection("chats").doc(roomId).get();
+    if (!chatDoc.exists) return res.status(404).json({ message: "채팅방을 찾을 수 없습니다." });
+
+    const participantIds = chatDoc.data().participants || [];
+
+    const userPromises = participantIds.map((uid) => db.collection("users").doc(uid).get());
+    const userDocs = await Promise.all(userPromises);
+    const users = userDocs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("❌ 채팅 참가자 조회 오류:", error);
+    res.status(500).json({ message: "❌ 서버 오류 발생" });
+  }
+};
+
 module.exports = {
   addMessageToChat,
   getChatMessages,
   getChatRooms,
   createOrGetAdminChatRoom,
-  createNoticeRoom,   // ✅ 필요 시 export
+  createNoticeRoom,
+  addUserToChatRoom,         // ✅ 신규 유저 추가 + 입장 메시지
+  getChatParticipants,       // ✅ 참가자 목록 조회
 };

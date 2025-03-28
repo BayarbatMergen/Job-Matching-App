@@ -54,22 +54,33 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
       .limit(1)
       .get();
 
-    if (!chatRoomSnap.empty) {
-      const chatRoomDoc = chatRoomSnap.docs[0];
-      await chatRoomDoc.ref.update({
-        participants: admin.firestore.FieldValue.arrayUnion(userId),
-      });
-
-      console.log(`✅ 사용자 ${userId} 공지 단톡방에 초대 완료`);
-    } else {
-      console.warn(`⚠️ jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
-    }
-
-    res.status(200).json({ message: '✅ 승인 완료 및 스케줄/단톡방 처리 완료' });
-
-  } catch (err) {
-    console.error('❌ 승인 처리 오류:', err);
-    res.status(500).json({ message: '❌ 서버 오류 발생', error: err.message });
+      if (!chatRoomSnap.empty) {
+        const chatRoomDoc = chatRoomSnap.docs[0];
+      
+        await chatRoomDoc.ref.update({
+          participants: admin.firestore.FieldValue.arrayUnion(userId),
+        });
+        console.log(`✅ 사용자 ${userId} 공지 단톡방에 초대 완료`);
+      
+        // ✅ 사용자 이름 불러오기
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userName = userDoc.exists ? userDoc.data().name || "사용자" : "사용자";
+      
+        // ✅ 시스템 메시지 전송
+        await chatRoomDoc.ref.collection('messages').add({
+          text: `${userName}님이 입장하셨습니다.`,
+          senderId: 'system',
+          createdAt: admin.firestore.Timestamp.now(),
+        });
+        console.log(`✅ ${userName}님 입장 메시지 전송 완료`);
+      } else {
+        console.warn(`⚠️ jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
+      }
+      
+      return res.status(200).json({ message: '✅ 지원 승인 완료' });
+  } catch (error) {        
+    console.error('❌ 지원 승인 오류:', error);
+    return res.status(500).json({ message: '❌ 서버 오류 발생' });
   }
 });
 
