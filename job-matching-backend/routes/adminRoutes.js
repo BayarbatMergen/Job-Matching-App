@@ -422,5 +422,18 @@ router.post('/settlements/request', async (req, res) => {
   }
 });
 
+// 사용자 정보 조회 (UID로 이름 가져오기)
+router.get("/users/:uid", async (req, res) => {
+  const { uid } = req.params;
+  const userDoc = await db.collection("users").doc(uid).get();
+
+  if (!userDoc.exists) {
+    return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
+  }
+
+  const userData = userDoc.data();
+  return res.status(200).json({ name: userData.name || "이름 없음" });
+});
+
 
 module.exports = router;

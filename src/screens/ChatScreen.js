@@ -8,21 +8,17 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
-  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
 
 export default function ChatScreen({ route }) {
-  const { roomId, roomName, roomType } = route.params;
+  const { roomId, roomType } = route.params; // 👈 roomName 제거
   const [messages, setMessages] = useState([]);
-  const [participants, setParticipants] = useState([]);
-  const [participantNames, setParticipantNames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const flatListRef = useRef();
 
   useEffect(() => {
@@ -31,35 +27,27 @@ export default function ChatScreen({ route }) {
       setCurrentUserId(userId);
     };
 
-    const fetchMessagesAndParticipants = async () => {
+    const fetchMessages = async () => {
       try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return;
 
-        const [msgRes, roomRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_BASE_URL}/chats/rooms`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+        const msgRes = await fetch(
+          `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
         const msgData = await msgRes.json();
         setMessages(msgData);
-
-        const roomList = await roomRes.json();
-        const currentRoom = roomList.find((room) => room.id === roomId);
-        setParticipants(currentRoom?.participants || []);
       } catch (error) {
-        console.error("❌ 데이터 로딩 실패:", error);
+        console.error("❌ 메시지 로딩 실패:", error);
       } finally {
         setLoading(false);
       }
     };
 
     loadUserId();
-    fetchMessagesAndParticipants();
+    fetchMessages();
   }, [roomId]);
 
   const sendMessage = async () => {
@@ -105,13 +93,6 @@ export default function ChatScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.topBar}>
-        <Text style={styles.roomTitle}>{roomName}</Text>
-        <TouchableOpacity onPress={() => setShowModal(true)}>
-          <Ionicons name="people-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
-
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -130,13 +111,13 @@ export default function ChatScreen({ route }) {
             {!item.system && (
               <Text style={styles.timestamp}>
                 {item.createdAt && item.createdAt._seconds
-                  ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
+                  ? new Date(item.createdAt._seconds * 1000 + 9 * 60 * 60 * 1000).toLocaleTimeString('ko-KR')
                   : ""}
               </Text>
             )}
           </View>
         )}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingTop: 15, paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       />
 
@@ -157,26 +138,6 @@ export default function ChatScreen({ route }) {
           </TouchableOpacity>
         </View>
       )}
-
-      {/* 👥 참여자 모달 */}
-      <Modal visible={showModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>참여자 목록</Text>
-            {participants.map((id, idx) => (
-              <Text key={idx} style={styles.participantText}>
-                👤 {id}
-              </Text>
-            ))}
-            <TouchableOpacity
-              onPress={() => setShowModal(false)}
-              style={styles.closeButton}
-            >
-              <Text style={styles.closeButtonText}>닫기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -184,15 +145,6 @@ export default function ChatScreen({ route }) {
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: "#fff" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  topBar: {
-    flexDirection: "row",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  roomTitle: { fontSize: 18, fontWeight: "bold" },
   messageBubble: {
     padding: 12,
     borderRadius: 10,
@@ -256,27 +208,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    width: "80%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 15,
-    alignItems: "center",
-  },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  participantText: { fontSize: 16, marginVertical: 5 },
-  closeButton: {
-    marginTop: 15,
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  closeButtonText: { color: "#fff", fontWeight: "bold" },
 });

@@ -8,10 +8,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function AdminChatScreen({ route }) {
   const { roomId, roomName, roomType } = route.params;
@@ -19,6 +23,9 @@ export default function AdminChatScreen({ route }) {
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
+  const [participantNames, setParticipantNames] = useState([]);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const drawerAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const flatListRef = useRef();
 
   useEffect(() => {
@@ -26,36 +33,50 @@ export default function AdminChatScreen({ route }) {
       const userId = await SecureStore.getItemAsync("userId");
       setCurrentUserId(userId);
     };
-
     loadUserId();
 
-    const fetchMessages = async () => {
+    const fetchMessagesAndParticipants = async () => {
       try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return;
 
-        const response = await fetch(
-          `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const [msgRes, roomRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${API_BASE_URL}/chats/rooms`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-        const data = await response.json();
-        console.log("✅ 가져온 메시지:", data);
-        setMessages(data);
+        const msgData = await msgRes.json();
+        setMessages(msgData);
+
+        const roomList = await roomRes.json();
+        const currentRoom = roomList.find((room) => room.id === roomId);
+        const participantIds = currentRoom?.participants || [];
+
+        // 유저 이름 가져오기
+        const namePromises = participantIds.map((uid) =>
+          fetch(`${API_BASE_URL}/users/${uid}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => {
+              if (!res.ok) throw new Error(`❌ ${uid} 요청 실패`);
+              return res.json();
+            })
+        );
+        const users = await Promise.all(namePromises);
+        console.log("✅ 참여자 이름 응답 확인:", users);
+        setParticipantNames(users.map((user) => user.name || "알 수 없음"));
       } catch (error) {
-        console.error("❌ 채팅 메시지 가져오기 실패:", error);
+        console.error("❌ 데이터 로딩 실패:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMessages();
+    fetchMessagesAndParticipants();
   }, [roomId]);
 
   useEffect(() => {
@@ -91,6 +112,23 @@ export default function AdminChatScreen({ route }) {
     }
   };
 
+  const openDrawer = () => {
+    setDrawerVisible(true);
+    Animated.timing(drawerAnim, {
+      toValue: SCREEN_WIDTH * 0.3,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const closeDrawer = () => {
+    Animated.timing(drawerAnim, {
+      toValue: SCREEN_WIDTH,
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => setDrawerVisible(false));
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -101,6 +139,13 @@ export default function AdminChatScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
+      <View style={styles.topBar}>
+        <Text style={styles.roomTitle}>{roomName}</Text>
+        <TouchableOpacity onPress={openDrawer}>
+          <Ionicons name="people-outline" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -117,37 +162,53 @@ export default function AdminChatScreen({ route }) {
             <Text style={styles.messageText}>{item.text}</Text>
             <Text style={styles.timestamp}>
               {item.createdAt && item.createdAt._seconds
-                ? new Date(item.createdAt._seconds * 1000).toLocaleTimeString()
+                ? new Date(item.createdAt._seconds * 1000)
+                    .toLocaleTimeString("ko-KR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
                 : ""}
             </Text>
           </View>
         )}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }}
       />
 
-      {/* ✅ 공지방일 때도 관리자면 입력창, 일반 유저면 안내문구 */}
-      {roomType === "notice" && currentUserId !== "1WUKTfOuaXVuiHmhitOJVGZzAhO2" ? (
-        <View style={styles.noticeBanner}>
-          <Text style={styles.noticeText}>
-            공지방은 관리자만 메시지를 보낼 수 있습니다.
-          </Text>
-        </View>
-      ) : (
-        <View style={styles.chatInputContainer}>
-          <TextInput
-            style={styles.chatInput}
-            placeholder="메시지를 입력하세요..."
-            value={messageText}
-            onChangeText={setMessageText}
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={24} color="#fff" />
+      {/* 채팅 입력창 */}
+      <View style={styles.chatInputContainer}>
+        <TextInput
+          style={styles.chatInput}
+          placeholder="메시지를 입력하세요..."
+          value={messageText}
+          onChangeText={setMessageText}
+        />
+        <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+          <Ionicons name="send" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {/* ✅ 오른쪽에서 슬라이드로 나오는 참여자 목록 drawer */}
+      {drawerVisible && (
+        <Animated.View
+          style={[
+            styles.drawerContainer,
+            { left: drawerAnim },
+          ]}
+        >
+          <Text style={styles.drawerTitle}>👥 참여자 목록</Text>
+          {participantNames.map((name, idx) => (
+            <Text key={idx} style={styles.participantItem}>
+              • {name}
+            </Text>
+          ))}
+          <TouchableOpacity style={styles.drawerCloseButton} onPress={closeDrawer}>
+            <Text style={{ color: "#007AFF", fontWeight: "bold" }}>닫기</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
     </SafeAreaView>
   );
@@ -156,6 +217,14 @@ export default function AdminChatScreen({ route }) {
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: "#fff" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  topBar: {
+    flexDirection: "row",
+    padding: 15,
+    backgroundColor: "#007AFF",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  roomTitle: { fontSize: 18, fontWeight: "bold", color: "#fff" },
   messageBubble: {
     padding: 12,
     borderRadius: 10,
@@ -173,7 +242,12 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   messageText: { fontSize: 16, color: "#333" },
-  timestamp: { fontSize: 12, color: "#777", marginTop: 5, textAlign: "right" },
+  timestamp: {
+    fontSize: 12,
+    color: "#777",
+    marginTop: 5,
+    textAlign: "right",
+  },
   chatInputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -199,19 +273,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     borderRadius: 20,
   },
-  noticeBanner: {
-    padding: 15,
-    backgroundColor: "#f8d7da",
-    borderTopWidth: 1,
-    borderColor: "#ddd",
-    alignItems: "center",
+  drawerContainer: {
     position: "absolute",
+    top: 0,
     bottom: 0,
-    width: "100%",
+    width: SCREEN_WIDTH * 0.7,
+    backgroundColor: "#f9f9f9",
+    borderLeftWidth: 1,
+    borderColor: "#ccc",
+    padding: 20,
+    zIndex: 100,
   },
-  noticeText: {
-    color: "#721c24",
-    fontSize: 16,
-    fontWeight: "bold",
+  drawerTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 15 },
+  participantItem: { fontSize: 16, marginVertical: 6 },
+  drawerCloseButton: {
+    marginTop: 20,
+    alignSelf: "flex-end",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#e1e1e1",
+    borderRadius: 8,
   },
 });
