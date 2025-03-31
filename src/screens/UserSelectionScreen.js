@@ -17,7 +17,7 @@ export default function UserSelectionScreen({ navigation }) {
         const userList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setUsers(userList);
       } catch (error) {
-        console.error("❌ 사용자 가져오기 오류:", error);
+        console.error(" 사용자 가져오기 오류:", error);
       } finally {
         setLoading(false);
       }

@@ -6,7 +6,7 @@ import { collection, getDocs } from 'firebase/firestore';
 export default function NoticeScreen({ navigation }) {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // ✅ 새로고침 상태 추가
+  const [refreshing, setRefreshing] = useState(false); //  새로고침 상태 추가
 
   const fetchNotices = async () => {
     try {
@@ -27,7 +27,7 @@ export default function NoticeScreen({ navigation }) {
     fetchNotices();
   }, []);
 
-  // ✅ 새로고침 함수
+  //  새로고침 함수
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchNotices();
@@ -58,7 +58,7 @@ export default function NoticeScreen({ navigation }) {
         )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        } // ✅ 여기 추가
+        } //  여기 추가
       />
     </View>
   );

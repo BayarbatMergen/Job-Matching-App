@@ -6,7 +6,7 @@ const apiRequest = async (endpoint, method = "GET", body = null) => {
   try {
     const token = await SecureStore.getItemAsync("token");
     if (!token) {
-      console.warn("⚠️ 인증 토큰 없음 → 로그인 필요");
+      console.warn(" 인증 토큰 없음 → 로그인 필요");
       return [];
     }
 
@@ -21,39 +21,39 @@ const apiRequest = async (endpoint, method = "GET", body = null) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
     if (response.status === 401) {
-      console.warn("❌ 인증 실패 → 로그아웃 후 재로그인 필요");
+      console.warn(" 인증 실패 → 로그아웃 후 재로그인 필요");
       await SecureStore.deleteItemAsync("token");
       await SecureStore.deleteItemAsync("userId");
       return [];
     }
 
     if (!response.ok) {
-      console.error(`🔥 API 요청 실패 (${response.status}): ${endpoint}`);
+      console.error(` API 요청 실패 (${response.status}): ${endpoint}`);
       return [];
     }
 
     const data = await response.json();
     return data || []; // null 또는 undefined 방지
   } catch (error) {
-    console.error(`🔥 API 요청 오류 (${endpoint}):`, error.message);
+    console.error(` API 요청 오류 (${endpoint}):`, error.message);
     return [];
   }
 };
 
-// ✅ 특정 날짜의 일정 가져오기
+//  특정 날짜의 일정 가져오기
 export const fetchSchedulesByDate = async (selectedDate) => {
   try {
     const userId = await SecureStore.getItemAsync("userId");
     if (!userId) {
-      console.warn("⚠️ [fetchSchedulesByDate] userId 없음 → 로그인 필요");
+      console.warn(" [fetchSchedulesByDate] userId 없음 → 로그인 필요");
       return [];
     }
 
-    console.log(`📌 [fetchSchedulesByDate] ${selectedDate}의 일정 가져오는 중...`);
+    console.log(` [fetchSchedulesByDate] ${selectedDate}의 일정 가져오는 중...`);
     const result = await apiRequest(`/api/schedules/user/${userId}`);
     return result || []; // 빈 배열 반환
   } catch (error) {
-    console.error("❌ [fetchSchedulesByDate] 일정 불러오기 오류:", error.message);
+    console.error(" [fetchSchedulesByDate] 일정 불러오기 오류:", error.message);
     return [];
   }
 };

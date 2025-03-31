@@ -11,7 +11,7 @@ import {
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import axios from "axios";
-import API_BASE_URL from "../config/apiConfig"; // ← ✅ default export에 맞는 import 방식
+import API_BASE_URL from "../config/apiConfig"; // ←  default export에 맞는 import 방식
 
 
 export default function ApplicationApprovalScreen() {
@@ -35,7 +35,7 @@ export default function ApplicationApprovalScreen() {
 
       setRequests(pendingRequests);
     } catch (error) {
-      console.error("❌ 지원 요청 가져오기 오류:", error);
+      console.error(" 지원 요청 가져오기 오류:", error);
     } finally {
       setLoading(false);
     }
@@ -45,24 +45,24 @@ export default function ApplicationApprovalScreen() {
     fetchApplicationRequests();
   }, []);
 
-  // ✅ 서버 API 호출로 승인 처리
+  //  서버 API 호출로 승인 처리
   const handleApprove = async (applicationId) => {
     console.log(`${API_BASE_URL}/applications/${applicationId}/approve`);
-    console.log("✅ API_BASE_URL:", API_BASE_URL);
+    console.log(" API_BASE_URL:", API_BASE_URL);
     try {
       const res = await axios.post(`${API_BASE_URL}/applications/${applicationId}/approve`);
-      console.log("✅ 승인 응답:", res.data);
-      Alert.alert("✅ 승인 완료", res.data.message || "승인이 완료되었습니다.");
+      console.log(" 승인 응답:", res.data);
+      Alert.alert(" 승인 완료", res.data.message || "승인이 완료되었습니다.");
       fetchApplicationRequests();
     } catch (error) {
-      console.error("❌ 승인 처리 오류:", {
+      console.error(" 승인 처리 오류:", {
         message: error.message,
         url: error.config?.url,
         method: error.config?.method,
         baseURL: error.config?.baseURL,
         headers: error.config?.headers,
       });
-      Alert.alert("❌ 승인 실패", error.response?.data?.message || "오류 발생");
+      Alert.alert(" 승인 실패", error.response?.data?.message || "오류 발생");
     }
   };
 
@@ -72,7 +72,7 @@ export default function ApplicationApprovalScreen() {
       Alert.alert("거절 완료", "지원 요청이 거절되었습니다.");
       fetchApplicationRequests();
     } catch (error) {
-      console.error("❌ 거절 오류:", error);
+      console.error(" 거절 오류:", error);
       Alert.alert("오류", "거절 처리 중 문제가 발생했습니다.");
     }
   };

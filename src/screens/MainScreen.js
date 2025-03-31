@@ -15,7 +15,7 @@ const MainScreen = () => {
   useEffect(() => {
     const loadRole = async () => {
       const storedRole = await SecureStore.getItemAsync('userRole');
-      console.log('✅ MainScreen detected role:', storedRole);
+      console.log(' MainScreen detected role:', storedRole);
       setRole(storedRole);
       setLoading(false);
     };

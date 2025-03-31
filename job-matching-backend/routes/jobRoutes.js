@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 
-// ✅ Nodemailer 설정 (이메일 알림 전송)
+//  Nodemailer 설정 (이메일 알림 전송)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -14,13 +14,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ 구인 공고 등록 API (startDate, endDate 포함 & 특정 유저 알림 전송)
+//  구인 공고 등록 API (startDate, endDate 포함 & 특정 유저 알림 전송)
 router.post('/add', async (req, res) => {
   try {
     const {
       title, wage, startDate, endDate, workDays, workHours, industry,
       employmentType, accommodation, maleRecruitment, femaleRecruitment,
-      location, description, notifyUsers  // ✅ 추가: notifyUsers
+      location, description, notifyUsers  //  추가: notifyUsers
     } = req.body;
 
     if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
@@ -36,9 +36,9 @@ router.post('/add', async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`✅ 공고 등록 성공! [${jobRef.id}] — 알림 처리 시작`);
+    console.log(` 공고 등록 성공! [${jobRef.id}] — 알림 처리 시작`);
 
-    // ✅ 알림 전송 처리
+    //  알림 전송 처리
     if (notifyUsers === "all") {
       // 모든 사용자에게 글로벌 알림 추가
       await db.collection('globalNotifications').add({
@@ -46,7 +46,7 @@ router.post('/add', async (req, res) => {
         message: `"${title}" 공고가 새로 등록되었습니다.`,
         createdAt: admin.firestore.Timestamp.now(),
       });
-      console.log("✅ 글로벌 알림 전송 완료");
+      console.log(" 글로벌 알림 전송 완료");
     } else if (Array.isArray(notifyUsers)) {
       // 특정 사용자에게 개별 알림 추가
       for (const userId of notifyUsers) {
@@ -57,7 +57,7 @@ router.post('/add', async (req, res) => {
           createdAt: admin.firestore.Timestamp.now(),
         });
       }
-      console.log(`✅ ${notifyUsers.length}명의 사용자에게 개별 알림 전송 완료`);
+      console.log(` ${notifyUsers.length}명의 사용자에게 개별 알림 전송 완료`);
     }
 
       // 공고 등록 후 바로 아래에 추가
@@ -70,17 +70,17 @@ await chatRoomRef.set({
   roomType: 'notice',
   type: 'group',
 });
-console.log(`✅ 공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
+console.log(` 공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
 
     res.status(201).json({ message: '공고 등록 및 알림 전송 완료', jobId: jobRef.id });
   } catch (error) {
-    console.error('🔥 공고 등록 또는 알림 전송 오류:', error.stack);
+    console.error(' 공고 등록 또는 알림 전송 오류:', error.stack);
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
 
 
-// ✅ 2️⃣ 구인 공고 목록 조회 API
+//  2️⃣ 구인 공고 목록 조회 API
 router.get('/list', async (req, res) => {
   try {
     const jobSnap = await db.collection('jobs').orderBy('createdAt', 'desc').get();
@@ -88,12 +88,12 @@ router.get('/list', async (req, res) => {
 
     res.status(200).json(jobs);
   } catch (error) {
-    console.error('🔥 구인 공고 조회 오류:', error);
-    res.status(500).json({ message: '❌ 서버 오류', error: error.message });
+    console.error(' 구인 공고 조회 오류:', error);
+    res.status(500).json({ message: ' 서버 오류', error: error.message });
   }
 });
 
-// ✅ 3️⃣ 특정 구인 공고 상세 조회 API
+//  3️⃣ 특정 구인 공고 상세 조회 API
 router.get('/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
@@ -101,17 +101,17 @@ router.get('/:jobId', async (req, res) => {
     const jobSnap = await jobRef.get();
 
     if (!jobSnap.exists) {
-      return res.status(404).json({ message: '❌ 공고를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 공고를 찾을 수 없습니다.' });
     }
 
     res.status(200).json({ id: jobSnap.id, ...jobSnap.data() });
   } catch (error) {
-    console.error('🔥 구인 공고 상세 조회 오류:', error);
-    res.status(500).json({ message: '❌ 서버 오류', error: error.message });
+    console.error(' 구인 공고 상세 조회 오류:', error);
+    res.status(500).json({ message: ' 서버 오류', error: error.message });
   }
 });
 
-// ✅ 4️⃣ 구인 공고 수정 API
+//  4️⃣ 구인 공고 수정 API
 router.put('/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
@@ -121,7 +121,7 @@ router.put('/:jobId', async (req, res) => {
     const jobSnap = await jobRef.get();
 
     if (!jobSnap.exists) {
-      return res.status(404).json({ message: '❌ 공고를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 공고를 찾을 수 없습니다.' });
     }
 
     await jobRef.update({
@@ -129,14 +129,14 @@ router.put('/:jobId', async (req, res) => {
       updatedAt: new Date(),
     });
 
-    res.status(200).json({ message: '✅ 구인 공고 수정 완료!' });
+    res.status(200).json({ message: ' 구인 공고 수정 완료!' });
   } catch (error) {
-    console.error('🔥 구인 공고 수정 오류:', error);
-    res.status(500).json({ message: '❌ 서버 오류', error: error.message });
+    console.error(' 구인 공고 수정 오류:', error);
+    res.status(500).json({ message: ' 서버 오류', error: error.message });
   }
 });
 
-// ✅ 5️⃣ 구인 공고 삭제 API
+//  5️⃣ 구인 공고 삭제 API
 router.delete('/:jobId', async (req, res) => {
   try {
     const { jobId } = req.params;
@@ -145,24 +145,24 @@ router.delete('/:jobId', async (req, res) => {
     const jobSnap = await jobRef.get();
 
     if (!jobSnap.exists) {
-      return res.status(404).json({ message: '❌ 공고를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 공고를 찾을 수 없습니다.' });
     }
 
     await jobRef.delete();
-    res.status(200).json({ message: '✅ 구인 공고 삭제 완료!' });
+    res.status(200).json({ message: ' 구인 공고 삭제 완료!' });
   } catch (error) {
-    console.error('🔥 구인 공고 삭제 오류:', error);
-    res.status(500).json({ message: '❌ 서버 오류', error: error.message });
+    console.error(' 구인 공고 삭제 오류:', error);
+    res.status(500).json({ message: ' 서버 오류', error: error.message });
   }
 });
 
-// ✅ 6️⃣ 지원 요청 API (구직자가 "지원하기" 클릭 시 실행)
+//  6️⃣ 지원 요청 API (구직자가 "지원하기" 클릭 시 실행)
 router.post('/apply', async (req, res) => {
   const { jobId, userEmail } = req.body;
-  console.log("📌 [POST /api/jobs/apply] 요청 수신:", req.body);
+  console.log(" [POST /api/jobs/apply] 요청 수신:", req.body);
 
   if (!jobId || !userEmail) {
-    return res.status(400).json({ message: '⚠️ 필수 정보를 입력하세요.' });
+    return res.status(400).json({ message: ' 필수 정보를 입력하세요.' });
   }
 
   try {
@@ -170,14 +170,14 @@ router.post('/apply', async (req, res) => {
     const jobRef = db.collection('jobs').doc(jobId);
     const jobSnap = await jobRef.get();
     if (!jobSnap.exists) {
-      return res.status(404).json({ message: '❌ 해당 공고를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 해당 공고를 찾을 수 없습니다.' });
     }
     const jobData = jobSnap.data();
 
     // 사용자 정보 가져오기
     const userQuery = await db.collection('users').where('email', '==', userEmail).get();
     if (userQuery.empty) {
-      return res.status(404).json({ message: '❌ 해당 이메일의 사용자를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 해당 이메일의 사용자를 찾을 수 없습니다.' });
     }
     const userDoc = userQuery.docs[0];
     const userId = userDoc.id;
@@ -199,8 +199,8 @@ router.post('/apply', async (req, res) => {
       jobId,
       jobTitle: jobData.title,
       wage: jobData.wage,
-      startDate: jobData.startDate,   // ✅ 이렇게
-      endDate: jobData.endDate,       // ✅ 이렇게
+      startDate: jobData.startDate,   //  이렇게
+      endDate: jobData.endDate,       //  이렇게
       appliedAt: admin.firestore.Timestamp.now(),
       status: 'pending'
     });
@@ -214,15 +214,15 @@ router.post('/apply', async (req, res) => {
     };
     await transporter.sendMail(mailOptions);
 
-    console.log("✅ 지원 요청 및 저장 완료!");
-    res.status(200).json({ message: '✅ 지원 요청이 완료되었습니다.' });
+    console.log(" 지원 요청 및 저장 완료!");
+    res.status(200).json({ message: ' 지원 요청이 완료되었습니다.' });
   } catch (error) {
-    console.error('❌ 지원 요청 처리 중 오류:', error.message);
-    res.status(500).json({ message: '❌ 서버 오류 발생', error: error.message });
+    console.error(' 지원 요청 처리 중 오류:', error.message);
+    res.status(500).json({ message: ' 서버 오류 발생', error: error.message });
   }
 });
 
-// ✅ 7️⃣ 관리자 지원자 목록 조회 API
+//  7️⃣ 관리자 지원자 목록 조회 API
 router.get('/applications/:jobId', async (req, res) => {
   const { jobId } = req.params;
 
@@ -239,37 +239,37 @@ router.get('/applications/:jobId', async (req, res) => {
     const applications = applicationSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(applications);
   } catch (error) {
-    console.error('🔥 지원자 목록 조회 오류:', error);
-    res.status(500).json({ message: '❌ 서버 오류 발생', error: error.message });
+    console.error(' 지원자 목록 조회 오류:', error);
+    res.status(500).json({ message: ' 서버 오류 발생', error: error.message });
   }
 });
 
 router.get("/user/:userId", async (req, res) => {
   try {
     let { userId } = req.params;
-    console.log(`📌 사용자 일정 요청 userId: ${userId}`);
+    console.log(` 사용자 일정 요청 userId: ${userId}`);
 
     if (!userId || userId === "UNKNOWN_USER") {
-      console.warn("⚠️ userId가 없음 → fetchUserData() 실행!");
+      console.warn(" userId가 없음 → fetchUserData() 실행!");
       userId = await fetchUserData();
     }
 
     if (!userId) {
-      console.error("❌ userId를 가져올 수 없습니다. Firestore 요청 중단!");
-      return res.status(400).json({ message: "❌ 유효한 userId가 필요합니다." });
+      console.error(" userId를 가져올 수 없습니다. Firestore 요청 중단!");
+      return res.status(400).json({ message: " 유효한 userId가 필요합니다." });
     }
 
     const schedulesRef = db.collection("schedules");
     const querySnapshot = await schedulesRef.where("userId", "==", userId).get();
 
     if (querySnapshot.empty) {
-      return res.status(404).json({ message: "❌ 해당 사용자의 일정이 없습니다." });
+      return res.status(404).json({ message: " 해당 사용자의 일정이 없습니다." });
     }
 
     const schedules = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     return res.status(200).json(schedules);
   } catch (error) {
-    console.error("🔥 사용자 일정 조회 오류:", error);
+    console.error(" 사용자 일정 조회 오류:", error);
     return res.status(500).json({ message: "서버 오류 발생", error: error.message });
   }
 });
@@ -278,18 +278,18 @@ router.get("/user/:userId", async (req, res) => {
 router.get("/id/:scheduleId", async (req, res) => {
   try {
     const { scheduleId } = req.params;
-    console.log(`📌 개별 일정 요청 scheduleId: ${scheduleId}`);
+    console.log(` 개별 일정 요청 scheduleId: ${scheduleId}`);
 
     const scheduleRef = db.collection("schedules").doc(scheduleId);
     const scheduleDoc = await scheduleRef.get();
 
     if (!scheduleDoc.exists) {
-      return res.status(404).json({ message: "❌ 해당 일정이 존재하지 않습니다." });
+      return res.status(404).json({ message: " 해당 일정이 존재하지 않습니다." });
     }
 
     return res.status(200).json({ id: scheduleDoc.id, ...scheduleDoc.data() });
   } catch (error) {
-    console.error("🔥 Firestore에서 일정 상세 조회 오류:", error);
+    console.error(" Firestore에서 일정 상세 조회 오류:", error);
     return res.status(500).json({ message: "서버 오류 발생", error: error.message });
   }
 });

@@ -39,15 +39,15 @@ export default function ChangePasswordScreen() {
       const result = await response.json();
   
       if (response.ok) {
-        Alert.alert('✅ 성공', '비밀번호가 성공적으로 변경되었습니다.');
+        Alert.alert(' 성공', '비밀번호가 성공적으로 변경되었습니다.');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        Alert.alert('❌ 실패', result.message);
+        Alert.alert(' 실패', result.message);
       }
     } catch (error) {
-      console.error('❌ 비밀번호 변경 오류:', error);
+      console.error(' 비밀번호 변경 오류:', error);
       Alert.alert('서버 오류', '잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);

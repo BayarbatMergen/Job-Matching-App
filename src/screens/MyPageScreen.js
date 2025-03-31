@@ -15,7 +15,7 @@ export default function MyPageScreen({ navigation }) {
 
   useEffect(() => {
     const loadUserData = async () => {
-      console.log("🚀 MyPageScreen useEffect 실행됨!");
+      console.log(" MyPageScreen useEffect 실행됨!");
       try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) {
@@ -40,10 +40,10 @@ export default function MyPageScreen({ navigation }) {
         }
 
         const userInfo = JSON.parse(errorData);
-        console.log("✅ [서버에서 가져온 사용자 데이터]:", userInfo);
+        console.log(" [서버에서 가져온 사용자 데이터]:", userInfo);
         setUserData(userInfo);
       } catch (error) {
-        console.error("❌ 사용자 정보 가져오기 오류:", error);
+        console.error(" 사용자 정보 가져오기 오류:", error);
         Alert.alert("오류", error.message || "사용자 정보를 불러올 수 없습니다.", [
           { text: "확인", onPress: () => navigation.replace("Login") },
         ]);
@@ -60,7 +60,7 @@ export default function MyPageScreen({ navigation }) {
       setLogoutModalVisible(false);
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     } catch (error) {
-      console.error("❌ 로그아웃 실패:", error);
+      console.error(" 로그아웃 실패:", error);
       Alert.alert("오류", "로그아웃에 실패했습니다.");
     }
   };
@@ -111,7 +111,7 @@ export default function MyPageScreen({ navigation }) {
           <Text style={styles.menuText}>고객센터 문의하기</Text>
           <Ionicons name="chevron-forward" size={22} color="#A0A0A0" />
         </TouchableOpacity>
-        {/* ✅ 내 문의 내역 보기 버튼 추가 */}
+        {/*  내 문의 내역 보기 버튼 추가 */}
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('MyInquiriesScreen')}>
           <Ionicons name="chatbox-ellipses-outline" size={26} color="#007AFF" />
           <Text style={styles.menuText}>내 문의 내역 보기</Text>

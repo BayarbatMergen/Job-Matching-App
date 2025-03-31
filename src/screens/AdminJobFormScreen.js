@@ -31,7 +31,7 @@ export default function AdminJobFormScreen({ navigation }) {
   });
 
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [sendToAll, setSendToAll] = useState(false); // ✅ 전체 알림 여부 상태 추가
+  const [sendToAll, setSendToAll] = useState(false); //  전체 알림 여부 상태 추가
 
   const handleNumberInput = (key, value) => {
     if (/^\d*$/.test(value)) {
@@ -54,17 +54,17 @@ export default function AdminJobFormScreen({ navigation }) {
           .split(",")
           .map((day) => day.trim())
           .filter((day) => day !== ""),
-        notifyUsers: sendToAll ? "all" : userSelectionStore.selectedUsers,  // ✅ 여기 수정!
+        notifyUsers: sendToAll ? "all" : userSelectionStore.selectedUsers,  //  여기 수정!
       };
   
       const response = await axios.post(`${API_BASE_URL}/jobs/add`, jobData);
-      console.log("✅ 공고 등록 성공:", response.data);
+      console.log(" 공고 등록 성공:", response.data);
   
       Alert.alert("등록 완료", "공고가 성공적으로 등록되었습니다.");
-      userSelectionStore.clearSelectedUsers();  // ✅ 전송 후 store 초기화
+      userSelectionStore.clearSelectedUsers();  //  전송 후 store 초기화
       navigation.goBack();
     } catch (error) {
-      console.error("❌ 공고 등록 API 오류:", error);
+      console.error(" 공고 등록 API 오류:", error);
       Alert.alert("등록 실패", "공고 등록 중 오류가 발생했습니다.");
     }
   };
@@ -207,7 +207,7 @@ export default function AdminJobFormScreen({ navigation }) {
         placeholder="업무 내용 및 추가 사항"
       />
 
-      {/* ✅ 전체 알림 또는 특정 사용자 알림 선택 */}
+      {/*  전체 알림 또는 특정 사용자 알림 선택 */}
       <View style={styles.alertTypeContainer}>
         <TouchableOpacity
           style={[

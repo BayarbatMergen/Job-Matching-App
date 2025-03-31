@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity } from 'react-native';
 
-// 📌 관리자 화면 Import
+//  관리자 화면 Import
 import AdminJobListScreen from '../screens/AdminJobListScreen';
 import AdminJobDetailScreen from '../screens/AdminJobDetailScreen';
 import AdminJobFormScreen from '../screens/AdminJobFormScreen';
@@ -18,13 +18,13 @@ import UserDetailScreen from '../screens/UserDetailScreen';
 import NoticeWriteScreen from '../screens/NoticeWriteScreen';
 import AdminPasswordChangeScreen from '../screens/AdminPasswordChangeScreen';
 import CustomerInquiryScreen from '../screens/CustomerInquiryScreen';
-import UserSelectionScreen from '../screens/UserSelectionScreen'; // ✅ 추가!
-import SettlementApprovalScreen from '../screens/SettlementApprovalScreen'; // ✅ 추가!
+import UserSelectionScreen from '../screens/UserSelectionScreen'; //  추가!
+import SettlementApprovalScreen from '../screens/SettlementApprovalScreen'; //  추가!
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// 📌 모집 공고 관리 스택
+//  모집 공고 관리 스택
 function AdminHomeStack() {
   return (
     <Stack.Navigator
@@ -52,13 +52,13 @@ function AdminHomeStack() {
       <Stack.Screen name="AdminJobForm" component={AdminJobFormScreen} options={{ headerTitle: '공고 등록' }} />
       <Stack.Screen name="ApprovalScreen" component={ApprovalScreen} options={{ headerTitle: '승인 대기 목록' }} />
 
-      {/* ✅ UserSelectionScreen 추가 */}
+      {/*  UserSelectionScreen 추가 */}
       <Stack.Screen name="UserSelectionScreen" component={UserSelectionScreen} options={{ headerTitle: '사용자 선택' }} />
     </Stack.Navigator>
   );
 }
 
-// 📌 일정 관리 스택
+//  일정 관리 스택
 function AdminScheduleStack() {
   return (
     <Stack.Navigator
@@ -74,7 +74,7 @@ function AdminScheduleStack() {
   );
 }
 
-// 📌 채팅 스택
+//  채팅 스택
 function AdminChatStack() {
   return (
     <Stack.Navigator
@@ -98,7 +98,7 @@ function AdminChatStack() {
   );
 }
 
-// 📌 마이페이지 스택
+//  마이페이지 스택
 function AdminMyPageStack() {
   return (
     <Stack.Navigator
@@ -118,7 +118,7 @@ function AdminMyPageStack() {
   );
 }
 
-// 📌 바텀 탭 네비게이터 (관리자용)
+//  바텀 탭 네비게이터 (관리자용)
 export default function AdminBottomTabNavigator() {
   return (
     <Tab.Navigator

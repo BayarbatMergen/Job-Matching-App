@@ -20,10 +20,10 @@ export default function AdminJobListScreen({ navigation }) {
     const checkAdminStatus = async () => {
       try {
         const role = await SecureStore.getItemAsync('userRole');
-        console.log("📌 저장된 userRole:", role);
+        console.log(" 저장된 userRole:", role);
         setIsAdmin(role === 'admin');
       } catch (error) {
-        console.error("❌ 관리자 확인 오류:", error);
+        console.error(" 관리자 확인 오류:", error);
       }
     };
 
@@ -39,7 +39,7 @@ export default function AdminJobListScreen({ navigation }) {
       }));
       setJobListings(jobs);
     } catch (error) {
-      console.error("❌ 모집 공고 불러오기 오류:", error);
+      console.error(" 모집 공고 불러오기 오류:", error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export default function AdminJobListScreen({ navigation }) {
             setJobListings((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
             Alert.alert('삭제 완료', '공고가 삭제되었습니다.');
           } catch (error) {
-            console.error("❌ 공고 삭제 오류:", error);
+            console.error(" 공고 삭제 오류:", error);
             Alert.alert('오류 발생', '공고 삭제에 실패했습니다.');
           }
         },

@@ -21,16 +21,16 @@ export default function CustomerSupportScreen() {
   
       await addDoc(collection(db, 'customerInquiries'), {
         email: userEmail,
-        user: userName, // ✅ 사용자 이름 추가 저장
+        user: userName, //  사용자 이름 추가 저장
         message,
-        reply: '',      // ✅ reply 필드 초기화
+        reply: '',      //  reply 필드 초기화
         createdAt: Timestamp.now(),
       });
   
       Alert.alert('문의 완료', '고객센터에 문의가 접수되었습니다.');
       setMessage('');
     } catch (error) {
-      console.error('❌ 문의 저장 오류:', error);
+      console.error(' 문의 저장 오류:', error);
       Alert.alert('오류', '문의 전송 중 문제가 발생했습니다.');
     } finally {
       setLoading(false);

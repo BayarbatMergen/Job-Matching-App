@@ -40,7 +40,7 @@ export default function ChatScreen({ route }) {
         const msgData = await msgRes.json();
         setMessages(msgData);
       } catch (error) {
-        console.error("❌ 메시지 로딩 실패:", error);
+        console.error(" 메시지 로딩 실패:", error);
       } finally {
         setLoading(false);
       }
@@ -73,7 +73,7 @@ export default function ChatScreen({ route }) {
         setMessages((prev) => [...prev, newMessage.data]);
       }
     } catch (error) {
-      console.error("❌ 메시지 전송 실패:", error);
+      console.error(" 메시지 전송 실패:", error);
     }
   };
 

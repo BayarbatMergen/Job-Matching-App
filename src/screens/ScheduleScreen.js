@@ -65,7 +65,7 @@ export default function ScheduleScreen({ navigation }) {
       const pending = snapshot.docs.find(doc => doc.data().userId === uid && doc.data().status === "pending");
       setHasPendingSettlement(!!pending);
     } catch (error) {
-      console.error("❌ 정산 대기 상태 확인 오류:", error);
+      console.error(" 정산 대기 상태 확인 오류:", error);
     }
   };
 
@@ -109,7 +109,7 @@ export default function ScheduleScreen({ navigation }) {
       });
       setMarkedDates(marks);
     } catch (error) {
-      console.error("❌ 일정 데이터 로딩 오류:", error);
+      console.error(" 일정 데이터 로딩 오류:", error);
     }
   };
 

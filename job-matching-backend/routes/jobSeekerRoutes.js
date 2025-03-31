@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { db, auth } = require('../config/firebase'); // ✅ 올바른 경로로 변경
+const { db, auth } = require('../config/firebase'); //  올바른 경로로 변경
 const bcrypt = require('bcrypt');
 
-/* ✅ 1. 구직자 회원가입 API
+/*  1. 구직자 회원가입 API
 router.post('/register', async (req, res) => {
     try {
-      console.log('✅ 요청 바디:', req.body); // <== 여기 추가!
+      console.log(' 요청 바디:', req.body); // <== 여기 추가!
       const { name, email, password, phone, bank, accountNumber } = req.body;
   
       if (!name || !email || !password || !phone || !bank || !accountNumber) {
@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
   });
   */
 
-// ✅ 2. 구직자 목록 조회 API
+//  2. 구직자 목록 조회 API
 router.get('/', async (req, res) => {
   try {
     const usersSnapshot = await db.collection('jobseekers').get();
@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ✅ 3. 특정 구직자 조회 API
+//  3. 특정 구직자 조회 API
 router.get('/:id', async (req, res) => {
   try {
     const userId = req.params.id;
@@ -67,7 +67,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ✅ 4. 구직자 정보 수정 API
+//  4. 구직자 정보 수정 API
 router.put('/:id', async (req, res) => {
   try {
     const userId = req.params.id;
@@ -87,7 +87,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// ✅ 5. 구직자 삭제 API
+//  5. 구직자 삭제 API
 router.delete('/:id', async (req, res) => {
   try {
     const userId = req.params.id;

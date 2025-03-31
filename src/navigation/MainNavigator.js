@@ -16,10 +16,10 @@ const MainNavigator = () => {
     const checkRole = async () => {
       try {
         const storedRole = await SecureStore.getItemAsync('userRole');
-        console.log('✅ MainNavigator에서 불러온 userRole:', storedRole);
+        console.log(' MainNavigator에서 불러온 userRole:', storedRole);
         setUserRole(storedRole);
       } catch (error) {
-        console.error('❌ SecureStore 가져오기 오류:', error);
+        console.error(' SecureStore 가져오기 오류:', error);
       } finally {
         setLoading(false);
       }

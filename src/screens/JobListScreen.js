@@ -18,7 +18,7 @@ export default function JobListScreen({ navigation }) {
       }));
       setJobListings(jobs);
     } catch (error) {
-      console.error("❌ 모집 공고 불러오기 오류:", error);
+      console.error(" 모집 공고 불러오기 오류:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);

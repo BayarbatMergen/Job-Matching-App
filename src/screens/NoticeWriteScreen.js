@@ -35,7 +35,7 @@ export default function NoticeWriteScreen({ navigation }) {
       Alert.alert('성공', '공지사항이 등록되었습니다.');
       navigation.goBack();
     } catch (error) {
-      console.error('❌ 공지사항 등록 오류:', error);
+      console.error(' 공지사항 등록 오류:', error);
       Alert.alert('오류', '공지사항 등록 중 오류가 발생했습니다.');
     }
   };

@@ -3,20 +3,20 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-// ✅ 사용자용 화면 import
+//  사용자용 화면 import
 import JobListScreen from '../screens/JobListScreen';
 import JobDetailScreen from '../screens/JobDetailScreen';
 import MyPageScreen from '../screens/MyPageScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
-import NotificationScreen from '../screens/NotificationScreen'; // ✅ 알림 화면 추가
-import ScheduleNavigator from './ScheduleNavigator';  // ✅ 중복 선언 제거 후 유지
+import NotificationScreen from '../screens/NotificationScreen'; //  알림 화면 추가
+import ScheduleNavigator from './ScheduleNavigator';  //  중복 선언 제거 후 유지
 import MyInquiriesScreen from '../screens/MyInquiriesScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// 📌 모집 공고 (홈) 네비게이터
+//  모집 공고 (홈) 네비게이터
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
@@ -28,7 +28,7 @@ function HomeStack() {
 }
 
 
-// 📌 채팅 네비게이터 (채팅 목록 → 개별 채팅방)
+//  채팅 네비게이터 (채팅 목록 → 개별 채팅방)
 function ChatNavigator() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
@@ -42,7 +42,7 @@ function ChatNavigator() {
   );
 }
 
-// 📌 마이페이지 네비게이터
+//  마이페이지 네비게이터
 function MyPageNavigator() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
@@ -52,7 +52,7 @@ function MyPageNavigator() {
   );
 }
 
-// 📌 공통 Stack Navigator 스타일 설정
+//  공통 Stack Navigator 스타일 설정
 const defaultScreenOptions = {
   headerStyle: { backgroundColor: '#007AFF' },
   headerTintColor: '#fff',
@@ -60,7 +60,7 @@ const defaultScreenOptions = {
   
 };
 
-// 📌 바텀 탭 네비게이션 (사용자용)
+//  바텀 탭 네비게이션 (사용자용)
 export default function BottomTabNavigator() {
   return (
     <Tab.Navigator

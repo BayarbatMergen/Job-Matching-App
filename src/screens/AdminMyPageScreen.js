@@ -18,13 +18,13 @@ export default function AdminMyPageScreen() {
       try {
         const storedName = await SecureStore.getItemAsync('userName');
         const storedEmail = await SecureStore.getItemAsync('userEmail');
-        console.log("✅ SecureStore에서 가져온 관리자 이름:", storedName);
-        console.log("✅ SecureStore에서 가져온 관리자 이메일:", storedEmail);
+        console.log(" SecureStore에서 가져온 관리자 이름:", storedName);
+        console.log(" SecureStore에서 가져온 관리자 이메일:", storedEmail);
 
         setAdminName(storedName || '관리자');
         setAdminEmail(storedEmail || 'admin@example.com');
       } catch (error) {
-        console.error("❌ 관리자 정보 불러오기 오류:", error);
+        console.error(" 관리자 정보 불러오기 오류:", error);
       }
     };
 
@@ -37,7 +37,7 @@ export default function AdminMyPageScreen() {
       setLogoutModalVisible(false);
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     } catch (error) {
-      console.error("❌ 로그아웃 오류:", error);
+      console.error(" 로그아웃 오류:", error);
       Alert.alert("오류", "로그아웃에 실패했습니다.");
     }
   };

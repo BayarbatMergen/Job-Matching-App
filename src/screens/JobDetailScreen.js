@@ -13,10 +13,10 @@ export default function JobDetailScreen({ route, navigation }) {
         const storedUserId = await SecureStore.getItemAsync('userId');
         if (storedUserId) {
           setUserId(storedUserId);
-          console.log("✅ 불러온 사용자 ID:", storedUserId);
+          console.log(" 불러온 사용자 ID:", storedUserId);
         }
       } catch (error) {
-        console.error("❌ 사용자 ID 불러오기 오류:", error);
+        console.error(" 사용자 ID 불러오기 오류:", error);
       }
     };
 
@@ -24,7 +24,7 @@ export default function JobDetailScreen({ route, navigation }) {
   }, []);
 
   useEffect(() => {
-    console.log("📌 [Job Data]:", job);
+    console.log(" [Job Data]:", job);
   }, [job]);
 
   if (!job) {
@@ -42,7 +42,7 @@ export default function JobDetailScreen({ route, navigation }) {
         <Text style={styles.detailTitle}>{job.title}</Text>
 
         <View style={styles.infoBox}>
-          <Text style={styles.detailSubTitle}>📌 근무 조건</Text>
+          <Text style={styles.detailSubTitle}> 근무 조건</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>근무 기간:</Text> {job.startDate && job.endDate ? `${job.startDate} ~ ${job.endDate}` : "미정"}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>급여:</Text> {job.wage ? `${Number(job.wage).toLocaleString()}원` : "미정"}</Text>
           <Text style={styles.detailText}><Text style={styles.bold}>근무 요일:</Text> {Array.isArray(job.workDays) ? job.workDays.join(", ") : job.workDays || "미정"}</Text>

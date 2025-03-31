@@ -23,16 +23,16 @@ const LoginScreen = ({ navigation }) => {
   const [isResetMode, setIsResetMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ 앱 시작 시 저장된 데이터 확인 및 자동 로그인 시도
+  //  앱 시작 시 저장된 데이터 확인 및 자동 로그인 시도
   useEffect(() => {
     const checkStoredData = async () => {
       try {
-        console.log("🚀 useEffect 실행됨! 저장된 데이터 확인 시작");
+        console.log(" useEffect 실행됨! 저장된 데이터 확인 시작");
 
         const token = await AsyncStorage.getItem('authToken');
         const storedUserId = await AsyncStorage.getItem('userId');
 
-        console.log("📌 AsyncStorage에서 가져온 데이터:", {
+        console.log(" AsyncStorage에서 가져온 데이터:", {
           token,
           storedUserId,
         });
@@ -41,11 +41,11 @@ const LoginScreen = ({ navigation }) => {
           console.log("🔹 저장된 토큰과 userId 발견:", { token, storedUserId });
           try {
             await signInWithCustomToken(auth, token);
-            console.log("✅ Firebase 인증 복원 성공:", auth.currentUser.uid);
+            console.log(" Firebase 인증 복원 성공:", auth.currentUser.uid);
             await fetchUserData(); // fetchUserData에서 ID Token 사용
             navigation.replace("Main");
           } catch (error) {
-            console.error("❌ Firebase 인증 복원 실패:", error);
+            console.error(" Firebase 인증 복원 실패:", error);
             // 인증 실패 시 저장된 데이터 삭제
             await AsyncStorage.removeItem('authToken');
             await AsyncStorage.removeItem('userId');
@@ -53,17 +53,17 @@ const LoginScreen = ({ navigation }) => {
             await AsyncStorage.removeItem('password');
           }
         } else {
-          console.warn("⚠️ 저장된 토큰 또는 userId 없음. 로그인 화면 유지");
+          console.warn(" 저장된 토큰 또는 userId 없음. 로그인 화면 유지");
         }
       } catch (error) {
-        console.error("❌ 저장된 데이터 확인 중 오류:", error);
+        console.error(" 저장된 데이터 확인 중 오류:", error);
       }
     };
 
     checkStoredData();
   }, []);
 
-  // ✅ 로그인 처리 함수
+  //  로그인 처리 함수
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("입력 오류", "이메일과 비밀번호를 모두 입력해주세요.");
@@ -82,30 +82,30 @@ const LoginScreen = ({ navigation }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log("✅ 로그인 성공:", result);
+        console.log(" 로그인 성공:", result);
   
         // 🔹 토큰 저장 후 fetchUserData 실행
         await saveUserData(result.token, result.user.userId, result.user.email, password, result.user.role, result.user.name);
   
-        console.log("🚀 토큰 저장 완료, 사용자 데이터 로드 시작");
-        await fetchUserData(); // 🚀 저장된 후 실행되도록 수정
+        console.log(" 토큰 저장 완료, 사용자 데이터 로드 시작");
+        await fetchUserData(); //  저장된 후 실행되도록 수정
   
         navigation.replace("Main"); // 로그인 성공 시 홈 화면으로 이동
       } else {
         Alert.alert("로그인 실패", result.message);
       }
     } catch (error) {
-      console.error("❌ 로그인 중 오류 발생:", error);
+      console.error(" 로그인 중 오류 발생:", error);
       Alert.alert("서버 오류", "잠시 후 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ 비밀번호 재설정 요청
+  //  비밀번호 재설정 요청
   const handleResetPassword = async () => {
     if (!resetEmail) {
-      Alert.alert("입력 오류", "⚠️ 이메일을 입력하세요.");
+      Alert.alert("입력 오류", " 이메일을 입력하세요.");
       return;
     }
 
@@ -113,10 +113,10 @@ const LoginScreen = ({ navigation }) => {
 
     try {
       const message = await resetPasswordWithBackend(resetEmail);
-      Alert.alert("✅ 이메일 전송 완료", message);
+      Alert.alert(" 이메일 전송 완료", message);
       setIsResetMode(false);
     } catch (error) {
-      Alert.alert("❌ 실패", error.message || "서버 오류");
+      Alert.alert(" 실패", error.message || "서버 오류");
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ const LoginScreen = ({ navigation }) => {
           style={styles.logo}
         />
 
-        {/* 📌 로그인 모드 */}
+        {/*  로그인 모드 */}
         {!isResetMode ? (
           <>
             <Text style={styles.title}>로그인</Text>
@@ -181,7 +181,7 @@ const LoginScreen = ({ navigation }) => {
             </View>
           </>
         ) : (
-          /* 📌 비밀번호 재설정 모드 */
+          /*  비밀번호 재설정 모드 */
           <>
             <Text style={styles.title}>비밀번호 찾기</Text>
 
@@ -216,7 +216,7 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// ✅ 스타일
+//  스타일
 const styles = StyleSheet.create({
   container: {
     flex: 1,

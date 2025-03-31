@@ -19,7 +19,7 @@ export default function UserDetailScreen({ route }) {
       const data = await response.json();
       setUserData(data);
     } catch (error) {
-      console.error('❌ 사용자 정보 가져오기 실패:', error);
+      console.error(' 사용자 정보 가져오기 실패:', error);
       Alert.alert('오류', error.message);
     } finally {
       setLoading(false);

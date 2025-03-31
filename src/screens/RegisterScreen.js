@@ -44,15 +44,15 @@ const RegisterScreen = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword || !name || !phone || !gender || !bank || !accountNumber) {
-      Alert.alert('입력 오류', '⚠️ 모든 필드를 입력하세요.');
+      Alert.alert('입력 오류', ' 모든 필드를 입력하세요.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("비밀번호 불일치", "⚠️ 비밀번호가 일치하지 않습니다.");
+      Alert.alert("비밀번호 불일치", " 비밀번호가 일치하지 않습니다.");
       return;
     }
     if (!isPasswordValid(password)) {
-      Alert.alert("비밀번호 오류", "⚠️ 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다.");
+      Alert.alert("비밀번호 오류", " 비밀번호는 최소 6자 이상이며, 특수문자를 포함해야 합니다.");
       return;
     }
 
@@ -63,7 +63,7 @@ const RegisterScreen = ({ navigation }) => {
     formData.append("password", password);
     formData.append("name", name);
     formData.append("phone", phone);
-    formData.append("gender", gender); // ✅ 성별 추가
+    formData.append("gender", gender); //  성별 추가
     formData.append("bank", bank);
     formData.append("accountNumber", accountNumber);
 
@@ -86,7 +86,7 @@ const RegisterScreen = ({ navigation }) => {
 
       const result = await response.json();
       if (response.ok) {
-        Alert.alert("회원가입 완료", "✅ 로그인 해주세요!");
+        Alert.alert("회원가입 완료", " 로그인 해주세요!");
         navigation.replace("Login");
       } else {
         Alert.alert("회원가입 실패", result.message || "서버 오류");

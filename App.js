@@ -1,18 +1,18 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { testAsyncStorage } from './src/services/authService';  // ✅ 가져오기
-import MainScreen from './src/screens/MainScreen'; // ✅ MainScreen 추가
+import { testAsyncStorage } from './src/services/authService';  //  가져오기
+import MainScreen from './src/screens/MainScreen'; //  MainScreen 추가
 
-// ✅ 기본 인증 화면
+//  기본 인증 화면
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 
-// ✅ 사용자 및 관리자 네비게이션
+//  사용자 및 관리자 네비게이션
 //import BottomTabNavigator from './src/navigation/BottomTabNavigator';
 import AdminBottomTabNavigator from './src/navigation/AdminBottomTabNavigator';
 
-// ✅ 관리자 기능
+//  관리자 기능
 import UserManagementScreen from './src/screens/UserManagementScreen';
 import AdminPasswordChangeScreen from './src/screens/AdminPasswordChangeScreen';
 import NoticeWriteScreen from './src/screens/NoticeWriteScreen';
@@ -21,24 +21,24 @@ import NoticeDetailScreen from './src/screens/NoticeDetailScreen';
 import ApprovedApplicationsScreen from './src/screens/ApprovedApplicationsScreen';
 
 
-// ✅ 사용자 기능
+//  사용자 기능
 import BankInfoScreen from './src/screens/BankInfoScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import NoticeScreen from './src/screens/NoticeScreen';
 import CustomerSupportScreen from './src/screens/CustomerSupportScreen';
 
-// ✅ 채팅 기능 추가
+//  채팅 기능 추가
 import ChatListScreen from './src/screens/ChatListScreen';
 import ChatScreen from './src/screens/ChatScreen';
 
-// ✅ 📆 일정 네비게이션
+//  📆 일정 네비게이션
 import ScheduleNavigator from './src/navigation/ScheduleNavigator';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    //firebaseAutoLogin();  // ✅ 자동 Firebase 로그인 실행
+    //firebaseAutoLogin();  //  자동 Firebase 로그인 실행
     testAsyncStorage();   // (선택) 저장된 값 디버깅 확인
   }, []);
 

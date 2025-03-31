@@ -33,7 +33,7 @@ export default function BankInfoScreen() {
           });
         }
       } catch (error) {
-        console.error("❌ 계좌 정보 불러오기 오류:", error);
+        console.error(" 계좌 정보 불러오기 오류:", error);
         Alert.alert("오류", "계좌 정보를 불러오는 중 오류가 발생했습니다.");
       } finally {
         setLoading(false);
@@ -60,9 +60,9 @@ export default function BankInfoScreen() {
       setNewBankName('');
       setNewAccountNumber('');
 
-      Alert.alert('✅ 저장 완료', `은행: ${newBankName}\n계좌번호: ${newAccountNumber}`);
+      Alert.alert(' 저장 완료', `은행: ${newBankName}\n계좌번호: ${newAccountNumber}`);
     } catch (error) {
-      console.error("❌ 계좌 저장 오류:", error);
+      console.error(" 계좌 저장 오류:", error);
       Alert.alert('오류', '계좌 정보 저장에 실패했습니다.');
     }
   };

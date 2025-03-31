@@ -40,7 +40,7 @@ export default {
       typedRoutes: true
     },
     extra: {
-      useBackendAuth: true, // ✅ 백엔드 로그인 사용 (필수)
+      useBackendAuth: true, //  백엔드 로그인 사용 (필수)
       firebaseApiKey: process.env.FIREBASE_API_KEY || "AIzaSyAMGE19uGk-A62cRMTWrf164o2XNTTevLI",
       firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN || "jobmatchingapp-383da.firebaseapp.com",
       firebaseProjectId: process.env.FIREBASE_PROJECT_ID || "jobmatchingapp-383da",

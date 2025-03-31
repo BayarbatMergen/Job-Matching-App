@@ -40,10 +40,10 @@ export default function ChatListScreen({ navigation }) {
       if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
 
       const data = await response.json();
-      console.log("✅ 채팅방 목록 불러오기 성공:", data);
+      console.log(" 채팅방 목록 불러오기 성공:", data);
       setChatRooms(data);
     } catch (error) {
-      console.error("❌ 채팅방 목록 가져오기 실패:", error);
+      console.error(" 채팅방 목록 가져오기 실패:", error);
       Alert.alert("오류", "채팅방 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export default function ChatListScreen({ navigation }) {
         Alert.alert("오류", result.message || "관리자 채팅방 생성 실패");
       }
     } catch (error) {
-      console.error("❌ 관리자 채팅방 오류:", error);
+      console.error(" 관리자 채팅방 오류:", error);
     }
   };
 

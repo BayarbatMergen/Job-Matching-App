@@ -63,7 +63,7 @@ export default function AdminPasswordChangeScreen({ navigation }) {
       Alert.alert('완료', '비밀번호가 성공적으로 변경되었습니다.');
       navigation.goBack();
     } catch (error) {
-      console.error('❌ 비밀번호 변경 실패:', error);
+      console.error(' 비밀번호 변경 실패:', error);
       Alert.alert('오류', '비밀번호 변경 중 문제가 발생했습니다.');
     } finally {
       setLoading(false);

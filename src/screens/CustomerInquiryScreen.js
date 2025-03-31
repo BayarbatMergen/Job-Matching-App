@@ -17,7 +17,7 @@ export default function CustomerInquiryScreen() {
   const [replyText, setReplyText] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // ✅ Firestore에서 문의 내역 가져오기
+  //  Firestore에서 문의 내역 가져오기
   const fetchInquiries = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'customerInquiries'));
@@ -27,7 +27,7 @@ export default function CustomerInquiryScreen() {
       }));
       setInquiries(data);
     } catch (error) {
-      console.error('❌ 문의 내역 불러오기 실패:', error);
+      console.error(' 문의 내역 불러오기 실패:', error);
       Alert.alert('오류', '문의 내역을 불러오는 데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -43,7 +43,7 @@ export default function CustomerInquiryScreen() {
     setReplyText((prev) => ({ ...prev, [id]: text }));
   };
 
-  // ✅ Firestore에 답장 업데이트
+  //  Firestore에 답장 업데이트
   const handleSendReply = async (id) => {
     const reply = replyText[id];
     if (!reply || reply.trim() === '') {
@@ -61,7 +61,7 @@ export default function CustomerInquiryScreen() {
       Alert.alert('완료', '답장이 성공적으로 등록되었습니다.');
       setReplyText((prev) => ({ ...prev, [id]: '' }));
     } catch (error) {
-      console.error('❌ 답장 전송 오류:', error);
+      console.error(' 답장 전송 오류:', error);
       Alert.alert('오류', '답장 전송에 실패했습니다.');
     }
   };

@@ -39,7 +39,7 @@ export default function AdminChatListScreen({ navigation }) {
       const data = await response.json();
       setChatRooms(data);
     } catch (error) {
-      console.error("❌ 채팅방 목록 오류:", error);
+      console.error(" 채팅방 목록 오류:", error);
       Alert.alert("오류", "채팅방 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
@@ -60,9 +60,9 @@ export default function AdminChatListScreen({ navigation }) {
       if (!res.ok) throw new Error("삭제 실패");
 
       setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
-      Alert.alert("✅ 삭제 완료", "채팅방이 삭제되었습니다.");
+      Alert.alert(" 삭제 완료", "채팅방이 삭제되었습니다.");
     } catch (error) {
-      console.error("❌ 채팅방 삭제 오류:", error);
+      console.error(" 채팅방 삭제 오류:", error);
       Alert.alert("오류", "채팅방 삭제에 실패했습니다.");
     }
   };

@@ -19,7 +19,7 @@ export default function ApprovedApplicationsScreen() {
 
       setApprovedApplications(approvedList);
     } catch (error) {
-      console.error('❌ 승인 내역 가져오기 오류:', error);
+      console.error(' 승인 내역 가져오기 오류:', error);
     } finally {
       setLoading(false);
     }

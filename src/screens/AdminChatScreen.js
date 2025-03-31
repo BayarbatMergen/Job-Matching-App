@@ -55,10 +55,10 @@ export default function AdminChatScreen({ route }) {
         const roomList = await roomRes.json();
         const currentRoom = roomList.find((room) => room.id === roomId);
         const participantIds = currentRoom?.participants || [];
-        console.log("✅ 현재 roomId:", roomId);
-        console.log("✅ 가져온 채팅방 목록:", roomList.map(r => r.id));
-        console.log("✅ 일치하는 채팅방:", currentRoom);
-        console.log("✅ 참여자 ID 목록:", participantIds);
+        console.log(" 현재 roomId:", roomId);
+        console.log(" 가져온 채팅방 목록:", roomList.map(r => r.id));
+        console.log(" 일치하는 채팅방:", currentRoom);
+        console.log(" 참여자 ID 목록:", participantIds);
 
         const namePromises = participantIds.map(async (uid) => {
           try {
@@ -66,22 +66,22 @@ export default function AdminChatScreen({ route }) {
               headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) {
-              console.warn(`⚠️ ${uid} 사용자 정보 응답 실패: ${res.status}`);
+              console.warn(` ${uid} 사용자 정보 응답 실패: ${res.status}`);
               return { name: "알 수 없음" };
             }
             const data = await res.json();
             return data;
           } catch (err) {
-            console.error(`❌ ${uid} 사용자 정보 가져오기 실패:`, err);
+            console.error(` ${uid} 사용자 정보 가져오기 실패:`, err);
             return { name: "알 수 없음" };
           }
         });
     
         const users = await Promise.all(namePromises);
-        console.log("✅ 참여자 이름 응답 확인:", users);
+        console.log(" 참여자 이름 응답 확인:", users);
         setParticipantNames(users.map((user) => user.name || "알 수 없음"));
       } catch (error) {
-        console.error("❌ 데이터 로딩 실패:", error);
+        console.error(" 데이터 로딩 실패:", error);
       } finally {
         setLoading(false);
       }
@@ -119,7 +119,7 @@ export default function AdminChatScreen({ route }) {
         setMessages((prev) => [...prev, newMessage.data]);
       }
     } catch (error) {
-      console.error("❌ 메시지 전송 실패:", error);
+      console.error(" 메시지 전송 실패:", error);
     }
   };
 
@@ -202,7 +202,7 @@ export default function AdminChatScreen({ route }) {
         </TouchableOpacity>
       </View>
 
-      {/* ✅ 오른쪽에서 슬라이드로 나오는 참여자 목록 drawer */}
+      {/*  오른쪽에서 슬라이드로 나오는 참여자 목록 drawer */}
       {drawerVisible && (
         <Animated.View
           style={[

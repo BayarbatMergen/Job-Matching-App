@@ -3,7 +3,7 @@ const router = express.Router();
 const admin = require('firebase-admin');
 const db = admin.firestore();
 
-// ✅ 지원 승인 API
+//  지원 승인 API
 router.post('/applications/:applicationId/approve', async (req, res) => {
   try {
     const { applicationId } = req.params;
@@ -13,7 +13,7 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
     const applicationDoc = await applicationRef.get();
 
     if (!applicationDoc.exists) {
-      return res.status(404).json({ message: '❌ 지원 내역을 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 지원 내역을 찾을 수 없습니다.' });
     }
 
     const applicationData = applicationDoc.data();
@@ -24,7 +24,7 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
     const jobDoc = await jobRef.get();
 
     if (!jobDoc.exists) {
-      return res.status(404).json({ message: '❌ 공고 정보를 찾을 수 없습니다.' });
+      return res.status(404).json({ message: ' 공고 정보를 찾을 수 없습니다.' });
     }
 
     const jobData = jobDoc.data();
@@ -60,12 +60,12 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
         participants: admin.firestore.FieldValue.arrayUnion(userId),
       });
 
-      console.log(`✅ 사용자 ${userId} 공지 단톡방에 초대 완료`);
+      console.log(` 사용자 ${userId} 공지 단톡방에 초대 완료`);
     } else {
-      console.warn(`⚠️ jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
+      console.warn(` jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
     }
 
-    // 6. ✅ 사용자에게 알림 전송
+    // 6.  사용자에게 알림 전송
     await db
       .collection('notifications')
       .doc(userId)
@@ -79,11 +79,11 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
 
     console.log(`📣 사용자 ${userId}에게 공고 승인 알림 전송 완료`);
 
-    return res.status(200).json({ message: '✅ 지원 승인 및 알림 전송 완료' });
+    return res.status(200).json({ message: ' 지원 승인 및 알림 전송 완료' });
 
   } catch (error) {
-    console.error('❌ 지원 승인 오류:', error);
-    return res.status(500).json({ message: '❌ 서버 오류 발생' });
+    console.error(' 지원 승인 오류:', error);
+    return res.status(500).json({ message: ' 서버 오류 발생' });
   }
 });
 

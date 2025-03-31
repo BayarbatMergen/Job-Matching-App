@@ -25,14 +25,14 @@ async function exportAllCollections() {
 
         const fileName = `${collection.id}.xlsx`;
         XLSX.writeFile(workbook, fileName);
-        console.log(`✅ ${fileName} 내보내기 완료`);
+        console.log(` ${fileName} 내보내기 완료`);
       } else {
-        console.log(`⚠️ 컬렉션 \"${collection.id}\" 에는 데이터가 없습니다.`);
+        console.log(` 컬렉션 \"${collection.id}\" 에는 데이터가 없습니다.`);
       }
     }
     console.log('🎉 모든 컬렉션 내보내기 완료!');
   } catch (error) {
-    console.error('❌ 내보내기 중 오류 발생:', error);
+    console.error(' 내보내기 중 오류 발생:', error);
   }
 }
 

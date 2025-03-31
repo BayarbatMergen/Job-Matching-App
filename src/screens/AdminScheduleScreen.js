@@ -61,7 +61,7 @@ export default function AdminScheduleScreen() {
         setAllSchedules(scheduleMap);
         setMarkedDates(marks);
       } catch (error) {
-        console.error('❌ 스케줄 불러오기 오류:', error);
+        console.error(' 스케줄 불러오기 오류:', error);
       } finally {
         setLoading(false);
       }
@@ -122,7 +122,7 @@ export default function AdminScheduleScreen() {
           </ScrollView>
         </View>
 
-        {/* ✅ 여기 추가: 승인 관리로 이동 버튼 */}
+        {/*  여기 추가: 승인 관리로 이동 버튼 */}
         <TouchableOpacity
           style={styles.approvalButton}
           onPress={() => navigation.navigate("SettlementApprovalScreen")}

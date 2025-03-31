@@ -28,14 +28,14 @@ const UserManagementScreen = ({ navigation }) => {
         throw new Error("사용자 목록을 불러오지 못했습니다.");
       }
       const data = await response.json();
-      console.log("✅ 사용자 리스트:", data);
+      console.log(" 사용자 리스트:", data);
 
       const sortedUsers = data.sort((a, b) =>
         a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0
       );
       setUsers(sortedUsers);
     } catch (error) {
-      console.error("❌ 사용자 가져오기 오류:", error);
+      console.error(" 사용자 가져오기 오류:", error);
       Alert.alert("오류", error.message);
     } finally {
       setLoading(false);

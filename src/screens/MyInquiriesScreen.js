@@ -28,7 +28,7 @@ export default function MyInquiriesScreen() {
 
         setInquiries(data);
       } catch (error) {
-        console.error('❌ 내 문의 내역 가져오기 실패:', error);
+        console.error(' 내 문의 내역 가져오기 실패:', error);
       } finally {
         setLoading(false);
       }

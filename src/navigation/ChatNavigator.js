@@ -1,7 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import ChatListScreen from '../screens/ChatListScreen'; // ✅ 채팅 목록
-import ChatScreen from '../screens/ChatScreen'; // ✅ 개별 채팅방
+import ChatListScreen from '../screens/ChatListScreen'; //  채팅 목록
+import ChatScreen from '../screens/ChatScreen'; //  개별 채팅방
 
 const Stack = createStackNavigator();
 

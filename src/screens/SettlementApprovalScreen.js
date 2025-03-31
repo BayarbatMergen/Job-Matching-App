@@ -20,7 +20,9 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
-import { useNavigation } from "@react-navigation/native"; // ✅ 뒤로가기용
+import { useNavigation } from "@react-navigation/native";
+import * as SecureStore from "expo-secure-store";
+import API_BASE_URL from "../config/apiConfig";
 
 export default function SettlementApprovalScreen() {
   const [requests, setRequests] = useState([]);
@@ -50,7 +52,7 @@ export default function SettlementApprovalScreen() {
 
       setRequests(pendingRequests);
     } catch (error) {
-      console.error("❌ 정산 요청 가져오기 오류:", error);
+      console.error(" 정산 요청 가져오기 오류:", error);
     } finally {
       setLoading(false);
     }
@@ -60,29 +62,36 @@ export default function SettlementApprovalScreen() {
     fetchSettlementRequests();
   }, []);
 
-  const handleApprove = async (id, userId) => {
+  const handleApprove = async (settlementId, userId) => {
     try {
-      await updateDoc(doc(db, "settlements", id), {
-        status: "approved",
-        approvedAt: new Date(), // ✅ 승인 날짜 저장
+      const token = await SecureStore.getItemAsync("token");
+      if (!token) {
+        Alert.alert("인증 오류", "토큰이 없습니다. 다시 로그인 해주세요.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/schedules/approve-settlement`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ settlementId, userId }),
       });
-  
-      const scheduleQuery = query(collection(db, "schedules"), where("userId", "==", userId));
-      const scheduleSnapshot = await getDocs(scheduleQuery);
-      const batch = writeBatch(db);
-  
-      scheduleSnapshot.forEach((scheduleDoc) => {
-        batch.delete(scheduleDoc.ref);
-      });
-      await batch.commit();
-  
-      Alert.alert("승인 완료", "정산 요청이 승인되었고, 스케줄 데이터가 삭제되었습니다.");
-      fetchSettlementRequests();
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Alert.alert("승인 완료", "정산 요청이 승인되었고, 스케줄 데이터가 삭제되었습니다.");
+        fetchSettlementRequests();
+      } else {
+        Alert.alert("오류", result.message || "승인 처리 중 문제가 발생했습니다.");
+      }
     } catch (error) {
-      console.error("❌ 승인 처리 오류:", error);
+      console.error(" 승인 처리 오류:", error);
       Alert.alert("오류", "승인 처리 중 문제가 발생했습니다.");
     }
-  };  
+  };
 
   const handleReject = async (id) => {
     try {
@@ -90,7 +99,7 @@ export default function SettlementApprovalScreen() {
       Alert.alert("거절 완료", "정산 요청이 거절되었습니다.");
       fetchSettlementRequests();
     } catch (error) {
-      console.error("❌ 거절 처리 오류:", error);
+      console.error(" 거절 처리 오류:", error);
       Alert.alert("오류", "거절 처리 중 문제가 발생했습니다.");
     }
   };
@@ -107,8 +116,6 @@ export default function SettlementApprovalScreen() {
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 30 }}>
       <View style={styles.container}>
-        {/* ✅ 뒤로가기 버튼 */}
-
         <Text style={styles.header}>정산 승인 요청 목록</Text>
 
         {requests.length === 0 ? (
@@ -175,15 +182,14 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontWeight: "bold" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   headerBar: {
-  backgroundColor: "#007AFF",
-  paddingVertical: 15,
-  alignItems: "center",
-  justifyContent: "center",
-},
-headerText: {
-  color: "#fff",
-  fontSize: 20,
-  fontWeight: "bold",
-},
-
+    backgroundColor: "#007AFF",
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
 });

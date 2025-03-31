@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
 
-// ✅ 로그인 함수 (최종 수정)
+//  로그인 함수 (최종 수정)
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -22,7 +22,7 @@ const login = async (req, res) => {
 
     const userDoc = userQuery.docs[0];
     const user = userDoc.data();
-    console.log("🔥 Firestore에서 가져온 user 데이터:", user);
+    console.log(" Firestore에서 가져온 user 데이터:", user);
     const userId = userDoc.id;
 
     // 비밀번호 검증 (실제 서비스에서는 반드시 해시 비교 필요)
@@ -44,11 +44,11 @@ const login = async (req, res) => {
     // Firebase Custom Token 생성
     const customToken = await admin.auth().createCustomToken(userId);
 
-    // ✅ 최종 응답
+    //  최종 응답
     res.json({
-      message: "✅ 로그인 성공!",
+      message: " 로그인 성공!",
       token,
-      firebaseToken: customToken,   // 🔥 여기서 customToken 사용!
+      firebaseToken: customToken,   //  여기서 customToken 사용!
       user: {
         userId,
         email: user.email,
@@ -57,7 +57,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ [로그인 실패]:", error);
+    console.error(" [로그인 실패]:", error);
     res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 };
@@ -66,20 +66,20 @@ const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     if (!userId) {
-      return res.status(400).json({ message: "❌ 사용자 ID가 없습니다!" });
+      return res.status(400).json({ message: " 사용자 ID가 없습니다!" });
     }
 
     const userRef = admin.firestore().collection("users").doc(userId);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      return res.status(404).json({ message: "❌ 사용자 정보를 찾을 수 없습니다!" });
+      return res.status(404).json({ message: " 사용자 정보를 찾을 수 없습니다!" });
     }
 
     res.status(200).json({ user: userSnap.data() });
   } catch (error) {
-    console.error("❌ [getUserProfile] 사용자 정보 조회 실패:", error);
-    res.status(500).json({ message: "❌ 서버 오류 발생" });
+    console.error(" [getUserProfile] 사용자 정보 조회 실패:", error);
+    res.status(500).json({ message: " 서버 오류 발생" });
   }
 };
 
@@ -95,7 +95,7 @@ const changePassword = async (req, res) => {
     await admin.auth().updateUser(userId, { password: newPassword });
     res.status(200).json({ message: "비밀번호 변경 완료!" });
   } catch (error) {
-    console.error("❌ 비밀번호 변경 실패:", error);
+    console.error(" 비밀번호 변경 실패:", error);
     res.status(500).json({ message: "비밀번호 변경 실패" });
   }
 };
@@ -104,25 +104,25 @@ const validateToken = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ valid: false, message: "❌ 토큰이 제공되지 않았습니다." });
+      return res.status(401).json({ valid: false, message: " 토큰이 제공되지 않았습니다." });
     }
 
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (error) {
-      return res.status(401).json({ valid: false, message: "❌ 토큰이 유효하지 않습니다." });
+      return res.status(401).json({ valid: false, message: " 토큰이 유효하지 않습니다." });
     }
 
-    console.log("✅ 토큰 검증 완료:", decoded);
+    console.log(" 토큰 검증 완료:", decoded);
     return res.json({
       valid: true,
       userId: decoded.userId,
       role: decoded.role === "admin" ? "admin" : "user",
     });
   } catch (error) {
-    console.error("❌ [validateToken] 오류 발생:", error);
-    return res.status(500).json({ valid: false, message: "❌ 서버 오류 발생" });
+    console.error(" [validateToken] 오류 발생:", error);
+    return res.status(500).json({ valid: false, message: " 서버 오류 발생" });
   }
 };
 
