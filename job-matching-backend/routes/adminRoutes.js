@@ -404,4 +404,26 @@ router.post('/settlements/request', async (req, res) => {
   }
 });
 
+router.delete("/chats/delete-room/:roomId", async (req, res) => {
+  const { roomId } = req.params;
+
+  try {
+    const chatRef = db.collection("chats").doc(roomId);
+    const chatSnap = await chatRef.get();
+
+    if (!chatSnap.exists) {
+      return res.status(404).json({ message: "❌ 해당 채팅방이 존재하지 않습니다." });
+    }
+
+    // 🔥 메시지 하위 컬렉션도 같이 삭제하려면 여기에 추가 가능
+
+    await chatRef.delete();
+    console.log(`🗑️ 단톡방 삭제 완료: ${roomId}`);
+    return res.status(200).json({ message: "✅ 채팅방 삭제 완료" });
+  } catch (error) {
+    console.error("🔥 단톡방 삭제 오류:", error);
+    return res.status(500).json({ message: "❌ 서버 오류", error: error.message });
+  }
+});
+
 module.exports = router;
