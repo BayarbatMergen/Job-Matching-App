@@ -12,6 +12,31 @@ export default function AdminJobDetailScreen({ route, navigation }) {
   };
 
   const [editedJob, setEditedJob] = useState(initialJob);
+  const [visibleUserNames, setVisibleUserNames] = useState([]);
+
+  useEffect(() => {
+    const fetchUserNames = async () => {
+      if (editedJob.visibleTo && Array.isArray(editedJob.visibleTo)) {
+        try {
+          const names = [];
+          for (const uid of editedJob.visibleTo) {
+            const response = await fetch(`http://192.168.0.5:5000/api/users/${uid}`);
+            const data = await response.json();
+            if (data && data.name) {
+              names.push(data.name);
+            } else {
+              names.push('(이름 없음)');
+            }
+          }
+          setVisibleUserNames(names);
+        } catch (error) {
+          console.error('👤 사용자 이름 불러오기 실패:', error);
+        }
+      }
+    };
+
+    fetchUserNames();
+  }, [editedJob.visibleTo]);
 
   const handleChange = (field, value) => {
     setEditedJob((prev) => ({ ...prev, [field]: value }));
@@ -31,7 +56,6 @@ export default function AdminJobDetailScreen({ route, navigation }) {
       }
     }
 
-    // workDays 문자열을 배열로 변환해서 업데이트
     const updatedJob = {
       ...editedJob,
       workDays: editedJob.workDays
@@ -128,6 +152,21 @@ export default function AdminJobDetailScreen({ route, navigation }) {
           onChangeText={(text) => handleChange('description', text)}
           multiline
         />
+
+        {editedJob.visibleTo && (
+          <View style={{ marginTop: 20 }}>
+            <Text style={styles.label}>공개 대상자</Text>
+            {editedJob.visibleTo === 'all' ? (
+              <Text style={{ color: 'green', marginTop: 5 }}>모든 사용자에게 공개됨</Text>
+            ) : visibleUserNames.length > 0 ? (
+              visibleUserNames.map((name, idx) => (
+                <Text key={idx} style={{ color: '#555', marginTop: 3 }}>- {name}</Text>
+              ))
+            ) : (
+              <Text style={{ color: '#888', marginTop: 5 }}>공개 대상자가 설정되지 않았습니다.</Text>
+            )}
+          </View>
+        )}
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>

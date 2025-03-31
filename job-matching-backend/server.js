@@ -55,6 +55,7 @@ const jobSeekerRoutes = require("./routes/jobSeekerRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const userRoutes = require('./routes/userRoutes');
 
 //  라우터 연결
 app.use("/api/auth", authRoutes);
@@ -64,6 +65,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/chats", chatRoutes);
 app.use('/api', applicationRoutes);
+app.use('/api/users', userRoutes);
 
 app.get("/", (req, res) => {
   res.send(" Job Matching Backend 서버가 실행 중입니다!");
