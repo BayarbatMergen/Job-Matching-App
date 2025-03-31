@@ -151,7 +151,7 @@ export default function AdminChatScreen({ route }) {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.topBar}>
-        <Text style={styles.roomTitle}>{roomName}</Text>
+        <Text style={styles.roomTitle}>참여자 {participantNames.length}명</Text>
         <TouchableOpacity onPress={openDrawer}>
           <Ionicons name="people-outline" size={24} color="#fff" />
         </TouchableOpacity>
@@ -210,7 +210,7 @@ export default function AdminChatScreen({ route }) {
             { left: drawerAnim },
           ]}
         >
-          <Text style={styles.drawerTitle}>👥 참여자 목록</Text>
+          <Text style={styles.drawerTitle}>참여자 목록</Text>
           {participantNames.map((name, idx) => (
             <Text key={idx} style={styles.participantItem}>
               • {name}
@@ -226,39 +226,58 @@ export default function AdminChatScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: "#fff" },
+  safeContainer: { flex: 1, backgroundColor: "#F9FAFB" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   topBar: {
     flexDirection: "row",
-    padding: 15,
-    backgroundColor: "#007AFF",
+    padding: 16,
+    backgroundColor: "#2D85F0",
     justifyContent: "space-between",
     alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
-  roomTitle: { fontSize: 18, fontWeight: "bold", color: "#fff" },
+  roomTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+
   messageBubble: {
     padding: 12,
-    borderRadius: 10,
-    marginVertical: 5,
-    maxWidth: "85%",
+    borderRadius: 14,
+    marginVertical: 6,
+    marginHorizontal: 10,
+    maxWidth: "80%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   myMessageBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "#A3D8FF",
-    marginRight: 15,
+    backgroundColor: "#D0E7FF",
   },
   otherMessageBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#F1F0F0",
-    marginLeft: 15,
+    backgroundColor: "#EDEDED",
   },
-  messageText: { fontSize: 16, color: "#333" },
+  messageText: {
+    fontSize: 16,
+    color: "#333",
+  },
   timestamp: {
-    fontSize: 12,
-    color: "#777",
-    marginTop: 5,
+    fontSize: 11,
+    color: "#888",
+    marginTop: 4,
     textAlign: "right",
   },
+
   chatInputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -270,39 +289,60 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 5,
   },
   chatInput: {
     flex: 1,
-    height: 40,
+    height: 42,
     backgroundColor: "#F1F1F1",
-    borderRadius: 20,
-    paddingHorizontal: 15,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    fontSize: 15,
   },
   sendButton: {
     marginLeft: 10,
     padding: 10,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#2D85F0",
     borderRadius: 20,
   },
+
   drawerContainer: {
     position: "absolute",
     top: 0,
     bottom: 0,
     width: SCREEN_WIDTH * 0.7,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#fff",
     borderLeftWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#ddd",
     padding: 20,
     zIndex: 100,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  drawerTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 15 },
-  participantItem: { fontSize: 16, marginVertical: 6 },
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#2D85F0",
+  },
+  participantItem: {
+    fontSize: 16,
+    marginVertical: 8,
+    color: "#333",
+  },
   drawerCloseButton: {
-    marginTop: 20,
+    marginTop: 30,
     alignSelf: "flex-end",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "#e1e1e1",
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#EFF2F7",
+    borderRadius: 10,
   },
 });

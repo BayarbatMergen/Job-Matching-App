@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
+import { Swipeable } from "react-native-gesture-handler";
 
 export default function AdminChatListScreen({ navigation }) {
   const [chatRooms, setChatRooms] = useState([]);
@@ -19,7 +20,6 @@ export default function AdminChatListScreen({ navigation }) {
 
   const fetchAdminChatRooms = async () => {
     try {
-      console.log("📡 관리자 채팅방 목록 요청 중...");
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
         Alert.alert("인증 오류", "로그인이 필요합니다.");
@@ -28,7 +28,6 @@ export default function AdminChatListScreen({ navigation }) {
       }
 
       const response = await fetch(`${API_BASE_URL}/admin/chats/all-rooms`, {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -38,15 +37,55 @@ export default function AdminChatListScreen({ navigation }) {
       if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
 
       const data = await response.json();
-      console.log("✅ 관리자 채팅방 목록 불러오기 성공:", data);
       setChatRooms(data);
     } catch (error) {
-      console.error("❌ 관리자 채팅방 목록 가져오기 실패:", error);
-      Alert.alert("오류", "관리자 채팅방 목록을 불러오지 못했습니다.");
+      console.error("❌ 채팅방 목록 오류:", error);
+      Alert.alert("오류", "채팅방 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }
   };
+
+  const deleteChatRoom = async (roomId) => {
+    try {
+      const token = await SecureStore.getItemAsync("token");
+      const res = await fetch(`${API_BASE_URL}/admin/chats/delete-room/${roomId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) throw new Error("삭제 실패");
+
+      setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
+      Alert.alert("✅ 삭제 완료", "채팅방이 삭제되었습니다.");
+    } catch (error) {
+      console.error("❌ 채팅방 삭제 오류:", error);
+      Alert.alert("오류", "채팅방 삭제에 실패했습니다.");
+    }
+  };
+
+  const confirmDelete = (roomId) => {
+    Alert.alert(
+      "채팅방 삭제",
+      "채팅방을 삭제하시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        { text: "삭제", style: "destructive", onPress: () => deleteChatRoom(roomId) },
+      ]
+    );
+  };
+
+  const renderRightActions = (roomId) => (
+    <TouchableOpacity
+      style={styles.deleteButton}
+      onPress={() => confirmDelete(roomId)}
+    >
+      <Text style={styles.deleteText}>삭제</Text>
+    </TouchableOpacity>
+  );
 
   useEffect(() => {
     fetchAdminChatRooms();
@@ -69,19 +108,22 @@ export default function AdminChatListScreen({ navigation }) {
           data={chatRooms}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.roomItem}
-              onPress={() =>
-                navigation.navigate("AdminChatScreen", {
-                  roomId: item.id,
-                  roomName: item.name || "채팅방",
-                  roomType: item.roomType || "inquiry",
-                })
-              }
-            >
-              <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
-              <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
-            </TouchableOpacity>
+            <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+              <TouchableOpacity
+                style={styles.roomItem}
+                onPress={() =>
+                  navigation.navigate("AdminChatScreen", {
+                    roomId: item.id,
+                    roomName: item.name || "채팅방",
+                    roomType: item.roomType || "inquiry",
+                  })
+                }
+                onLongPress={() => confirmDelete(item.id)}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
+                <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
+              </TouchableOpacity>
+            </Swipeable>
           )}
           showsVerticalScrollIndicator={false}
         />
@@ -105,4 +147,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   roomName: { fontSize: 18, fontWeight: "bold", marginLeft: 10, color: "#333" },
+  deleteButton: {
+    backgroundColor: "red",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    borderRadius: 10,
+    marginVertical: 5,
+  },
+  deleteText: {
+    color: "white",
+    fontWeight: "bold",
+  },
 });
