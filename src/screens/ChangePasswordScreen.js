@@ -24,7 +24,7 @@ export default function ChangePasswordScreen() {
   
       const token = await SecureStore.getItemAsync("token");
   
-      const response = await fetch("http://192.168.0.6:5000/api/auth/change-password", {
+      const response = await fetch("http://192.168.0.5:5000/api/auth/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

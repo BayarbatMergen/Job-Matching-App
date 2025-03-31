@@ -199,6 +199,23 @@ const getChatParticipants = async (req, res) => {
   }
 };
 
+const getUserNameById = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const userDoc = await db.collection("users").doc(uid).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
+    }
+
+    const userData = userDoc.data();
+    return res.status(200).json({ name: userData.name || "이름 없음" });
+  } catch (error) {
+    console.error("❌ 사용자 정보 조회 실패:", error);
+    return res.status(500).json({ message: "❌ 서버 오류", error: error.message });
+  }
+};
+
 module.exports = {
   addMessageToChat,
   getChatMessages,
@@ -207,4 +224,5 @@ module.exports = {
   createNoticeRoom,
   addUserToChatRoom,         // ✅ 신규 유저 추가 + 입장 메시지
   getChatParticipants,       // ✅ 참가자 목록 조회
+  getUserNameById,
 };

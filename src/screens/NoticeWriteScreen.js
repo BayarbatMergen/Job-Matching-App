@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
-const API_BASE_URL = 'http://192.168.0.6:5000';
+const API_BASE_URL = 'http://192.168.0.5:5000';
 
 export default function NoticeWriteScreen({ navigation }) {
   const [title, setTitle] = useState('');

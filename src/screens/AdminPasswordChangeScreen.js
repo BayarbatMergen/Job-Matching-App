@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'http://192.168.0.6:5000';
+const API_BASE_URL = 'http://192.168.0.5:5000';
 
 export default function AdminPasswordChangeScreen({ navigation }) {
   const [currentPassword, setCurrentPassword] = useState('');

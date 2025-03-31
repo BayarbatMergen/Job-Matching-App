@@ -281,24 +281,6 @@ router.get('/chats/all-rooms', async (req, res) => {
   }
 });
 
-router.get("/users", async (req, res) => {
-  try {
-    const snapshot = await admin.firestore().collection("users").get();
-    let users = snapshot.docs.map(doc => ({ userId: doc.id, ...doc.data() }));
-
-    // 관리자 계정을 최상단에 오도록 정렬
-    users = users.sort((a, b) =>
-      a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0
-    );
-
-    res.json(users);
-  } catch (error) {
-    console.error("❌ 사용자 목록 가져오기 오류:", error);
-    res.status(500).json({ message: "사용자 목록 가져오기 실패" });
-  }
-});
-
-
 // ✅ 특정 사용자 상세 정보 가져오기 API
 router.get('/user/:userId', async (req, res) => {
   try {
@@ -421,19 +403,5 @@ router.post('/settlements/request', async (req, res) => {
     return res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
-
-// 사용자 정보 조회 (UID로 이름 가져오기)
-router.get("/users/:uid", async (req, res) => {
-  const { uid } = req.params;
-  const userDoc = await db.collection("users").doc(uid).get();
-
-  if (!userDoc.exists) {
-    return res.status(404).json({ message: "❌ 사용자를 찾을 수 없습니다." });
-  }
-
-  const userData = userDoc.data();
-  return res.status(200).json({ name: userData.name || "이름 없음" });
-});
-
 
 module.exports = router;

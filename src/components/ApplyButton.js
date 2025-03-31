@@ -53,7 +53,7 @@ const ApplyButton = ({ job, navigation }) => {
       const requestBody = { jobId: job.id, userEmail };
       console.log("📌 [handleApply] 전송 데이터:", JSON.stringify(requestBody));
 
-      const response = await fetch("http://192.168.0.6:5000/api/jobs/apply", {
+      const response = await fetch("http://192.168.0.5:5000/api/jobs/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

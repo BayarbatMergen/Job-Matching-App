@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { logout } from "../services/authService";
 
-const API_BASE_URL = 'http://192.168.0.6:5000';
+const API_BASE_URL = 'http://192.168.0.5:5000';
 
 export default function MyPageScreen({ navigation }) {
   const [userData, setUserData] = useState(null);

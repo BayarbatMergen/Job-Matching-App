@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_BASE_URL = 'http://192.168.0.6:5000';
+const API_BASE_URL = 'http://192.168.0.5:5000';
 
 export default function UserDetailScreen({ route }) {
   const { userId } = route.params;

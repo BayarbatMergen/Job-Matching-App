@@ -39,33 +39,44 @@ export default function AdminChatScreen({ route }) {
       try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) return;
-
+    
         const [msgRes, roomRes] = await Promise.all([
           fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`${API_BASE_URL}/chats/rooms`, {
+          fetch(`${API_BASE_URL}/admin/chats/all-rooms`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
-
+    
         const msgData = await msgRes.json();
         setMessages(msgData);
-
+    
         const roomList = await roomRes.json();
         const currentRoom = roomList.find((room) => room.id === roomId);
         const participantIds = currentRoom?.participants || [];
+        console.log("✅ 현재 roomId:", roomId);
+        console.log("✅ 가져온 채팅방 목록:", roomList.map(r => r.id));
+        console.log("✅ 일치하는 채팅방:", currentRoom);
+        console.log("✅ 참여자 ID 목록:", participantIds);
 
-        // 유저 이름 가져오기
-        const namePromises = participantIds.map((uid) =>
-          fetch(`${API_BASE_URL}/users/${uid}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-            .then((res) => {
-              if (!res.ok) throw new Error(`❌ ${uid} 요청 실패`);
-              return res.json();
-            })
-        );
+        const namePromises = participantIds.map(async (uid) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/chats/users/${uid}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+              console.warn(`⚠️ ${uid} 사용자 정보 응답 실패: ${res.status}`);
+              return { name: "알 수 없음" };
+            }
+            const data = await res.json();
+            return data;
+          } catch (err) {
+            console.error(`❌ ${uid} 사용자 정보 가져오기 실패:`, err);
+            return { name: "알 수 없음" };
+          }
+        });
+    
         const users = await Promise.all(namePromises);
         console.log("✅ 참여자 이름 응답 확인:", users);
         setParticipantNames(users.map((user) => user.name || "알 수 없음"));

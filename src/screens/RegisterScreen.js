@@ -78,7 +78,7 @@ const RegisterScreen = ({ navigation }) => {
     console.log("📤 회원가입 요청 데이터:", formData);
 
     try {
-      const response = await fetch("http://192.168.0.6:5000/api/auth/register", {
+      const response = await fetch("http://192.168.0.5:5000/api/auth/register", {
         method: "POST",
         body: formData,
         headers: { "Content-Type": "multipart/form-data" },

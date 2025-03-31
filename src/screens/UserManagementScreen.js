@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-const API_BASE_URL = "http://192.168.0.6:5000";
+const API_BASE_URL = "http://192.168.0.5:5000";
 
 const UserManagementScreen = ({ navigation }) => {
   const [users, setUsers] = useState([]);
