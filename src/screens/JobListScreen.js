@@ -1,38 +1,58 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { db } from '../config/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import * as SecureStore from 'expo-secure-store';
+import { fetchUserData } from '../services/authService';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function JobListScreen({ navigation }) {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [userId, setUserId] = useState(null);
 
-  const fetchJobs = async () => {
+  const fetchJobs = async (uid) => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'jobs'));
-      const jobs = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setJobListings(jobs);
+      const response = await fetch(`${API_BASE_URL}/jobs/list?userId=${uid}`);
+      const data = await response.json();
+      if (response.ok) {
+        setJobListings(data);
+      } else {
+        console.error("공고 불러오기 실패:", data.message);
+      }
     } catch (error) {
-      console.error(" 모집 공고 불러오기 오류:", error);
+      console.error("공고 불러오기 오류:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const initialize = async () => {
+    try {
+      const token = await SecureStore.getItemAsync("token");
+      if (!token) {
+        navigation.replace("Login");
+        return;
+      }
+      const user = await fetchUserData();  // userId 포함 객체
+      setUserId(user.userId);
+      fetchJobs(user.userId);
+    } catch (error) {
+      console.error("🛑 사용자 정보 가져오기 실패:", error);
+    }
+  };
+
   useEffect(() => {
-    fetchJobs();
+    initialize();
   }, []);
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchJobs();
-  }, []);
+    if (userId) {
+      setRefreshing(true);
+      fetchJobs(userId);
+    }
+  }, [userId]);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
