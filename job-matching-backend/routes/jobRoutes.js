@@ -19,20 +19,21 @@ router.post('/add', async (req, res) => {
     const {
       title, wage, startDate, endDate, workDays, workHours, industry,
       employmentType, accommodation, maleRecruitment, femaleRecruitment,
-      location, description, notifyUsers // 👈 notifyUsers는 visibleTo 대상
+      location, description, notifyUsers
     } = req.body;
 
     if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
       return res.status(400).json({ message: '모든 필수 항목을 입력해주세요.' });
     }
 
-    // ✅ visibleTo 정리: 문자열 따옴표 제거 + 배열 강제 형 변환
+    // ✅ visibleTo 정리
     const visibleTo = notifyUsers === "all"
       ? "all"
       : Array.isArray(notifyUsers)
         ? notifyUsers.map(uid => String(uid).replace(/"/g, '').trim())
         : [];
 
+    // ✅ 공고 저장
     const jobRef = db.collection('jobs').doc();
     await jobRef.set({
       title,
@@ -48,14 +49,14 @@ router.post('/add', async (req, res) => {
       femaleRecruitment,
       location,
       description,
-      visibleTo, // 👈 여기에 필터된 값 저장
+      visibleTo,
       createdAt: admin.firestore.Timestamp.now(),
       updatedAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`✅ 공고 등록 성공! [${jobRef.id}] — 알림 처리 시작`);
+    console.log(`✅ 공고 등록 성공! [${jobRef.id}]`);
 
-    // 🔔 알림 전송 처리
+    // 🔔 알림 전송
     if (notifyUsers === "all") {
       await db.collection('globalNotifications').add({
         title: "새 공고 등록",
@@ -63,7 +64,7 @@ router.post('/add', async (req, res) => {
         createdAt: admin.firestore.Timestamp.now(),
       });
       console.log("📣 글로벌 알림 전송 완료");
-    } else if (Array.isArray(notifyUsers)) {
+    } else if (Array.isArray(visibleTo)) {
       for (const userId of visibleTo) {
         await db.collection('notifications').doc(userId).collection('userNotifications').add({
           title: "새 공고 등록",
@@ -75,23 +76,17 @@ router.post('/add', async (req, res) => {
       console.log(`📣 ${visibleTo.length}명의 사용자에게 개별 알림 전송 완료`);
     }
 
-    // 💬 공고 전용 단톡방 생성
+    // 💬 공고 단톡방 미리 생성 (참가자 없음)
     const chatRoomRef = db.collection('chats').doc();
-    const participants =
-  notifyUsers === "all"
-    ? []  // or maybe [adminId] if you want the admin to join
-    : Array.isArray(visibleTo)
-    ? visibleTo
-    : [];
-    console.log("🔥 채팅방 생성 준비 중...");
     await chatRoomRef.set({
       name: `알바생 단톡방 (${title})`,
-      participants,
+      participants: [], // 사용자는 승인 시 추가됨
       jobId: jobRef.id,
       createdAt: admin.firestore.Timestamp.now(),
       roomType: 'notice',
       type: 'group',
     });
+
     console.log(`💬 공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
 
     res.status(201).json({ message: '공고 등록 및 알림 전송 완료', jobId: jobRef.id });
@@ -100,6 +95,7 @@ router.post('/add', async (req, res) => {
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
+
 
 //  2️⃣ 구인 공고 목록 조회 API
 router.get('/list', async (req, res) => {
