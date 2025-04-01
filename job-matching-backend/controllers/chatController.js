@@ -23,6 +23,7 @@ const getChatMessages = async (req, res) => {
 };
 
 //  메시지 추가
+// 메시지 추가
 const addMessageToChat = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -30,7 +31,7 @@ const addMessageToChat = async (req, res) => {
     const senderId = req.user.userId;
 
     if (!roomId || !text) {
-      return res.status(400).json({ message: " roomId와 text가 필요합니다." });
+      return res.status(400).json({ message: "roomId와 text가 필요합니다." });
     }
 
     const roomDoc = await db.collection("chats").doc(roomId).get();
@@ -42,19 +43,26 @@ const addMessageToChat = async (req, res) => {
 
     const createdAt = admin.firestore.Timestamp.now();
     const messageRef = db.collection("chats").doc(roomId).collection("messages").doc();
-    const newMessage = { text, senderId, createdAt };
+    
+    const newMessage = {
+      text,
+      senderId,
+      createdAt,
+      readBy: [senderId], // ✅ 처음 보낸 사람은 읽은 것으로 처리
+    };
 
     await messageRef.set(newMessage);
 
     return res.status(200).json({
-      message: " 메시지 추가 성공!",
+      message: "메시지 추가 성공!",
       data: { id: messageRef.id, ...newMessage },
     });
   } catch (error) {
-    console.error(" 메시지 추가 오류:", error);
-    res.status(500).json({ message: " 서버 오류 발생" });
+    console.error("메시지 추가 오류:", error);
+    res.status(500).json({ message: "서버 오류 발생" });
   }
 };
+
 
 //  채팅방 목록 가져오기
 const getChatRooms = async (req, res) => {
@@ -216,6 +224,24 @@ const getUserNameById = async (req, res) => {
   }
 };
 
+const markMessageAsRead = async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+    const { userId } = req.body;
+
+    const msgRef = db.collection('chats').doc(roomId).collection('messages').doc(messageId);
+    await msgRef.update({
+      readBy: admin.firestore.FieldValue.arrayUnion(userId)
+    });
+
+    res.status(200).json({ message: "읽음 처리 완료" });
+  } catch (error) {
+    console.error("읽음 처리 오류:", error);
+    res.status(500).json({ message: "서버 오류" });
+  }
+};
+
+
 module.exports = {
   addMessageToChat,
   getChatMessages,
@@ -225,4 +251,5 @@ module.exports = {
   addUserToChatRoom,         //  신규 유저 추가 + 입장 메시지
   getChatParticipants,       //  참가자 목록 조회
   getUserNameById,
+  markMessageAsRead,
 };

@@ -77,9 +77,16 @@ router.post('/add', async (req, res) => {
 
     // 💬 공고 전용 단톡방 생성
     const chatRoomRef = db.collection('chats').doc();
+    const participants =
+  notifyUsers === "all"
+    ? []  // or maybe [adminId] if you want the admin to join
+    : Array.isArray(visibleTo)
+    ? visibleTo
+    : [];
+    console.log("🔥 채팅방 생성 준비 중...");
     await chatRoomRef.set({
       name: `알바생 단톡방 (${title})`,
-      participants: [],
+      participants,
       jobId: jobRef.id,
       createdAt: admin.firestore.Timestamp.now(),
       roomType: 'notice',

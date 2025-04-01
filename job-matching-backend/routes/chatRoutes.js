@@ -8,7 +8,8 @@ const {
   createNoticeRoom,
   addUserToChatRoom,
   getChatParticipants,
-  getUserNameById 
+  getUserNameById,
+  markMessageAsRead
 } = require("../controllers/chatController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 
@@ -35,6 +36,8 @@ router.get("/rooms/:roomId/participants", verifyToken, getChatParticipants);
 
 //  사용자 이름 조회
 router.get("/users/:uid", verifyToken, getUserNameById);
+
+router.post('/rooms/:roomId/messages/:messageId/read', markMessageAsRead);
 
 console.log(" chatRoutes.js 로드 완료");
 

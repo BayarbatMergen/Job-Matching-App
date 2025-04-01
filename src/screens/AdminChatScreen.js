@@ -29,6 +29,37 @@ export default function AdminChatScreen({ route }) {
   const flatListRef = useRef();
 
   useEffect(() => {
+    if (!currentUserId || messages.length === 0) return;
+  
+    const markAsRead = async () => {
+      const token = await SecureStore.getItemAsync("token");
+      const unreadMessages = messages.filter(
+        (msg) => !msg.readBy?.includes(currentUserId)
+      );
+  
+      for (const msg of unreadMessages) {
+        try {
+          await fetch(
+            `${API_BASE_URL}/chats/rooms/${roomId}/messages/${msg.id}/read`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ userId: currentUserId }),
+            }
+          );
+        } catch (err) {
+          console.error("읽음 처리 실패:", err);
+        }
+      }
+    };
+  
+    markAsRead();
+  }, [messages, currentUserId]);  
+
+  useEffect(() => {
     const loadUserId = async () => {
       const userId = await SecureStore.getItemAsync("userId");
       setCurrentUserId(userId);
@@ -172,14 +203,18 @@ export default function AdminChatScreen({ route }) {
           >
             <Text style={styles.messageText}>{item.text}</Text>
             <Text style={styles.timestamp}>
-              {item.createdAt && item.createdAt._seconds
-                ? new Date(item.createdAt._seconds * 1000)
-                    .toLocaleTimeString("ko-KR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                : ""}
-            </Text>
+  {item.createdAt && item.createdAt._seconds
+    ? new Date(item.createdAt._seconds * 1000).toLocaleString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Seoul", // ✅ 명시함
+    })
+    
+    : ""}
+</Text>
           </View>
         )}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 80 }}

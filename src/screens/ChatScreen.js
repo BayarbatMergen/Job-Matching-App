@@ -14,40 +14,62 @@ import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
 
 export default function ChatScreen({ route }) {
-  const { roomId, roomType } = route.params; // 👈 roomName 제거
+  const { roomId, roomType } = route.params;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
   const flatListRef = useRef();
 
+  // ✅ 유저 ID와 메시지 로딩 처리
   useEffect(() => {
-    const loadUserId = async () => {
-      const userId = await SecureStore.getItemAsync("userId");
-      setCurrentUserId(userId);
-    };
-
-    const fetchMessages = async () => {
+    const setup = async () => {
       try {
+        const userId = await SecureStore.getItemAsync("userId");
         const token = await SecureStore.getItemAsync("token");
-        if (!token) return;
 
-        const msgRes = await fetch(
-          `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        if (!userId || !token) {
+          console.warn("❗️userId 또는 token이 없습니다.");
+          return;
+        }
+
+        setCurrentUserId(userId);
+
+        const res = await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const msgData = await res.json();
+        setMessages(msgData);
+
+        // ✅ 안 읽은 메시지 읽음 처리
+        const unreadMessages = msgData.filter(
+          (msg) =>
+            msg.senderId !== userId &&
+            (!msg.readBy || !msg.readBy.includes(userId))
         );
 
-        const msgData = await msgRes.json();
-        setMessages(msgData);
+        for (const msg of unreadMessages) {
+          await fetch(
+            `${API_BASE_URL}/chats/rooms/${roomId}/messages/${msg.id}/read`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ userId }),
+            }
+          );
+        }
       } catch (error) {
-        console.error(" 메시지 로딩 실패:", error);
+        console.error("📛 메시지 로딩 실패:", error);
       } finally {
-        setLoading(false);
+        setLoading(false); // ✅ 반드시 호출되도록
       }
     };
 
-    loadUserId();
-    fetchMessages();
+    setup();
   }, [roomId]);
 
   const sendMessage = async () => {
@@ -55,7 +77,7 @@ export default function ChatScreen({ route }) {
 
     try {
       const token = await SecureStore.getItemAsync("token");
-      const response = await fetch(
+      const res = await fetch(
         `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
         {
           method: "POST",
@@ -67,13 +89,13 @@ export default function ChatScreen({ route }) {
         }
       );
 
-      if (response.ok) {
+      if (res.ok) {
         setMessageText("");
-        const newMessage = await response.json();
+        const newMessage = await res.json();
         setMessages((prev) => [...prev, newMessage.data]);
       }
     } catch (error) {
-      console.error(" 메시지 전송 실패:", error);
+      console.error("📛 메시지 전송 실패:", error);
     }
   };
 
@@ -111,7 +133,14 @@ export default function ChatScreen({ route }) {
             {!item.system && (
               <Text style={styles.timestamp}>
                 {item.createdAt && item.createdAt._seconds
-                  ? new Date(item.createdAt._seconds * 1000 + 9 * 60 * 60 * 1000).toLocaleTimeString('ko-KR')
+                  ? new Date(item.createdAt._seconds * 1000).toLocaleString("ko-KR", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZone: "Asia/Seoul",
+                    })
                   : ""}
               </Text>
             )}
