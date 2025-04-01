@@ -2,9 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { db } from '../config/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  getDocs
+} from 'firebase/firestore';
+import * as SecureStore from 'expo-secure-store';
 
 // 화면 import
 import AdminJobListScreen from '../screens/AdminJobListScreen';
@@ -46,6 +53,49 @@ export function useUnreadNotificationCount() {
   return count;
 }
 
+// ✅ 관리자 unread 채팅 감지용 훅
+function useUnreadChatCount() {
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    let unsubscribers = [];
+
+    const listen = async () => {
+      const adminId = await SecureStore.getItemAsync("userId");
+      if (!adminId) return;
+
+      const roomSnap = await getDocs(
+        query(collection(db, "chats"), where("participants", "array-contains", adminId))
+      );
+
+      unsubscribers = roomSnap.docs.map((doc) => {
+        const roomId = doc.id;
+        const messagesRef = collection(db, `chats/${roomId}/messages`);
+
+        const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
+          const hasUnreadInRoom = snapshot.docs.some((msgDoc) => {
+            const data = msgDoc.data();
+            return !(data.readBy || []).includes(adminId);
+          });
+
+          // ✅ 여러 채팅방 중 하나라도 unread 있으면 true
+          setHasUnread((prev) => prev || hasUnreadInRoom);
+        });
+
+        return unsubscribe;
+      });
+    };
+
+    listen();
+
+    return () => {
+      unsubscribers.forEach((unsub) => unsub());
+    };
+  }, []);
+
+  return hasUnread;
+}
+
 // 모집 공고 관리 스택
 function AdminHomeStack() {
   const unreadCount = useUnreadNotificationCount();
@@ -64,7 +114,10 @@ function AdminHomeStack() {
         options={({ navigation }) => ({
           headerTitle: '모집 공고',
           headerRight: () => (
-            <TouchableOpacity onPress={() => navigation.navigate('AdminNotificationScreen')} style={{ marginRight: 15 }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('AdminNotificationScreen')}
+              style={{ marginRight: 15 }}
+            >
               <View>
                 <Ionicons name="notifications-outline" size={24} color="white" />
                 {unreadCount > 0 && (
@@ -95,13 +148,11 @@ function AdminHomeStack() {
 // 일정 관리 스택
 function AdminScheduleStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#007AFF' },
-        headerTintColor: '#fff',
-        headerTitleAlign: 'center'
-      }}
-    >
+    <Stack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: '#007AFF' },
+      headerTintColor: '#fff',
+      headerTitleAlign: 'center'
+    }}>
       <Stack.Screen name="AdminScheduleScreen" component={AdminScheduleScreen} options={{ headerTitle: '일정 관리' }} />
       <Stack.Screen name="SettlementApprovalScreen" component={SettlementApprovalScreen} options={{ headerTitle: '정산 승인 관리' }} />
     </Stack.Navigator>
@@ -111,13 +162,11 @@ function AdminScheduleStack() {
 // 채팅 스택
 function AdminChatStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#007AFF' },
-        headerTintColor: '#fff',
-        headerTitleAlign: 'center'
-      }}
-    >
+    <Stack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: '#007AFF' },
+      headerTintColor: '#fff',
+      headerTitleAlign: 'center'
+    }}>
       <Stack.Screen name="AdminChatList" component={AdminChatListScreen} options={{ headerTitle: '채팅 목록' }} />
       <Stack.Screen name="AdminChatScreen" component={AdminChatScreen} options={({ route }) => ({
         headerTitle: route.params?.roomName || '채팅방'
@@ -129,13 +178,11 @@ function AdminChatStack() {
 // 마이페이지 스택
 function AdminMyPageStack() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#007AFF' },
-        headerTintColor: '#fff',
-        headerTitleAlign: 'center'
-      }}
-    >
+    <Stack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: '#007AFF' },
+      headerTintColor: '#fff',
+      headerTitleAlign: 'center'
+    }}>
       <Stack.Screen name="AdminMyPageMain" component={AdminMyPageScreen} options={{ headerTitle: '마이페이지' }} />
       <Stack.Screen name="UserManagementScreen" component={UserManagementScreen} options={{ headerTitle: '전체 사용자 관리' }} />
       <Stack.Screen name="UserDetailScreen" component={UserDetailScreen} options={{ headerTitle: '사용자 상세 정보' }} />
@@ -147,8 +194,10 @@ function AdminMyPageStack() {
   );
 }
 
-// 바텀 탭 네비게이터
+// ✅ 관리자 바텀 탭 네비게이터
 export default function AdminBottomTabNavigator() {
+  const hasUnreadChat = useUnreadChatCount();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -162,7 +211,22 @@ export default function AdminBottomTabNavigator() {
           else if (route.name === 'AdminChat') iconName = 'chatbubble-outline';
           else if (route.name === 'AdminMyPage') iconName = 'person-outline';
 
-          return <Ionicons name={iconName} size={28} color={color} />;
+          return (
+            <View style={{ position: 'relative' }}>
+              <Ionicons name={iconName} size={28} color={color} />
+              {route.name === 'AdminChat' && hasUnreadChat && (
+                <View style={{
+                  position: 'absolute',
+                  top: -2,
+                  right: -6,
+                  width: 8,
+                  height: 8,
+                  backgroundColor: 'red',
+                  borderRadius: 4,
+                }} />
+              )}
+            </View>
+          );
         },
       })}
     >

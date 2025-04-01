@@ -29,35 +29,47 @@ export default function AdminChatScreen({ route }) {
   const flatListRef = useRef();
 
   useEffect(() => {
-    if (!currentUserId || messages.length === 0) return;
+    const loadUserIdAndMessages = async () => {
+      const userId = await SecureStore.getItemAsync("userId");
+      setCurrentUserId(userId);
+      if (!userId) return;
   
-    const markAsRead = async () => {
       const token = await SecureStore.getItemAsync("token");
-      const unreadMessages = messages.filter(
-        (msg) => !msg.readBy?.includes(currentUserId)
+      if (!token) return;
+  
+      const msgRes = await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      const msgData = await msgRes.json();
+  
+      // ✅ 읽지 않은 메시지만 필터
+      const unreadMessages = msgData.filter(
+        (msg) => !msg.readBy?.includes(userId)
       );
   
       for (const msg of unreadMessages) {
         try {
-          await fetch(
-            `${API_BASE_URL}/chats/rooms/${roomId}/messages/${msg.id}/read`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ userId: currentUserId }),
-            }
-          );
+          await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages/${msg.id}/read`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userId }),
+          });
         } catch (err) {
-          console.error("읽음 처리 실패:", err);
+          console.error("❌ 읽음 처리 실패:", err);
         }
       }
+  
+      // ✅ 최신 메시지 반영
+      setMessages(msgData);
     };
   
-    markAsRead();
-  }, [messages, currentUserId]);  
+    loadUserIdAndMessages();
+  }, [roomId]);
+   
 
   useEffect(() => {
     const loadUserId = async () => {

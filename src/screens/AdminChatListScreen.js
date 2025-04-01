@@ -13,15 +13,43 @@ import { Ionicons } from "@expo/vector-icons";
 import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
 import { Swipeable } from "react-native-gesture-handler";
+import { db } from "../config/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function AdminChatListScreen({ navigation }) {
   const [chatRooms, setChatRooms] = useState([]);
+  const [unreadRoomIds, setUnreadRoomIds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchAdminChatRooms(); // 기존에 정의된 함수 재활용
+    setRefreshing(false);
+  };
+
+const fetchUnreadRooms = async (rooms, adminId) => {
+  const unreadRoomIds = [];
+
+  for (const room of rooms) {
+    const messagesSnap = await getDocs(collection(db, `chats/${room.id}/messages`));
+    const hasUnread = messagesSnap.docs.some(doc => {
+      const data = doc.data();
+      return !(data.readBy || []).includes(adminId);
+    });
+
+    if (hasUnread) {
+      unreadRoomIds.push(room.id);
+    }
+  }
+
+  setUnreadRoomIds(unreadRoomIds);
+};
 
   const fetchAdminChatRooms = async () => {
     try {
       const token = await SecureStore.getItemAsync("token");
-      if (!token) {
+      const adminId = await SecureStore.getItemAsync("userId");
+      if (!token || !adminId) {
         Alert.alert("인증 오류", "로그인이 필요합니다.");
         navigation.replace("Login");
         return;
@@ -38,6 +66,7 @@ export default function AdminChatListScreen({ navigation }) {
 
       const data = await response.json();
       setChatRooms(data);
+      fetchUnreadRooms(data, adminId);
     } catch (error) {
       console.error(" 채팅방 목록 오류:", error);
       Alert.alert("오류", "채팅방 목록을 불러올 수 없습니다.");
@@ -60,6 +89,7 @@ export default function AdminChatListScreen({ navigation }) {
       if (!res.ok) throw new Error("삭제 실패");
 
       setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
+      setUnreadRoomIds((prev) => prev.filter((id) => id !== roomId));
       Alert.alert(" 삭제 완료", "채팅방이 삭제되었습니다.");
     } catch (error) {
       console.error(" 채팅방 삭제 오류:", error);
@@ -107,6 +137,8 @@ export default function AdminChatListScreen({ navigation }) {
         <FlatList
           data={chatRooms}
           keyExtractor={(item) => item.id}
+          refreshing={refreshing}      // ✅ 추가
+          onRefresh={onRefresh}        // ✅ 추가
           renderItem={({ item }) => (
             <Swipeable renderRightActions={() => renderRightActions(item.id)}>
               <TouchableOpacity
@@ -122,6 +154,9 @@ export default function AdminChatListScreen({ navigation }) {
               >
                 <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
                 <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
+                {unreadRoomIds.includes(item.id) && (
+                  <View style={styles.unreadDot} />
+                )}
               </TouchableOpacity>
             </Swipeable>
           )}
@@ -145,6 +180,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     marginBottom: 10,
+    position: "relative",
   },
   roomName: { fontSize: 18, fontWeight: "bold", marginLeft: 10, color: "#333" },
   deleteButton: {
@@ -158,5 +194,14 @@ const styles = StyleSheet.create({
   deleteText: {
     color: "white",
     fontWeight: "bold",
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    backgroundColor: "red",
+    borderRadius: 5,
   },
 });
