@@ -103,9 +103,17 @@ export default function NotificationScreen() {
           {item.message}
         </Text>
         <Text style={styles.time}>
-          {item.createdAt?.seconds
-            ? new Date(item.createdAt.seconds * 1000).toLocaleString()
-            : ''}
+        {item.createdAt?.seconds
+  ? new Date(item.createdAt.seconds * 1000).toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  : ''}
+
         </Text>
       </View>
     </TouchableOpacity>
