@@ -183,6 +183,16 @@ router.post('/apply', async (req, res) => {
   }
 
   try {
+    // 🔒 중복 지원 확인
+    const duplicateCheck = await db.collection('applications')
+      .where('jobId', '==', jobId)
+      .where('userEmail', '==', userEmail)
+      .get();
+
+    if (!duplicateCheck.empty) {
+      return res.status(400).json({ message: '이미 해당 공고에 지원하셨습니다.' });
+    }
+
     // 공고 가져오기
     const jobRef = db.collection('jobs').doc(jobId);
     const jobSnap = await jobRef.get();
@@ -202,9 +212,8 @@ router.post('/apply', async (req, res) => {
     // workDate 계산
     let workDate;
     if (jobData.startDate) {
-      workDate = jobData.startDate; // startDate 가 있으면 그것 사용
+      workDate = jobData.startDate;
     } else {
-      // 없으면 지원 시각을 YYYY-MM-DD 로 포맷
       const appliedDate = new Date();
       workDate = appliedDate.toISOString().split('T')[0];
     }
@@ -216,8 +225,8 @@ router.post('/apply', async (req, res) => {
       jobId,
       jobTitle: jobData.title,
       wage: jobData.wage,
-      startDate: jobData.startDate,   //  이렇게
-      endDate: jobData.endDate,       //  이렇게
+      startDate: jobData.startDate,
+      endDate: jobData.endDate,
       appliedAt: admin.firestore.Timestamp.now(),
       status: 'pending'
     });
@@ -233,6 +242,7 @@ router.post('/apply', async (req, res) => {
 
     console.log(" 지원 요청 및 저장 완료!");
     res.status(200).json({ message: ' 지원 요청이 완료되었습니다.' });
+
   } catch (error) {
     console.error(' 지원 요청 처리 중 오류:', error.message);
     res.status(500).json({ message: ' 서버 오류 발생', error: error.message });
@@ -308,6 +318,26 @@ router.get("/id/:scheduleId", async (req, res) => {
   } catch (error) {
     console.error(" Firestore에서 일정 상세 조회 오류:", error);
     return res.status(500).json({ message: "서버 오류 발생", error: error.message });
+  }
+});
+
+router.get('/applied', async (req, res) => {
+  const { jobId, userEmail } = req.query;
+
+  try {
+    const snapshot = await db.collection('applications')
+      .where('jobId', '==', jobId)
+      .where('userEmail', '==', userEmail)
+      .get();
+
+    if (!snapshot.empty) {
+      return res.status(200).json({ alreadyApplied: true });
+    }
+
+    return res.status(200).json({ alreadyApplied: false });
+  } catch (error) {
+    console.error("중복 지원 확인 오류:", error);
+    return res.status(500).json({ message: "서버 오류" });
   }
 });
 
