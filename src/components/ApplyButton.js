@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import { db } from "../config/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 const jwtDecode = require("jwt-decode");
 
 const ApplyButton = ({ job, navigation }) => {
@@ -67,7 +69,7 @@ const ApplyButton = ({ job, navigation }) => {
       ]);
       return;
     }
-
+  
     setLoading(true);
     try {
       const response = await fetch("http://192.168.0.5:5000/api/jobs/apply", {
@@ -78,17 +80,29 @@ const ApplyButton = ({ job, navigation }) => {
         },
         body: JSON.stringify({ jobId: job.id, userEmail }),
       });
-
+  
       const data = await response.json();
       console.log("📨 서버 응답:", data);
-
+  
       if (response.ok) {
+        // ✅ Firestore에 알림 생성
+        await addDoc(collection(db, "notifications"), {
+          type: "application",
+          status: "unread",
+          createdAt: serverTimestamp(),
+          recipientRole: "admin",
+          jobId: job.id,
+          jobTitle: job.title,
+          userEmail: userEmail,
+          message: `${userEmail} 님이 "${job.title}" 공고에 지원했습니다.`,
+        });
+  
         Alert.alert("지원 완료", `${job.title}에 지원 요청이 전송되었습니다.`);
-        setHasApplied(true); // 성공 후 상태 업데이트
+        setHasApplied(true);
         navigation.navigate("JobList");
       } else {
         if (data.message === "이미 해당 공고에 지원하셨습니다.") {
-          setHasApplied(true); // 서버도 거부했으면 UI 반영
+          setHasApplied(true);
           Alert.alert("⚠️ 중복 지원", data.message);
         } else {
           throw new Error(data.message || "지원 요청 실패");
