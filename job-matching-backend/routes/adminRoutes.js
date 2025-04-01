@@ -285,24 +285,28 @@ router.get('/chats/all-rooms', async (req, res) => {
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log("📥 [user 조회] 요청 받은 userId:", userId);
+
     const userRef = admin.firestore().collection('users').doc(userId);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
+      console.warn(`❌ userId ${userId} 에 해당하는 사용자를 찾을 수 없습니다.`);
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }
 
     const userData = userSnap.data();
+    console.log("✅ 사용자 데이터:", userData);
 
-    //  password 필드 제거
     const { password, ...safeData } = userData;
 
     res.status(200).json(safeData);
   } catch (error) {
-    console.error(' 사용자 상세 조회 오류:', error);
-    res.status(500).json({ message: '사용자 정보 가져오기 실패' });
+    console.error('❗ 사용자 상세 조회 오류:', error);
+    res.status(500).json({ message: '사용자 정보 가져오기 실패', error: error.message });
   }
 });
+
 
 router.patch('/change-password', async (req, res) => {
   try {
@@ -425,5 +429,19 @@ router.delete("/chats/delete-room/:roomId", async (req, res) => {
     return res.status(500).json({ message: " 서버 오류", error: error.message });
   }
 });
+
+// ✅ 모든 사용자 조회 API
+router.get('/users', async (req, res) => {
+  try {
+    const snapshot = await db.collection('users').get();
+    const users = snapshot.docs.map(doc => ({ userId: doc.id, ...doc.data() }));
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("❗ 사용자 목록 조회 실패:", error);
+    res.status(500).json({ message: '사용자 목록을 불러오지 못했습니다.' });
+  }
+});
+
 
 module.exports = router;
