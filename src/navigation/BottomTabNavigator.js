@@ -1,48 +1,75 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { db } from '../config/firebase';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import * as SecureStore from 'expo-secure-store';
 
-//  사용자용 화면 import
+// 화면 import
 import JobListScreen from '../screens/JobListScreen';
 import JobDetailScreen from '../screens/JobDetailScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 import MyPageScreen from '../screens/MyPageScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
-import NotificationScreen from '../screens/NotificationScreen'; //  알림 화면 추가
-import ScheduleNavigator from './ScheduleNavigator';  //  중복 선언 제거 후 유지
 import MyInquiriesScreen from '../screens/MyInquiriesScreen';
+import ScheduleNavigator from './ScheduleNavigator';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-//  모집 공고 (홈) 네비게이터
-function HomeStack() {
+const defaultScreenOptions = {
+  headerStyle: { backgroundColor: '#007AFF' },
+  headerTintColor: '#fff',
+  headerTitleAlign: 'center',
+};
+
+// 🔔 헤더에 알림 버튼 + 빨간 점
+function HomeStack({ hasNotifications }) {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
-      <Stack.Screen name="JobList" component={JobListScreen} options={{ headerTitle: '모집 공고' }} />
+<Stack.Screen
+  name="JobList"
+  children={(props) => (
+    <JobListScreen {...props} hasNotifications={hasNotifications} />
+  )}
+  options={({ navigation }) => ({
+    headerTitle: '모집 공고',
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Notification')}
+        style={styles.notificationButton}
+      >
+        <Ionicons name="notifications-outline" size={24} color="#fff" />
+        {hasNotifications && <View style={styles.notificationDot} />}
+      </TouchableOpacity>
+    ),
+  })}
+/>
+
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ headerTitle: '공고 상세' }} />
       <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerTitle: '알림' }} />
     </Stack.Navigator>
   );
 }
 
-
-//  채팅 네비게이터 (채팅 목록 → 개별 채팅방)
 function ChatNavigator() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
       <Stack.Screen name="ChatList" component={ChatListScreen} options={{ headerTitle: '채팅방 목록' }} />
-      <Stack.Screen 
-        name="ChatScreen" 
-        component={ChatScreen} 
-        options={({ route }) => ({ headerTitle: route.params?.roomName || '채팅방' })} 
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={({ route }) => ({
+          headerTitle: route.params?.roomName || '채팅방',
+        })}
       />
     </Stack.Navigator>
   );
 }
 
-//  마이페이지 네비게이터
 function MyPageNavigator() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
@@ -52,23 +79,42 @@ function MyPageNavigator() {
   );
 }
 
-//  공통 Stack Navigator 스타일 설정
-const defaultScreenOptions = {
-  headerStyle: { backgroundColor: '#007AFF' },
-  headerTintColor: '#fff',
-  headerTitleAlign: 'center',
-  
-};
-
-//  바텀 탭 네비게이션 (사용자용)
 export default function BottomTabNavigator() {
+  const [hasNotifications, setHasNotifications] = useState(false);
+
+  useEffect(() => {
+    let unsubscribe;
+
+    const setupListener = async () => {
+      const userId = await SecureStore.getItemAsync('userId');
+      if (!userId) return;
+
+      const q = query(
+        collection(db, `notifications/${userId}/userNotifications`),
+        where('read', '==', false)
+      );
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const hasUnread = snapshot.size > 0;
+        console.log(`📍 알림 수신됨: ${snapshot.size}`);
+        setHasNotifications(hasUnread);
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarShowLabel: false,
         headerShown: false,
         tabBarStyle: { backgroundColor: '#f8f8f8', height: 60, paddingBottom: 10 },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color }) => {
           const icons = {
             Home: 'home-outline',
             Schedule: 'calendar-outline',
@@ -79,10 +125,28 @@ export default function BottomTabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen name="Home">
+        {() => <HomeStack hasNotifications={hasNotifications} />}
+      </Tab.Screen>
       <Tab.Screen name="Schedule" component={ScheduleNavigator} />
       <Tab.Screen name="Chat" component={ChatNavigator} />
       <Tab.Screen name="MyPage" component={MyPageNavigator} />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  notificationButton: {
+    position: 'relative',
+    marginRight: 15,
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    backgroundColor: 'red',
+    borderRadius: 4,
+  },
+});

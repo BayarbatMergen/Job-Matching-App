@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, ActivityIndicator, RefreshControl
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 import { fetchUserData } from '../services/authService';
 import API_BASE_URL from '../config/apiConfig';
 
-export default function JobListScreen({ navigation }) {
+export default function JobListScreen({ navigation, hasNotifications }) {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,24 +32,38 @@ export default function JobListScreen({ navigation }) {
     }
   };
 
-  const initialize = async () => {
-    try {
+  useEffect(() => {
+    const init = async () => {
       const token = await SecureStore.getItemAsync("token");
       if (!token) {
         navigation.replace("Login");
         return;
       }
-      const user = await fetchUserData();  // userId 포함 객체
+      const user = await fetchUserData();
       setUserId(user.userId);
       fetchJobs(user.userId);
-    } catch (error) {
-      console.error("🛑 사용자 정보 가져오기 실패:", error);
-    }
-  };
-
-  useEffect(() => {
-    initialize();
+    };
+    init();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({
+        headerTitle: '모집 공고',
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notification')}
+            style={{ marginRight: 15, position: 'relative' }}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#fff" />
+            {hasNotifications && (
+              <View style={styles.notificationDot} />
+            )}
+          </TouchableOpacity>
+        )
+      });
+    }, [hasNotifications])
+  );
 
   const onRefresh = useCallback(() => {
     if (userId) {
@@ -53,17 +71,6 @@ export default function JobListScreen({ navigation }) {
       fetchJobs(userId);
     }
   }, [userId]);
-
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: '모집 공고',
-      headerRight: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('Notification')} style={styles.iconButton}>
-          <Ionicons name="notifications-outline" size={28} color="black" />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
 
   if (loading) {
     return (
@@ -98,7 +105,6 @@ export default function JobListScreen({ navigation }) {
             <Text style={styles.location}>📍 {item.location}</Text>
           </TouchableOpacity>
         )}
-        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -114,14 +120,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ccc',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
   },
   title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 6 },
   wage: { fontSize: 16, color: 'red', marginBottom: 4 },
   date: { fontSize: 14, color: '#555', marginBottom: 4 },
   location: { fontSize: 14, color: '#777' },
-  iconButton: { paddingRight: 15 },
+  notificationDot: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    width: 10,
+    height: 10,
+    backgroundColor: 'red',
+    borderRadius: 5,
+  },
 });
