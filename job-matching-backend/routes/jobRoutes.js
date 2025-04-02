@@ -22,8 +22,13 @@ router.post('/add', async (req, res) => {
       location, description, notifyUsers
     } = req.body;
 
-    if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
-      return res.status(400).json({ message: '모든 필수 항목을 입력해주세요.' });
+    if (
+      !title || !wage || !startDate || !endDate || !workDays || !employmentType || !location ||
+      (!notifyUsers || (notifyUsers !== 'all' && !Array.isArray(notifyUsers)))
+    ) {
+      return res.status(400).json({
+        message: '모든 필수 항목과 알림 대상(notifyUsers)을 입력해주세요.',
+      });
     }
     const parsedWage = Number(wage);
     const parsedMaleRecruitment = Number(maleRecruitment);
@@ -61,23 +66,34 @@ router.post('/add', async (req, res) => {
 
     // 🔔 알림 전송
     if (notifyUsers === "all") {
+      // 1. 글로벌 알림 저장
       await db.collection('globalNotifications').add({
         title: "새 공고 등록",
         message: `"${title}" 공고가 새로 등록되었습니다.`,
         createdAt: admin.firestore.Timestamp.now(),
       });
       console.log("📣 글로벌 알림 전송 완료");
-    } else if (Array.isArray(visibleTo)) {
-      for (const userId of visibleTo) {
-        await db.collection('notifications').doc(userId).collection('userNotifications').add({
-          title: "새 공고 등록",
-          message: `"${title}" 공고가 새로 등록되었습니다.`,
-          read: false,
-          createdAt: admin.firestore.Timestamp.now(),
-        });
+    
+      // 2. 모든 사용자에게 개별 알림 전송 (read: false)
+      const usersSnap = await db.collection("users").get();
+      const allUsers = usersSnap.docs.map(doc => doc.id);
+    
+      for (const userId of allUsers) {
+        await db
+          .collection('notifications')
+          .doc(userId)
+          .collection('userNotifications')
+          .add({
+            title: "새 공고 등록",
+            message: `"${title}" 공고가 새로 등록되었습니다.`,
+            read: false, // ✅ 반드시 포함
+            createdAt: admin.firestore.Timestamp.now(),
+          });
       }
-      console.log(`📣 ${visibleTo.length}명의 사용자에게 개별 알림 전송 완료`);
+    
+      console.log(`📣 ${allUsers.length}명의 사용자에게 개별 알림 전송 완료`);
     }
+    
 
     // 💬 공고 단톡방 미리 생성 (참가자 없음)
     const chatRoomRef = db.collection('chats').doc();

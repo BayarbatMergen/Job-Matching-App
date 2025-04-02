@@ -47,12 +47,18 @@ export default function AdminJobFormScreen({ navigation }) {
       }
     }
   
+    // ✅ 알림 대상 유효성 검사 추가
+    if (!sendToAll && (!userSelectionStore.selectedUsers || userSelectionStore.selectedUsers.length === 0)) {
+      Alert.alert("알림 대상 선택", "특정 사용자를 선택하거나 전체 알림을 선택해주세요.");
+      return;
+    }
+  
     try {
       const jobData = {
         ...form,
-        wage: Number(form.wage), // ✅ 숫자로 변환
-        maleRecruitment: Number(form.maleRecruitment || 0), // ✅ 숫자로 변환
-        femaleRecruitment: Number(form.femaleRecruitment || 0), // ✅ 숫자로 변환
+        wage: Number(form.wage),
+        maleRecruitment: Number(form.maleRecruitment || 0),
+        femaleRecruitment: Number(form.femaleRecruitment || 0),
         workDays: form.workDays
           .split(",")
           .map((day) => day.trim())
@@ -70,7 +76,8 @@ export default function AdminJobFormScreen({ navigation }) {
       console.error(" 공고 등록 API 오류:", error);
       Alert.alert("등록 실패", "공고 등록 중 오류가 발생했습니다.");
     }
-  };  
+  };
+  
 
   return (
     <ScrollView style={styles.container}>

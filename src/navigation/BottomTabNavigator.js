@@ -176,7 +176,7 @@ export default function BottomTabNavigator() {
         },
         tabBarIcon: ({ color }) => {
           const icons = {
-            Home: 'home-outline',
+            Home: 'briefcase-outline',
             Schedule: 'calendar-outline',
             Chat: 'chatbubble-outline',
             MyPage: 'person-outline',

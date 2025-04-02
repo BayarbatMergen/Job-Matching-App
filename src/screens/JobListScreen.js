@@ -90,29 +90,31 @@ export default function JobListScreen({ navigation, hasNotifications }) {
           <Text style={styles.emptyTextSub}>새로운 공고가 등록되면 알려드릴게요!</Text>
         </View>
       ) : (
-        <FlatList
-          data={jobListings}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 30 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#007AFF']} />
-          }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.jobCard}
-              onPress={() => navigation.navigate('JobDetail', { job: item })}
-            >
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
-              <Text style={styles.date}>
-                {item.startDate && item.endDate
-                  ? `${item.startDate} ~ ${item.endDate}`
-                  : '기간 정보 없음'}
-              </Text>
-              <Text style={styles.location}>📍 {item.location}</Text>
-            </TouchableOpacity>
-          )}
-        />
+<FlatList
+  data={jobListings}
+  keyExtractor={(item) => item.id}
+  refreshing={refreshing}
+  onRefresh={onRefresh}
+  contentContainerStyle={
+    jobListings.length === 0 ? styles.emptyContainer : { paddingBottom: 30 }
+  }
+  renderItem={({ item }) => (
+    <TouchableOpacity
+      style={styles.jobCard}
+      onPress={() => navigation.navigate('JobDetail', { job: item })}
+    >
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
+      <Text style={styles.date}>
+        {item.startDate && item.endDate
+          ? `${item.startDate} ~ ${item.endDate}`
+          : '기간 정보 없음'}
+      </Text>
+      <Text style={styles.location}>📍 {item.location}</Text>
+    </TouchableOpacity>
+  )}
+/>
+
       )}
     </View>
   );

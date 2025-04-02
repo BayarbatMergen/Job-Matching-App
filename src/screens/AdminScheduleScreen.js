@@ -34,10 +34,17 @@ export default function AdminScheduleScreen() {
 
         jobs.forEach(job => {
           if (job.startDate && job.endDate) {
-            const start = new Date(job.startDate);
-            const end = new Date(job.endDate);
-
-            for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+            const start =
+              typeof job.startDate.toDate === 'function'
+                ? job.startDate.toDate()
+                : new Date(job.startDate);
+        
+            const end =
+              typeof job.endDate.toDate === 'function'
+                ? job.endDate.toDate()
+                : new Date(job.endDate);
+        
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
               const dateString = d.toISOString().split('T')[0];
               marks[dateString] = {
                 customStyles: {
@@ -45,7 +52,7 @@ export default function AdminScheduleScreen() {
                   text: { color: '#fff', fontWeight: 'bold' }
                 }
               };
-
+        
               if (!scheduleMap[dateString]) {
                 scheduleMap[dateString] = [];
               }
@@ -57,6 +64,7 @@ export default function AdminScheduleScreen() {
             }
           }
         });
+        
 
         setAllSchedules(scheduleMap);
         setMarkedDates(marks);
