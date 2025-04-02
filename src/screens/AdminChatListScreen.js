@@ -14,7 +14,7 @@ import API_BASE_URL from "../config/apiConfig";
 import * as SecureStore from "expo-secure-store";
 import { Swipeable } from "react-native-gesture-handler";
 import { db } from "../config/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 
 export default function AdminChatListScreen({ navigation }) {
   const [chatRooms, setChatRooms] = useState([]);
@@ -27,23 +27,44 @@ export default function AdminChatListScreen({ navigation }) {
     setRefreshing(false);
   };
 
-const fetchUnreadRooms = async (rooms, adminId) => {
-  const unreadRoomIds = [];
-
-  for (const room of rooms) {
-    const messagesSnap = await getDocs(collection(db, `chats/${room.id}/messages`));
-    const hasUnread = messagesSnap.docs.some(doc => {
-      const data = doc.data();
-      return !(data.readBy || []).includes(adminId);
-    });
-
-    if (hasUnread) {
-      unreadRoomIds.push(room.id);
+  const fetchUnreadRooms = async (rooms, adminId) => {
+    const unreadRoomIds = [];
+    const roomWithLastMessage = [];
+  
+    for (const room of rooms) {
+      const messagesSnap = await getDocs(
+        query(
+          collection(db, `chats/${room.id}/messages`),
+          orderBy("createdAt", "desc"),
+          limit(1)
+        )
+      );
+  
+      let lastMessageTime = null;
+      let hasUnread = false;
+  
+      if (!messagesSnap.empty) {
+        const message = messagesSnap.docs[0].data();
+        lastMessageTime = message.createdAt?.toDate();
+        hasUnread = !(message.readBy || []).includes(adminId);
+      }
+  
+      if (hasUnread) unreadRoomIds.push(room.id);
+  
+      roomWithLastMessage.push({
+        ...room,
+        lastMessageTime: lastMessageTime || new Date(0),
+      });
     }
-  }
-
-  setUnreadRoomIds(unreadRoomIds);
-};
+  
+    // 정렬
+    roomWithLastMessage.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+  
+    // ✅ 정렬된 리스트와 unreadRoomIds를 반환
+    return { sortedRooms: roomWithLastMessage, unreadRoomIds };
+  };
+  
+  
 
   const fetchAdminChatRooms = async () => {
     try {
@@ -54,26 +75,29 @@ const fetchUnreadRooms = async (rooms, adminId) => {
         navigation.replace("Login");
         return;
       }
-
+  
       const response = await fetch(`${API_BASE_URL}/admin/chats/all-rooms`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-
+  
       if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
-
+  
       const data = await response.json();
-      setChatRooms(data);
-      fetchUnreadRooms(data, adminId);
+      const { sortedRooms, unreadRoomIds } = await fetchUnreadRooms(data, adminId);
+  
+      setChatRooms(sortedRooms);        // ✅ 정렬 반영
+      setUnreadRoomIds(unreadRoomIds);  // ✅ 도트 표시도 반영
     } catch (error) {
-      console.error(" 채팅방 목록 오류:", error);
+      console.error("채팅방 목록 오류:", error);
       Alert.alert("오류", "채팅방 목록을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   const deleteChatRoom = async (roomId) => {
     try {

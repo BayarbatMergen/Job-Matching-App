@@ -79,7 +79,16 @@ function MyPageNavigator() {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
       <Stack.Screen name="MyPageScreen" component={MyPageScreen} options={{ headerTitle: '마이페이지' }} />
-      <Stack.Screen name="MyInquiriesScreen" component={MyInquiriesScreen} options={{ headerTitle: '내 문의 내역' }} />
+      <Stack.Screen
+  name="MyInquiriesScreen"
+  component={MyInquiriesScreen}
+  options={{
+    headerTitle: '내 문의 내역',
+    headerStyle: { backgroundColor: '#fff' }, // 💡 상단바 흰색
+    headerTintColor: '#000', // 💡 텍스트/아이콘은 검정색
+    headerTitleAlign: 'center',
+  }}
+/>
     </Stack.Navigator>
   );
 }

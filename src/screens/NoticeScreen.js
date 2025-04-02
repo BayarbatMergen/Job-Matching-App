@@ -58,7 +58,12 @@ export default function NoticeScreen({ navigation }) {
         )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        } //  여기 추가
+        }
+        ListEmptyComponent={(
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>공지사항이 없습니다.</Text>
+          </View>
+        )}
       />
     </View>
   );
@@ -70,4 +75,13 @@ const styles = StyleSheet.create({
   noticeItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#ddd' },
   title: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
   date: { fontSize: 14, color: 'gray' },
+  emptyContainer: {
+    marginTop: 50,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+  },
+  
 });
