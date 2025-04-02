@@ -74,44 +74,48 @@ export default function ScheduleScreen({ navigation }) {
       const schedulesArray = await fetchUserSchedules(uid);
       const formattedSchedules = {};
       let totalWageSum = 0;
-
+  
       schedulesArray.forEach((schedule) => {
         const start = new Date(schedule.startDate);
         const end = new Date(schedule.endDate);
-
+  
+        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const dailyWage = (Number(schedule.wage) || 0) / diffDays;
+  
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          const dateStr = d.toISOString().split('T')[0];
+          const dateStr = d.toISOString().split("T")[0];
           if (!formattedSchedules[dateStr]) {
             formattedSchedules[dateStr] = [];
           }
           formattedSchedules[dateStr].push({
             name: schedule.name || schedule.title || "제목 없음",
-            wage: schedule.wage,
+            wage: dailyWage,
             date: dateStr,
           });
         }
-
-        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-        totalWageSum += (Number(schedule.wage) || 0) * diffDays;
+  
+        totalWageSum += Number(schedule.wage) || 0; // 전체 급여 기준
       });
-
+  
       setScheduleData(formattedSchedules);
       setAllTotalWage(totalWageSum);
-
+  
       const marks = {};
-      Object.keys(formattedSchedules).forEach(date => {
+      Object.keys(formattedSchedules).forEach((date) => {
         marks[date] = {
           customStyles: {
-            container: { backgroundColor: '#4CAF50', borderRadius: 5 },
-            text: { color: '#fff', fontWeight: 'bold' },
+            container: { backgroundColor: "#4CAF50", borderRadius: 5 },
+            text: { color: "#fff", fontWeight: "bold" },
           },
         };
       });
+  
       setMarkedDates(marks);
     } catch (error) {
       console.error(" 일정 데이터 로딩 오류:", error);
     }
   };
+  
 
   const handleDayPress = (day) => {
     const selected = day.dateString;

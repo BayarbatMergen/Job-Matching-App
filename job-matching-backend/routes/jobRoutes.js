@@ -25,7 +25,9 @@ router.post('/add', async (req, res) => {
     if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
       return res.status(400).json({ message: '모든 필수 항목을 입력해주세요.' });
     }
-
+    const parsedWage = Number(wage);
+    const parsedMaleRecruitment = Number(maleRecruitment);
+    const parsedFemaleRecruitment = Number(femaleRecruitment);
     // ✅ visibleTo 정리
     const visibleTo = notifyUsers === "all"
       ? "all"
@@ -37,7 +39,7 @@ router.post('/add', async (req, res) => {
     const jobRef = db.collection('jobs').doc();
     await jobRef.set({
       title,
-      wage,
+      wage: parsedWage,
       startDate,
       endDate,
       workDays: Array.isArray(workDays) ? workDays : [],
@@ -45,14 +47,15 @@ router.post('/add', async (req, res) => {
       industry,
       employmentType,
       accommodation,
-      maleRecruitment,
-      femaleRecruitment,
+      maleRecruitment: parsedMaleRecruitment,
+      femaleRecruitment: parsedFemaleRecruitment,
       location,
       description,
       visibleTo,
       createdAt: admin.firestore.Timestamp.now(),
       updatedAt: admin.firestore.Timestamp.now(),
     });
+    
 
     console.log(`✅ 공고 등록 성공! [${jobRef.id}]`);
 

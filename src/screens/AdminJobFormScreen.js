@@ -50,24 +50,27 @@ export default function AdminJobFormScreen({ navigation }) {
     try {
       const jobData = {
         ...form,
+        wage: Number(form.wage), // ✅ 숫자로 변환
+        maleRecruitment: Number(form.maleRecruitment || 0), // ✅ 숫자로 변환
+        femaleRecruitment: Number(form.femaleRecruitment || 0), // ✅ 숫자로 변환
         workDays: form.workDays
           .split(",")
           .map((day) => day.trim())
           .filter((day) => day !== ""),
-        notifyUsers: sendToAll ? "all" : userSelectionStore.selectedUsers,  //  여기 수정!
+        notifyUsers: sendToAll ? "all" : userSelectionStore.selectedUsers,
       };
   
       const response = await axios.post(`${API_BASE_URL}/jobs/add`, jobData);
       console.log(" 공고 등록 성공:", response.data);
   
       Alert.alert("등록 완료", "공고가 성공적으로 등록되었습니다.");
-      userSelectionStore.clearSelectedUsers();  //  전송 후 store 초기화
+      userSelectionStore.clearSelectedUsers();
       navigation.goBack();
     } catch (error) {
       console.error(" 공고 등록 API 오류:", error);
       Alert.alert("등록 실패", "공고 등록 중 오류가 발생했습니다.");
     }
-  };
+  };  
 
   return (
     <ScrollView style={styles.container}>

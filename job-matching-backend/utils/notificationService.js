@@ -19,7 +19,7 @@ exports.sendAdminNotification = async (userId, amount) => {
       return;
     }
 
-    const message = `💰 사용자 ${userName} (${userEmail})님이 ${amount.toLocaleString()}원 정산 요청을 보냈습니다.`;
+    const message = `사용자 ${userName} (${userEmail})님이 ${amount.toLocaleString()}원 정산 요청을 보냈습니다.`;
 
     adminSnap.forEach(async (doc) => {
       const adminEmail = doc.data().email;
@@ -27,8 +27,10 @@ exports.sendAdminNotification = async (userId, amount) => {
         recipientEmail: adminEmail,
         message,
         status: "unread",
+        type: "settlement", // ✅ 알림 타입 추가
         createdAt: new Date(),
       });
+      
     });
 
     console.log("✅ 관리자 알림 전송 완료");

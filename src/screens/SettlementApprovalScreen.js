@@ -125,8 +125,20 @@ export default function SettlementApprovalScreen() {
             <View key={item.id} style={styles.card}>
               <Text style={styles.userName}>{item.userName}</Text>
               <Text>요청 금액: {Number(item.totalWage).toLocaleString()}원</Text>
-              <Text>요청 날짜: {new Date(item.requestedAt.seconds * 1000).toLocaleDateString()}</Text>
-              <View style={styles.buttonContainer}>
+              <Text>
+  요청 날짜: {new Date(item.requestedAt.seconds * 1000).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul", // ✅ 한국 시간대로 설정
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  })}
+</Text>
+
+<View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.approveButton}
                   onPress={() => handleApprove(item.id, item.userId)}
