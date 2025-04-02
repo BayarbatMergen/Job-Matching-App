@@ -68,22 +68,37 @@ function useUnreadChatCount() {
         query(collection(db, "chats"), where("participants", "array-contains", adminId))
       );
 
-      unsubscribers = roomSnap.docs.map((doc) => {
+      const allRooms = roomSnap.docs;
+
+      if (allRooms.length === 0) {
+        setHasUnread(false);
+        return;
+      }
+
+      const unsubArray = [];
+      const unreadMap = {}; // 각 방의 unread 상태 저장
+
+      allRooms.forEach((doc) => {
         const roomId = doc.id;
         const messagesRef = collection(db, `chats/${roomId}/messages`);
 
-        const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
+        const unsub = onSnapshot(messagesRef, (snapshot) => {
           const hasUnreadInRoom = snapshot.docs.some((msgDoc) => {
             const data = msgDoc.data();
             return !(data.readBy || []).includes(adminId);
           });
 
-          // ✅ 여러 채팅방 중 하나라도 unread 있으면 true
-          setHasUnread((prev) => prev || hasUnreadInRoom);
+          unreadMap[roomId] = hasUnreadInRoom;
+
+          // 전체 방 중 하나라도 true면 true
+          const isAnyUnread = Object.values(unreadMap).some(Boolean);
+          setHasUnread(isAnyUnread);
         });
 
-        return unsubscribe;
+        unsubArray.push(unsub);
       });
+
+      unsubscribers = unsubArray;
     };
 
     listen();
@@ -95,6 +110,7 @@ function useUnreadChatCount() {
 
   return hasUnread;
 }
+
 
 // 모집 공고 관리 스택
 function AdminHomeStack() {
