@@ -32,7 +32,6 @@ const defaultScreenOptions = {
   headerTitleAlign: 'center',
 };
 
-// 🔔 헤더에 알림 버튼 + 빨간 점
 function HomeStack({ hasNotifications }) {
   return (
     <Stack.Navigator screenOptions={defaultScreenOptions}>
@@ -80,15 +79,15 @@ function MyPageNavigator() {
     <Stack.Navigator screenOptions={defaultScreenOptions}>
       <Stack.Screen name="MyPageScreen" component={MyPageScreen} options={{ headerTitle: '마이페이지' }} />
       <Stack.Screen
-  name="MyInquiriesScreen"
-  component={MyInquiriesScreen}
-  options={{
-    headerTitle: '내 문의 내역',
-    headerStyle: { backgroundColor: '#fff' }, // 💡 상단바 흰색
-    headerTintColor: '#000', // 💡 텍스트/아이콘은 검정색
-    headerTitleAlign: 'center',
-  }}
-/>
+        name="MyInquiriesScreen"
+        component={MyInquiriesScreen}
+        options={{
+          headerTitle: '내 문의 내역',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#000',
+          headerTitleAlign: 'center',
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -97,61 +96,75 @@ export default function BottomTabNavigator() {
   const [hasNotifications, setHasNotifications] = useState(false);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
 
-  // 🔔 알림용 리스너
   useEffect(() => {
-    let unsubscribe;
-    const checkUnreadGlobalNotifications = async () => {
-      const userId = await SecureStore.getItemAsync('userId');
+    let unsubscribePersonal;
+    let unsubscribeGlobal;
+    let userId = null;
+  
+    const setupNotificationListeners = async () => {
+      userId = await SecureStore.getItemAsync('userId');
       if (!userId) return;
   
-      const q = collection(db, 'globalNotifications');
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        let hasUnread = false;
+      let personalUnread = false;
+      let globalUnread = false;
   
+      // 🔹 개인 알림
+      const personalQuery = query(
+        collection(db, `notifications/${userId}/userNotifications`),
+        where('read', '==', false)
+      );
+      unsubscribePersonal = onSnapshot(personalQuery, (snapshot) => {
+        personalUnread = snapshot.size > 0;
+        updateCombinedStatus();
+      });
+  
+      // 🔹 글로벌 알림
+      const globalQuery = collection(db, 'globalNotifications');
+      unsubscribeGlobal = onSnapshot(globalQuery, (snapshot) => {
+        globalUnread = false;
         snapshot.forEach((doc) => {
           const data = doc.data();
           if (!data.readBy || !data.readBy.includes(userId)) {
-            hasUnread = true;
+            globalUnread = true;
           }
         });
-  
-        setHasNotifications((prev) => {
-          if (hasUnread !== prev) {
-            console.log("글로벌 알림 읽음 상태 변경:", hasUnread);
-          }
-          return hasUnread;
-        });
+        updateCombinedStatus();
       });
+  
+      // 🔄 상태 통합
+      const updateCombinedStatus = () => {
+        setHasNotifications(personalUnread || globalUnread);
+      };
     };
   
-    checkUnreadGlobalNotifications();
+    setupNotificationListeners();
   
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribePersonal) unsubscribePersonal();
+      if (unsubscribeGlobal) unsubscribeGlobal();
     };
   }, []);
   
 
-  //채팅 메시지 리스너 (unread 감지용)
+  // 💬 채팅 읽지 않은 메시지 감지
   useEffect(() => {
     let unsubscribers = [];
-  
+
     const setupMessageListeners = async () => {
       const userId = await SecureStore.getItemAsync('userId');
       if (!userId) return;
-  
+
       const chatRoomSnap = await getDocs(
         query(collection(db, 'chats'), where('participants', 'array-contains', userId))
       );
       const roomIds = chatRoomSnap.docs.map((doc) => doc.id);
-  
+
       if (roomIds.length === 0) return;
-  
+
       unsubscribers = roomIds.map((roomId) => {
         const msgQuery = collection(db, `chats/${roomId}/messages`);
         return onSnapshot(msgQuery, (snapshot) => {
           let hasUnread = false;
-  
           snapshot.forEach((doc) => {
             const msg = doc.data();
             if (
@@ -161,18 +174,17 @@ export default function BottomTabNavigator() {
               hasUnread = true;
             }
           });
-  
           setHasUnreadMessages(hasUnread);
         });
       });
     };
-  
+
     setupMessageListeners();
-  
+
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, []);  
+  }, []);
 
   return (
     <Tab.Navigator
@@ -198,6 +210,9 @@ export default function BottomTabNavigator() {
               {route.name === 'Chat' && hasUnreadMessages && (
                 <View style={styles.notificationDot} />
               )}
+              {route.name === 'Home' && hasNotifications && (
+                <View style={styles.notificationDot} />
+              )}
             </View>
           );
         },
@@ -220,12 +235,12 @@ const styles = StyleSheet.create({
   },
   notificationDot: {
     position: 'absolute',
-    top: -2,
+    top: -4,
     right: -6,
-    width: 8,
-    height: 8,
+    width: 10,
+    height: 10,
     backgroundColor: 'red',
-    borderRadius: 4,
-    zIndex: 10,
+    borderRadius: 5,
+    zIndex: 999,
   },
 });
