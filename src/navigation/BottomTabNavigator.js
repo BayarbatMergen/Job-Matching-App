@@ -100,29 +100,39 @@ export default function BottomTabNavigator() {
   // 🔔 알림용 리스너
   useEffect(() => {
     let unsubscribe;
-    const setupListener = async () => {
+    const checkUnreadGlobalNotifications = async () => {
       const userId = await SecureStore.getItemAsync('userId');
       if (!userId) return;
-
-      const q = query(
-        collection(db, `notifications/${userId}/userNotifications`),
-        where('read', '==', false)
-      );
-
+  
+      const q = collection(db, 'globalNotifications');
       unsubscribe = onSnapshot(q, (snapshot) => {
-        const hasUnread = snapshot.size > 0;
-        console.log(`📍 알림 수신됨: ${snapshot.size}`);
-        setHasNotifications(hasUnread);
+        let hasUnread = false;
+  
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (!data.readBy || !data.readBy.includes(userId)) {
+            hasUnread = true;
+          }
+        });
+  
+        setHasNotifications((prev) => {
+          if (hasUnread !== prev) {
+            console.log("글로벌 알림 읽음 상태 변경:", hasUnread);
+          }
+          return hasUnread;
+        });
       });
     };
-
-    setupListener();
+  
+    checkUnreadGlobalNotifications();
+  
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, []);
+  
 
-  // 💬 채팅 메시지 리스너 (unread 감지용)
+  //채팅 메시지 리스너 (unread 감지용)
   useEffect(() => {
     let unsubscribers = [];
   

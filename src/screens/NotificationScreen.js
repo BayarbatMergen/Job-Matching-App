@@ -4,19 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { db } from '../config/firebase';
 import { collection, query, orderBy, getDocs, doc, updateDoc } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function NotificationScreen() {
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   const fetchNotifications = async () => {
-    const userId = await SecureStore.getItemAsync('userId');
-    if (!userId) return;
+    const uid = await SecureStore.getItemAsync('userId');
+    setUserId(uid);
+    if (!uid) return;
 
     try {
-      // 개인 알림 가져오기
+      // 개인 알림
       const personalQuery = query(
-        collection(db, 'notifications', userId, 'userNotifications'),
+        collection(db, 'notifications', uid, 'userNotifications'),
         orderBy('createdAt', 'desc')
       );
       const personalSnapshot = await getDocs(personalQuery);
@@ -26,19 +29,23 @@ export default function NotificationScreen() {
         source: 'personal',
       }));
 
-      // 글로벌 알림 가져오기
+      // 글로벌 알림
       const globalQuery = query(
         collection(db, 'globalNotifications'),
         orderBy('createdAt', 'desc')
       );
       const globalSnapshot = await getDocs(globalQuery);
-      const globalNotifs = globalSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        source: 'global',
-      }));
+      const globalNotifs = globalSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          source: 'global',
+          read: Array.isArray(data.readBy) && data.readBy.includes(uid),
 
-      // 병합 및 정렬
+        };
+      });
+
       const combined = [...personalNotifs, ...globalNotifs].sort(
         (a, b) => b.createdAt.seconds - a.createdAt.seconds
       );
@@ -58,12 +65,31 @@ export default function NotificationScreen() {
     setRefreshing(false);
   }, []);
 
-  const markAsRead = async (id) => {
-    const userId = await SecureStore.getItemAsync('userId');
+  const markAsRead = async (item) => {
     if (!userId) return;
-    await updateDoc(doc(db, 'notifications', userId, 'userNotifications', id), { read: true });
+
+    if (item.source === 'personal') {
+      await updateDoc(doc(db, 'notifications', userId, 'userNotifications', item.id), {
+        read: true,
+      });
+    } else if (item.source === 'global' && !item.read) {
+      const token = await SecureStore.getItemAsync('token');
+      await fetch(`${API_BASE_URL}/jobs/notifications/global/${item.id}/read`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+    }
+
     setNotifications((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, read: true } : item))
+      prev.map((n) =>
+        n.id === item.id && n.source === item.source
+          ? { ...n, read: true }
+          : n
+      )
     );
   };
 
@@ -73,47 +99,51 @@ export default function NotificationScreen() {
         styles.notificationCard,
         item.source === 'personal' && !item.read && styles.personalUnreadCard,
         item.source === 'personal' && item.read && styles.personalReadCard,
+        item.source === 'global' && !item.read && styles.personalUnreadCard,
+        item.source === 'global' && item.read && styles.personalReadCard,
       ]}
       onPress={() => {
-        if (item.source === 'personal' && !item.read) {
-          markAsRead(item.id);
+        if (!item.read) {
+          setNotifications((prev) =>
+            prev.map((n) =>
+              n.id === item.id && n.source === item.source
+                ? { ...n, read: true } // ✅ 먼저 읽음 처리
+                : n
+            )
+          );
+          markAsRead(item); // ✅ 나중에 처리
         }
       }}
     >
       <Ionicons
         name={
-          item.source === 'personal' && !item.read
-            ? 'notifications'
-            : 'checkmark-done-outline'
+          !item.read ? 'notifications' : 'checkmark-done-outline'
         }
         size={24}
-        color={
-          item.source === 'personal' && !item.read ? '#007AFF' : '#666'
-        }
+        color={!item.read ? '#007AFF' : '#666'}
         style={styles.icon}
       />
       <View style={styles.textContainer}>
         <Text
           style={[
             styles.message,
-            item.source === 'personal' && !item.read && styles.personalUnreadText,
-            item.source === 'personal' && item.read && styles.personalReadText,
+            !item.read && styles.personalUnreadText,
+            item.read && styles.personalReadText,
           ]}
         >
           {item.message}
         </Text>
         <Text style={styles.time}>
-        {item.createdAt?.seconds
-  ? new Date(item.createdAt.seconds * 1000).toLocaleString('ko-KR', {
-      timeZone: 'Asia/Seoul',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  : ''}
-
+          {item.createdAt?.seconds
+            ? new Date(item.createdAt.seconds * 1000).toLocaleString('ko-KR', {
+                timeZone: 'Asia/Seoul',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : ''}
         </Text>
       </View>
     </TouchableOpacity>
@@ -124,7 +154,7 @@ export default function NotificationScreen() {
       {notifications.length > 0 ? (
         <FlatList
           data={notifications}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.source}-${item.id}`}
           renderItem={renderItem}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
