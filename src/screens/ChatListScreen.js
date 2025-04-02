@@ -16,34 +16,46 @@ import * as SecureStore from "expo-secure-store";
 export default function ChatListScreen({ navigation }) {
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [unreadRoomIds, setUnreadRoomIds] = useState([]);
+  const [userId, setUserId] = useState(null);
 
-  const fetchChatRooms = async () => {
+  const fetchUnreadStatus = async (uid) => {
     try {
-      console.log("📡 채팅방 목록 요청 중...");
-
       const token = await SecureStore.getItemAsync("token");
-      const userId = await SecureStore.getItemAsync("userId");
-      if (!token || !userId) {
-        Alert.alert("인증 오류", "로그인이 필요합니다.");
-        navigation.replace("Login");
-        return;
-      }
+      const res = await fetch(`${API_BASE_URL}/chats/unread-status?userId=${uid}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("읽지 않은 메시지 상태 조회 실패");
 
-      const response = await fetch(`${API_BASE_URL}/chats/rooms?userId=${userId}`, {
-        method: "GET",
+      const data = await res.json(); // { roomId1: true, roomId2: false }
+      const unreadIds = Object.entries(data)
+        .filter(([_, isUnread]) => isUnread)
+        .map(([roomId]) => roomId);
+
+      setUnreadRoomIds(unreadIds);
+    } catch (err) {
+      console.error("❌ 읽지 않은 상태 불러오기 실패:", err.message);
+    }
+  };
+
+  const fetchChatRooms = async (uid) => {
+    try {
+      const token = await SecureStore.getItemAsync("token");
+      const response = await fetch(`${API_BASE_URL}/chats/rooms?userId=${uid}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
 
-      if (!response.ok) throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
-
+      if (!response.ok) throw new Error(`HTTP 오류: ${response.status}`);
       const data = await response.json();
-      console.log(" 채팅방 목록 불러오기 성공:", data);
       setChatRooms(data);
+      await fetchUnreadStatus(uid);
     } catch (error) {
-      console.error(" 채팅방 목록 가져오기 실패:", error);
+      console.error("❌ 채팅방 목록 오류:", error);
       Alert.alert("오류", "채팅방 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
@@ -51,21 +63,29 @@ export default function ChatListScreen({ navigation }) {
   };
 
   useEffect(() => {
-    fetchChatRooms();
+    const init = async () => {
+      const uid = await SecureStore.getItemAsync("userId");
+      if (!uid) {
+        Alert.alert("로그인 필요", "다시 로그인 해주세요.");
+        navigation.replace("Login");
+        return;
+      }
+      setUserId(uid);
+      fetchChatRooms(uid);
+    };
+    init();
   }, []);
 
   const startAdminChat = async () => {
-    const adminId = "1WUKTfOuaXVuiHmhitOJVGZzAhO2"; // 관리자 UID
-    const userId = await SecureStore.getItemAsync("userId");
-    if (!userId) return Alert.alert("로그인이 필요합니다.");
+    const adminId = "1WUKTfOuaXVuiHmhitOJVGZzAhO2";
+    const token = await SecureStore.getItemAsync("token");
 
     try {
-      const token = await SecureStore.getItemAsync("token");
       const response = await fetch(`${API_BASE_URL}/chats/admin-room`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ participantId: adminId }),
       });
@@ -75,13 +95,13 @@ export default function ChatListScreen({ navigation }) {
         navigation.navigate("ChatScreen", {
           roomId: result.roomId,
           roomName: "관리자와의 채팅",
-          roomType: "inquiry", // 직접 고정 전달
+          roomType: "inquiry",
         });
       } else {
-        Alert.alert("오류", result.message || "관리자 채팅방 생성 실패");
+        Alert.alert("오류", result.message || "채팅방 생성 실패");
       }
     } catch (error) {
-      console.error(" 관리자 채팅방 오류:", error);
+      console.error("❌ 관리자 채팅 오류:", error);
     }
   };
 
@@ -119,11 +139,12 @@ export default function ChatListScreen({ navigation }) {
             >
               <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
               <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
+              {unreadRoomIds.includes(item.id) && <View style={styles.unreadDot} />}
             </TouchableOpacity>
           )}
           showsVerticalScrollIndicator={false}
           refreshing={loading}
-          onRefresh={fetchChatRooms}
+          onRefresh={() => userId && fetchChatRooms(userId)}
         />
       )}
     </SafeAreaView>
@@ -143,6 +164,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     marginBottom: 10,
+    position: "relative",
   },
   roomName: { fontSize: 18, fontWeight: "bold", marginLeft: 10, color: "#333" },
   adminChatButton: {
@@ -155,5 +177,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   adminChatText: { color: "#fff", marginLeft: 8, fontSize: 16, fontWeight: "bold" },
+  unreadDot: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "red",
+  },
 });
-

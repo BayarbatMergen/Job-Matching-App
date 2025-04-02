@@ -241,6 +241,89 @@ const markMessageAsRead = async (req, res) => {
   }
 };
 
+const getUnreadChatRooms = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ message: "userId가 필요합니다." });
+
+    const chatSnapshot = await db
+      .collection("chats")
+      .where("participants", "array-contains", userId)
+      .get();
+
+    const unreadRoomIds = [];
+
+    for (const doc of chatSnapshot.docs) {
+      const roomId = doc.id;
+      const messagesSnapshot = await db
+        .collection("chats")
+        .doc(roomId)
+        .collection("messages")
+        .orderBy("createdAt", "desc")
+        .limit(10)
+        .get();
+
+      let hasUnread = false;
+      messagesSnapshot.forEach((msgDoc) => {
+        const msg = msgDoc.data();
+        if (msg.senderId !== userId && (!msg.readBy || !msg.readBy.includes(userId))) {
+          hasUnread = true;
+        }
+      });
+
+      if (hasUnread) unreadRoomIds.push(roomId);
+    }
+
+    return res.status(200).json({ unreadRoomIds });
+  } catch (error) {
+    console.error("🔴 안읽은 메시지 조회 오류:", error);
+    res.status(500).json({ message: "서버 오류", error: error.message });
+  }
+};
+
+// 🔴 사용자 기준 읽지 않은 채팅방 목록 조회
+const getUnreadStatus = async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ message: "userId가 필요합니다." });
+
+    const chatSnap = await db.collection("chats")
+      .where("participants", "array-contains", userId)
+      .get();
+
+    const unreadStatus = {}; // { roomId: true/false }
+
+    const checkPromises = chatSnap.docs.map(async (doc) => {
+      const roomId = doc.id;
+      const messagesSnap = await db.collection("chats").doc(roomId)
+        .collection("messages")
+        .orderBy("createdAt", "desc")
+        .limit(10) // 최근 메시지 10개만 확인 (퍼포먼스)
+        .get();
+
+      let hasUnread = false;
+
+      messagesSnap.forEach((msgDoc) => {
+        const msg = msgDoc.data();
+        const senderId = msg.senderId;
+        const readBy = msg.readBy || [];
+
+        if (senderId !== userId && !readBy.includes(userId)) {
+          hasUnread = true;
+        }
+      });
+
+      unreadStatus[roomId] = hasUnread;
+    });
+
+    await Promise.all(checkPromises);
+
+    return res.status(200).json(unreadStatus);
+  } catch (error) {
+    console.error("❌ 읽지 않은 상태 확인 오류:", error);
+    return res.status(500).json({ message: "서버 오류 발생" });
+  }
+};
 
 module.exports = {
   addMessageToChat,
@@ -252,4 +335,6 @@ module.exports = {
   getChatParticipants,       //  참가자 목록 조회
   getUserNameById,
   markMessageAsRead,
+  getUnreadChatRooms,
+  getUnreadStatus,
 };

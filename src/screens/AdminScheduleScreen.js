@@ -1,5 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -21,60 +29,66 @@ export default function AdminScheduleScreen() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSchedules, setSelectedSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [allSchedules, setAllSchedules] = useState([]);
 
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'jobs'));
-        const jobs = querySnapshot.docs.map(doc => doc.data());
+  const fetchJobs = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'jobs'));
+      const jobs = querySnapshot.docs.map(doc => doc.data());
 
-        const marks = {};
-        const scheduleMap = {};
+      const marks = {};
+      const scheduleMap = {};
 
-        jobs.forEach(job => {
-          if (job.startDate && job.endDate) {
-            const start =
-              typeof job.startDate.toDate === 'function'
-                ? job.startDate.toDate()
-                : new Date(job.startDate);
-        
-            const end =
-              typeof job.endDate.toDate === 'function'
-                ? job.endDate.toDate()
-                : new Date(job.endDate);
-        
-            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-              const dateString = d.toISOString().split('T')[0];
-              marks[dateString] = {
-                customStyles: {
-                  container: { backgroundColor: '#4CAF50', borderRadius: 5 },
-                  text: { color: '#fff', fontWeight: 'bold' }
-                }
-              };
-        
-              if (!scheduleMap[dateString]) {
-                scheduleMap[dateString] = [];
+      jobs.forEach(job => {
+        if (job.startDate && job.endDate) {
+          const start =
+            typeof job.startDate.toDate === 'function'
+              ? job.startDate.toDate()
+              : new Date(job.startDate);
+
+          const end =
+            typeof job.endDate.toDate === 'function'
+              ? job.endDate.toDate()
+              : new Date(job.endDate);
+
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dateString = d.toISOString().split('T')[0];
+            marks[dateString] = {
+              customStyles: {
+                container: { backgroundColor: '#4CAF50', borderRadius: 5 },
+                text: { color: '#fff', fontWeight: 'bold' }
               }
-              scheduleMap[dateString].push({
-                title: job.title,
-                wage: job.wage,
-                location: job.location,
-              });
+            };
+
+            if (!scheduleMap[dateString]) {
+              scheduleMap[dateString] = [];
             }
+            scheduleMap[dateString].push({
+              title: job.title,
+              wage: job.wage,
+              location: job.location,
+            });
           }
-        });
-        
+        }
+      });
 
-        setAllSchedules(scheduleMap);
-        setMarkedDates(marks);
-      } catch (error) {
-        console.error(' 스케줄 불러오기 오류:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setAllSchedules(scheduleMap);
+      setMarkedDates(marks);
+    } catch (error) {
+      console.error('스케줄 불러오기 오류:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
     fetchJobs();
   }, []);
 
@@ -94,7 +108,13 @@ export default function AdminScheduleScreen() {
   }
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView
+      style={styles.scrollContainer}
+      contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#007AFF']} />
+      }
+    >
       <View style={styles.container}>
         <Calendar
           monthFormat={'yyyy MM'}
@@ -130,7 +150,6 @@ export default function AdminScheduleScreen() {
           </ScrollView>
         </View>
 
-        {/*  여기 추가: 승인 관리로 이동 버튼 */}
         <TouchableOpacity
           style={styles.approvalButton}
           onPress={() => navigation.navigate("SettlementApprovalScreen")}
@@ -138,16 +157,15 @@ export default function AdminScheduleScreen() {
           <Text style={styles.approvalButtonText}>정산 승인 관리</Text>
         </TouchableOpacity>
         <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('ApprovedApplicationsScreen')}
-      >
-        <Text style={styles.buttonText}>승인 내역 보기</Text>
-      </TouchableOpacity>
+          style={styles.button}
+          onPress={() => navigation.navigate('ApprovedApplicationsScreen')}
+        >
+          <Text style={styles.buttonText}>승인 내역 보기</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   scrollContainer: { flex: 1 },
@@ -204,22 +222,18 @@ const styles = StyleSheet.create({
   },
   approvalButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   button: {
-    backgroundColor: '#007AFF',  // 초록색 계열로 승인 내역 보기 버튼 구분
+    backgroundColor: '#007AFF',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
     alignItems: 'center',
-    //marginVertical: 1,
     marginHorizontal: 20,
     elevation: 4,
   },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 18, 
-    fontWeight: 'bold', 
-    letterSpacing: 0.5, 
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
-  
-
-  
 });

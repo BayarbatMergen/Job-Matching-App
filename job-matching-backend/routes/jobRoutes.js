@@ -22,23 +22,29 @@ router.post('/add', async (req, res) => {
       location, description, notifyUsers
     } = req.body;
 
+    // ✅ 필수 항목 검사
+    if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
+      return res.status(400).json({ message: '모든 필수 항목을 입력해주세요.' });
+    }
+
+    // ✅ 알림 대상 유효성 검사
     if (
-      !title || !wage || !startDate || !endDate || !workDays || !employmentType || !location ||
-      (!notifyUsers || (notifyUsers !== 'all' && !Array.isArray(notifyUsers)))
+      notifyUsers === undefined ||
+      (notifyUsers !== 'all' && (!Array.isArray(notifyUsers) || notifyUsers.length === 0))
     ) {
       return res.status(400).json({
-        message: '모든 필수 항목과 알림 대상(notifyUsers)을 입력해주세요.',
+        message: '알림 대상을 선택해주세요. 모든 사용자 또는 특정 사용자 중 하나를 선택해야 합니다.',
       });
     }
+
+    // ✅ 정리
     const parsedWage = Number(wage);
-    const parsedMaleRecruitment = Number(maleRecruitment);
-    const parsedFemaleRecruitment = Number(femaleRecruitment);
-    // ✅ visibleTo 정리
+    const parsedMaleRecruitment = Number(maleRecruitment || 0);
+    const parsedFemaleRecruitment = Number(femaleRecruitment || 0);
+
     const visibleTo = notifyUsers === "all"
       ? "all"
-      : Array.isArray(notifyUsers)
-        ? notifyUsers.map(uid => String(uid).replace(/"/g, '').trim())
-        : [];
+      : notifyUsers.map(uid => String(uid).replace(/"/g, '').trim());
 
     // ✅ 공고 저장
     const jobRef = db.collection('jobs').doc();
@@ -60,24 +66,23 @@ router.post('/add', async (req, res) => {
       createdAt: admin.firestore.Timestamp.now(),
       updatedAt: admin.firestore.Timestamp.now(),
     });
-    
 
     console.log(`✅ 공고 등록 성공! [${jobRef.id}]`);
 
-    // 🔔 알림 전송
+    // ✅ 알림 전송
     if (notifyUsers === "all") {
-      // 1. 글로벌 알림 저장
+      // 글로벌 알림 저장
       await db.collection('globalNotifications').add({
         title: "새 공고 등록",
         message: `"${title}" 공고가 새로 등록되었습니다.`,
         createdAt: admin.firestore.Timestamp.now(),
       });
       console.log("📣 글로벌 알림 전송 완료");
-    
-      // 2. 모든 사용자에게 개별 알림 전송 (read: false)
+
+      // 모든 사용자에게 개별 알림 저장 (read: false)
       const usersSnap = await db.collection("users").get();
       const allUsers = usersSnap.docs.map(doc => doc.id);
-    
+
       for (const userId of allUsers) {
         await db
           .collection('notifications')
@@ -86,20 +91,35 @@ router.post('/add', async (req, res) => {
           .add({
             title: "새 공고 등록",
             message: `"${title}" 공고가 새로 등록되었습니다.`,
-            read: false, // ✅ 반드시 포함
+            read: false,
             createdAt: admin.firestore.Timestamp.now(),
           });
       }
-    
-      console.log(`📣 ${allUsers.length}명의 사용자에게 개별 알림 전송 완료`);
-    }
-    
 
-    // 💬 공고 단톡방 미리 생성 (참가자 없음)
+      console.log(`📣 ${allUsers.length}명의 사용자에게 개별 알림 전송 완료`);
+    } else if (Array.isArray(visibleTo)) {
+      // 특정 사용자 알림 전송
+      for (const userId of visibleTo) {
+        await db
+          .collection('notifications')
+          .doc(userId)
+          .collection('userNotifications')
+          .add({
+            title: "새 공고 등록",
+            message: `"${title}" 공고가 새로 등록되었습니다.`,
+            read: false,
+            createdAt: admin.firestore.Timestamp.now(),
+          });
+      }
+
+      console.log(`📣 ${visibleTo.length}명의 사용자에게 개별 알림 전송 완료`);
+    }
+
+    // 💬 단톡방 생성 (참가자 없음)
     const chatRoomRef = db.collection('chats').doc();
     await chatRoomRef.set({
       name: `알바생 단톡방 (${title})`,
-      participants: [], // 사용자는 승인 시 추가됨
+      participants: [],
       jobId: jobRef.id,
       createdAt: admin.firestore.Timestamp.now(),
       roomType: 'notice',

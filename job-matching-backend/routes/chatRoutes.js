@@ -9,7 +9,9 @@ const {
   addUserToChatRoom,
   getChatParticipants,
   getUserNameById,
-  markMessageAsRead
+  markMessageAsRead,
+  getUnreadChatRooms,
+  getUnreadStatus
 } = require("../controllers/chatController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 
@@ -38,6 +40,9 @@ router.get("/rooms/:roomId/participants", verifyToken, getChatParticipants);
 router.get("/users/:uid", verifyToken, getUserNameById);
 
 router.post('/rooms/:roomId/messages/:messageId/read', markMessageAsRead);
+
+router.get("/unread-status", verifyToken, getUnreadStatus);
+
 
 console.log(" chatRoutes.js 로드 완료");
 
