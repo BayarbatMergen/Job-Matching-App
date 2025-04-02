@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { db } from "../config/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 const jwtDecode = require("jwt-decode");
 
 const ApplyButton = ({ job, navigation }) => {
@@ -85,7 +85,16 @@ const ApplyButton = ({ job, navigation }) => {
       console.log("📨 서버 응답:", data);
   
       if (response.ok) {
-        // ✅ Firestore에 알림 생성
+        // ✅ 사용자 이름 조회
+        const userQuery = query(
+          collection(db, "users"),
+          where("email", "==", userEmail)
+        );
+        const userSnap = await getDocs(userQuery);
+        const userData = userSnap.docs[0]?.data();
+        const userName = userData?.name || userEmail;
+  
+        // ✅ 관리자 알림 전송
         await addDoc(collection(db, "notifications"), {
           type: "application",
           status: "unread",
@@ -94,7 +103,7 @@ const ApplyButton = ({ job, navigation }) => {
           jobId: job.id,
           jobTitle: job.title,
           userEmail: userEmail,
-          message: `${userEmail} 님이 "${job.title}" 공고에 지원했습니다.`,
+          message: `${userName} 님이 "${job.title}" 공고에 지원했습니다.`,
         });
   
         Alert.alert("지원 완료", `${job.title}에 지원 요청이 전송되었습니다.`);
@@ -115,6 +124,7 @@ const ApplyButton = ({ job, navigation }) => {
       setLoading(false);
     }
   };
+  
 
   // ✅ 지원 완료 상태 UI
   if (hasApplied) {

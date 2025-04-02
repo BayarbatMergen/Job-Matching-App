@@ -22,25 +22,44 @@ export default function ApplicationApprovalScreen() {
     try {
       const snapshot = await getDocs(collection(db, "applications"));
       const pendingRequests = [];
-
+  
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data();
+  
         if (data.status === "pending") {
+          let userName = data.userEmail;
+  
+          // ✅ userId로 사용자 이름 가져오기
+          if (data.userId) {
+            try {
+              const userDoc = await getDocs(
+                collection(db, "users")
+              );
+              const userInfo = userDoc.docs.find(u => u.id === data.userId)?.data();
+              if (userInfo?.name) {
+                userName = userInfo.name;
+              }
+            } catch (err) {
+              console.warn(`사용자 이름 불러오기 실패: ${data.userId}`, err.message);
+            }
+          }
+  
           pendingRequests.push({
             id: docSnap.id,
             ...data,
+            userName,
           });
         }
       }
-
+  
       setRequests(pendingRequests);
     } catch (error) {
-      console.error(" 지원 요청 가져오기 오류:", error);
+      console.error("지원 요청 가져오기 오류:", error);
     } finally {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchApplicationRequests();
   }, []);
@@ -94,7 +113,8 @@ export default function ApplicationApprovalScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.userInfo}>지원자: {item.userEmail ?? "N/A"}</Text>
+            <Text style={styles.userInfo}>지원자: {item.userName ?? item.userEmail ?? "N/A"}</Text>
+
             <Text>공고 제목: {item.jobTitle ?? "N/A"}</Text>
             <Text>상태: {item.status}</Text>
             <Text>
