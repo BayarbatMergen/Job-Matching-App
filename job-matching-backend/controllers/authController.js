@@ -22,7 +22,7 @@ const login = async (req, res) => {
 
     const userDoc = userQuery.docs[0];
     const user = userDoc.data();
-    console.log(" Firestore에서 가져온 user 데이터:", user);
+    
     const userId = userDoc.id;
 
     // 비밀번호 검증 (실제 서비스에서는 반드시 해시 비교 필요)
@@ -114,7 +114,7 @@ const validateToken = async (req, res) => {
       return res.status(401).json({ valid: false, message: " 토큰이 유효하지 않습니다." });
     }
 
-    console.log(" 토큰 검증 완료:", decoded);
+    
     return res.json({
       valid: true,
       userId: decoded.userId,

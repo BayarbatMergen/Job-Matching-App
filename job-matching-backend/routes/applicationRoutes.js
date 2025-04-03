@@ -72,7 +72,7 @@ await applicationRef.update({
         participants: admin.firestore.FieldValue.arrayUnion(userId),
       });
 
-      console.log(` 사용자 ${userId} 공지 단톡방에 초대 완료`);
+      
     } else {
       console.warn(` jobId: ${jobId} 에 해당하는 채팅방이 존재하지 않습니다.`);
     }
@@ -89,7 +89,7 @@ await applicationRef.update({
         createdAt: admin.firestore.Timestamp.now(),
       });
 
-    console.log(`📣 사용자 ${userId}에게 공고 승인 알림 전송 완료`);
+    
 
     return res.status(200).json({ message: ' 지원 승인 및 알림 전송 완료' });
 

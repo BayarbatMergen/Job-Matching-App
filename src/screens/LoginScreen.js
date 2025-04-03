@@ -27,7 +27,7 @@ const LoginScreen = ({ navigation }) => {
   useEffect(() => {
     const checkStoredData = async () => {
       try {
-        console.log(" useEffect 실행됨! 저장된 데이터 확인 시작");
+        
 
         const token = await AsyncStorage.getItem('authToken');
         const storedUserId = await AsyncStorage.getItem('userId');
@@ -38,10 +38,10 @@ const LoginScreen = ({ navigation }) => {
         });
 
         if (token && storedUserId) {
-          console.log("🔹 저장된 토큰과 userId 발견:", { token, storedUserId });
+          
           try {
             await signInWithCustomToken(auth, token);
-            console.log(" Firebase 인증 복원 성공:", auth.currentUser.uid);
+            
             await fetchUserData(); // fetchUserData에서 ID Token 사용
             navigation.replace("Main");
           } catch (error) {
@@ -82,12 +82,12 @@ const LoginScreen = ({ navigation }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log(" 로그인 성공:", result);
+        
   
         // 🔹 토큰 저장 후 fetchUserData 실행
         await saveUserData(result.token, result.user.userId, result.user.email, password, result.user.role, result.user.name);
   
-        console.log(" 토큰 저장 완료, 사용자 데이터 로드 시작");
+        
         await fetchUserData(); //  저장된 후 실행되도록 수정
   
         navigation.replace("Main"); // 로그인 성공 시 홈 화면으로 이동

@@ -70,7 +70,7 @@ export default function AdminJobFormScreen({ navigation }) {
       };
   
       const response = await axios.post(`${API_BASE_URL}/jobs/add`, jobData);
-      console.log("✅ 공고 등록 성공:", response.data);
+      
       Alert.alert("등록 완료", "공고가 성공적으로 등록되었습니다.");
   
       // ✅ 알림 전송
@@ -97,7 +97,7 @@ export default function AdminJobFormScreen({ navigation }) {
     } catch (error) {
       console.error("❌ 공고 등록 API 오류:", error);
       if (error.response) {
-        console.log("🔍 서버 응답:", error.response.data);
+        
       }
       Alert.alert("등록 실패", "공고 등록 중 오류가 발생했습니다.");
     }

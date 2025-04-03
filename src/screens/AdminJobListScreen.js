@@ -20,7 +20,7 @@ export default function AdminJobListScreen({ navigation }) {
     const checkAdminStatus = async () => {
       try {
         const role = await SecureStore.getItemAsync('userRole');
-        console.log(" 저장된 userRole:", role);
+        
         setIsAdmin(role === 'admin');
       } catch (error) {
         console.error(" 관리자 확인 오류:", error);

@@ -15,7 +15,7 @@ export default function MyPageScreen({ navigation }) {
 
   useEffect(() => {
     const loadUserData = async () => {
-      console.log(" MyPageScreen useEffect 실행됨!");
+      
       try {
         const token = await SecureStore.getItemAsync("token");
         if (!token) {
@@ -40,7 +40,7 @@ export default function MyPageScreen({ navigation }) {
         }
 
         const userInfo = JSON.parse(errorData);
-        console.log(" [서버에서 가져온 사용자 데이터]:", userInfo);
+        
         setUserData(userInfo);
       } catch (error) {
         console.error(" 사용자 정보 가져오기 오류:", error);

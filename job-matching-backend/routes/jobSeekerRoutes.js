@@ -6,7 +6,7 @@ const bcrypt = require('bcrypt');
 /*  1. 구직자 회원가입 API
 router.post('/register', async (req, res) => {
     try {
-      console.log(' 요청 바디:', req.body); // <== 여기 추가!
+       // <== 여기 추가!
       const { name, email, password, phone, bank, accountNumber } = req.body;
   
       if (!name || !email || !password || !phone || !bank || !accountNumber) {

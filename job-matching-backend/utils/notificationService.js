@@ -33,7 +33,7 @@ exports.sendAdminNotification = async (userId, amount) => {
       
     });
 
-    console.log("관리자 알림 전송 완료");
+    
   } catch (error) {
     console.error(" 알림 전송 오류:", error);
   }

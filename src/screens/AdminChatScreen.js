@@ -98,10 +98,10 @@ export default function AdminChatScreen({ route }) {
         const roomList = await roomRes.json();
         const currentRoom = roomList.find((room) => room.id === roomId);
         const participantIds = currentRoom?.participants || [];
-        console.log(" 현재 roomId:", roomId);
-        console.log(" 가져온 채팅방 목록:", roomList.map(r => r.id));
-        console.log(" 일치하는 채팅방:", currentRoom);
-        console.log(" 참여자 ID 목록:", participantIds);
+        
+        
+        
+        
 
         const namePromises = participantIds.map(async (uid) => {
           try {
@@ -121,7 +121,7 @@ export default function AdminChatScreen({ route }) {
         });
     
         const users = await Promise.all(namePromises);
-        console.log(" 참여자 이름 응답 확인:", users);
+        
         setParticipantNames(users.map((user) => user.name || "알 수 없음"));
       } catch (error) {
         console.error(" 데이터 로딩 실패:", error);

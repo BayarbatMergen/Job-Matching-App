@@ -31,7 +31,7 @@ export const registerForPushNotificationsAsync = async (userId) => {
       projectId: Constants.expoConfig.extra.eas.projectId,
     })).data;
 
-    console.log('✅ Expo Push Token:', token);
+    
 
     // ✅ Firestore의 사용자 문서에 토큰 저장
     await setDoc(doc(db, "users", userId), {
@@ -50,7 +50,7 @@ export const registerForPushNotificationsAsync = async (userId) => {
  */
 export const sendUserApplicationApprovalNotification = async (userEmail, jobTitle) => {
   try {
-    console.log(`📩 사용자 승인 알림 전송 중...`);
+    
 
     await addDoc(collection(db, "notifications"), {
       recipientEmail: userEmail,
@@ -59,7 +59,7 @@ export const sendUserApplicationApprovalNotification = async (userEmail, jobTitl
       createdAt: new Date(),
     });
 
-    console.log("✅ 사용자에게 승인 알림 전송 완료!");
+    
   } catch (error) {
     console.error("❌ 알림 전송 오류:", error);
   }
@@ -69,7 +69,7 @@ export const sendUserApplicationApprovalNotification = async (userEmail, jobTitl
  * ✅ 에뮬레이터 테스트용 Alert 알림 (실제 푸시 대체)
  */
 export const sendTestNotification = async (title, body) => {
-  console.log("📢 [TEST] 에뮬레이터 알림 전송:", title, body);
+  
   await Notifications.scheduleNotificationAsync({
     content: {
       title,

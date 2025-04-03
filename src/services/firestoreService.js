@@ -49,7 +49,7 @@ export const fetchSchedulesByDate = async (selectedDate) => {
       return [];
     }
 
-    console.log(` [fetchSchedulesByDate] ${selectedDate}의 일정 가져오는 중...`);
+    
     const result = await apiRequest(`/api/schedules/user/${userId}`);
     return result || []; // 빈 배열 반환
   } catch (error) {

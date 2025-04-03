@@ -66,11 +66,11 @@ export default function ApplicationApprovalScreen() {
 
   //  서버 API 호출로 승인 처리
   const handleApprove = async (applicationId) => {
-    console.log(`${API_BASE_URL}/applications/${applicationId}/approve`);
-    console.log(" API_BASE_URL:", API_BASE_URL);
+    
+    
     try {
       const res = await axios.post(`${API_BASE_URL}/applications/${applicationId}/approve`);
-      console.log(" 승인 응답:", res.data);
+      
       Alert.alert(" 승인 완료", res.data.message || "승인이 완료되었습니다.");
       fetchApplicationRequests();
     } catch (error) {

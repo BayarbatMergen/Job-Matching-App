@@ -29,7 +29,7 @@ const uploadToCloudinary = (fileBuffer) => {
           console.error(" Cloudinary 업로드 실패:", error);
           return reject(error);
         }
-        console.log(" Cloudinary 업로드 성공:", result.secure_url);
+        
         resolve(result.secure_url);
       }
     );
@@ -54,15 +54,15 @@ const formatPhoneNumber = (phone) => {
   return null; // 잘못된 형식
 };
 
-console.log(" 현재 SMTP 설정 확인:", process.env.SMTP_USER, process.env.SMTP_PASS ? " 비밀번호 설정됨" : " 비밀번호 없음");
+
 
 //  Firebase Authentication 사용 가능 여부 확인
-console.log(" Firebase Auth 연결 상태:", auth ? " 연결됨" : " 연결되지 않음");
+
 
 //  회원가입 API (Firebase Authentication + Firestore)
 router.post('/register', upload.single('idImage'), async (req, res) => {
   try {
-    console.log(" [회원가입 요청 데이터]:", req.body);
+    
     let { email, password, name, phone, gender, bank, accountNumber, role } = req.body;
 
     if (!email || !password || !name || !phone || !gender) {
@@ -129,7 +129,7 @@ router.post('/login', async (req, res) => {
     try {
       const userCredential = await firebaseAuth.signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-      console.log(' Firebase 로그인 성공:', firebaseUser.uid);
+      
 
       // Firestore에서 해당 유저 정보 가져오기
       const userDoc = await admin.firestore().collection('users').doc(firebaseUser.uid).get();
@@ -180,7 +180,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', verifyToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    console.log(" [GET /api/auth/me] 요청 수신 → userId:", userId);
+    
 
     const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
@@ -193,7 +193,7 @@ router.get('/me', verifyToken, async (req, res) => {
     const userData = userSnap.data();
     delete userData.password; // 비밀번호 제거 (이미 필요 없음)
 
-    console.log(" 사용자 정보 조회 성공:", userData);
+    
     res.status(200).json(userData);
   } catch (error) {
     console.error(" /me 조회 오류:", error);
@@ -205,7 +205,7 @@ router.get('/me', verifyToken, async (req, res) => {
 router.get('/user/:userId', verifyToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log(` [GET /api/auth/user/:userId] 요청 수신 → userId: ${userId}`);
+    
 
     const userRef = db.collection('users').doc(userId);
     const userSnap = await userRef.get();
@@ -218,7 +218,7 @@ router.get('/user/:userId', verifyToken, async (req, res) => {
     const userData = userSnap.data();
     delete userData.password; // 비밀번호 제거
 
-    console.log(" 사용자 정보 조회 성공:", userData);
+    
     res.status(200).json(userData);
   } catch (error) {
     console.error(" 사용자 정보 조회 오류:", error);
@@ -359,6 +359,6 @@ router.post('/change-password', verifyToken, async (req, res) => {
 });
 
 
-console.log(" authRoutes.js 로드 완료");
+
 
 module.exports = router;

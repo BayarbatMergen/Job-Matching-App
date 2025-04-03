@@ -28,7 +28,7 @@ const UserManagementScreen = ({ navigation }) => {
         throw new Error("사용자 목록을 불러오지 못했습니다.");
       }
       const data = await response.json();
-      console.log(" 사용자 리스트:", data);
+      
 
       const sortedUsers = data.sort((a, b) =>
         a.role === "admin" ? -1 : b.role === "admin" ? 1 : 0
@@ -46,7 +46,7 @@ const UserManagementScreen = ({ navigation }) => {
     <TouchableOpacity
       style={styles.userItem}
       onPress={() => {
-        console.log("👉 유저 클릭:", item.userId);
+        
         navigation.navigate("UserDetailScreen", { userId: item.userId });
       }}
     >

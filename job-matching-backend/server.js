@@ -23,10 +23,10 @@ if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
 }
 
 //  SMTP 설정
-console.log(" SMTP 설정 확인");
-console.log(" SMTP_USER:", process.env.SMTP_USER);
-console.log(" ADMIN_EMAIL:", process.env.ADMIN_EMAIL || " 없음");
-console.log(" ADMIN_UID:", process.env.ADMIN_UID || " 없음");
+
+
+
+
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -42,7 +42,7 @@ const transporter = nodemailer.createTransport({
 async function testSMTP() {
   try {
     await transporter.verify();
-    console.log(" SMTP 서버 연결 성공!");
+    
   } catch (error) {
     console.error(" SMTP 서버 연결 실패:", error.message);
   }
@@ -74,6 +74,6 @@ app.get("/", (req, res) => {
 //  서버 실행
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
-  console.log(` 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  
   await testSMTP();
 });

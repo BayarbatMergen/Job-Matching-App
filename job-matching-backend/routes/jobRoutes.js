@@ -67,7 +67,7 @@ router.post('/add', async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`공고 등록 성공! [${jobRef.id}]`);
+    
 
     // 알림 전송
     if (notifyUsers === "all") {
@@ -79,7 +79,7 @@ router.post('/add', async (req, res) => {
         readBy: [],
       });
 
-      console.log("📣 글로벌 알림 전송 완료");
+      
     } else if (Array.isArray(visibleTo)) {
       // 특정 사용자에게만 개별 알림 전송
       for (const userId of visibleTo) {
@@ -95,7 +95,7 @@ router.post('/add', async (req, res) => {
           });
       }
 
-      console.log(`📣 ${visibleTo.length}명의 사용자에게 개별 알림 전송 완료`);
+      
     }
 
     // 단톡방 생성
@@ -109,7 +109,7 @@ router.post('/add', async (req, res) => {
       type: 'group',
     });
 
-    console.log(`공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
+    
 
     res.status(201).json({ message: '공고 등록 및 알림 전송 완료', jobId: jobRef.id });
   } catch (error) {
@@ -202,7 +202,7 @@ router.delete('/:jobId', async (req, res) => {
 //  6️⃣ 지원 요청 API (구직자가 "지원하기" 클릭 시 실행)
 router.post('/apply', async (req, res) => {
   const { jobId, userEmail } = req.body;
-  console.log(" [POST /api/jobs/apply] 요청 수신:", req.body);
+  
 
   if (!jobId || !userEmail) {
     return res.status(400).json({ message: ' 필수 정보를 입력하세요.' });
@@ -266,7 +266,7 @@ router.post('/apply', async (req, res) => {
     };
     await transporter.sendMail(mailOptions);
 
-    console.log(" 지원 요청 및 저장 완료!");
+    
     res.status(200).json({ message: ' 지원 요청이 완료되었습니다.' });
 
   } catch (error) {
@@ -300,7 +300,7 @@ router.get('/applications/:jobId', async (req, res) => {
 router.get("/user/:userId", async (req, res) => {
   try {
     let { userId } = req.params;
-    console.log(` 사용자 일정 요청 userId: ${userId}`);
+    
 
     if (!userId || userId === "UNKNOWN_USER") {
       console.warn(" userId가 없음 → fetchUserData() 실행!");
@@ -331,7 +331,7 @@ router.get("/user/:userId", async (req, res) => {
 router.get("/id/:scheduleId", async (req, res) => {
   try {
     const { scheduleId } = req.params;
-    console.log(` 개별 일정 요청 scheduleId: ${scheduleId}`);
+    
 
     const scheduleRef = db.collection("schedules").doc(scheduleId);
     const scheduleDoc = await scheduleRef.get();

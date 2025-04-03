@@ -18,8 +18,8 @@ export default function AdminMyPageScreen() {
       try {
         const storedName = await SecureStore.getItemAsync('userName');
         const storedEmail = await SecureStore.getItemAsync('userEmail');
-        console.log(" SecureStore에서 가져온 관리자 이름:", storedName);
-        console.log(" SecureStore에서 가져온 관리자 이메일:", storedEmail);
+        
+        
 
         setAdminName(storedName || '관리자');
         setAdminEmail(storedEmail || 'admin@example.com');

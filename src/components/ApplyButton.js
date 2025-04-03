@@ -82,7 +82,7 @@ const ApplyButton = ({ job, navigation }) => {
       });
   
       const data = await response.json();
-      console.log("📨 서버 응답:", data);
+      
   
       if (response.ok) {
         // 사용자 이름 조회

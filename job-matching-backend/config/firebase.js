@@ -7,16 +7,16 @@ const path = require('path');
 require('dotenv').config();
 
 //  Firebase 환경 변수 확인 (디버깅 시 사용 가능)
-console.log(" Firebase API Key:", process.env.FIREBASE_API_KEY);
-console.log(" Firebase Project ID:", process.env.FIREBASE_PROJECT_ID);
-console.log(" Firebase Storage Bucket:", process.env.FIREBASE_STORAGE_BUCKET);
+
+
+
 
 //  Firebase 서비스 계정 JSON 파일 로드
 let serviceAccount;
 try {
   const serviceAccountPath = path.join(__dirname, '../firebase-service-account.json');
   serviceAccount = require(serviceAccountPath);
-  console.log(' Firebase 서비스 계정 JSON 로드 성공');
+  
 } catch (error) {
   console.warn(' Firebase 서비스 계정 JSON 파일을 찾을 수 없습니다. 환경변수를 사용합니다.');
 }
@@ -31,13 +31,13 @@ if (!admin.apps.length) {
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com",
     });
 
-    console.log(' Firebase Admin SDK 초기화 완료');
+    
   } catch (error) {
     console.error(' Firebase 초기화 실패:', error.message);
     process.exit(1); // 🚨 Firebase가 없으면 서버 실행 중단
   }
 } else {
-  console.log(' Firebase Admin SDK가 이미 초기화됨');
+  
 }
 
 //  Firebase Client SDK 초기화 (앱 내 기능용)
@@ -52,7 +52,7 @@ const firebaseConfig = {
 
 if (!firebase.getApps().length) {
   firebase.initializeApp(firebaseConfig);
-  console.log(" Firebase Client SDK 초기화 완료");
+  
 }
 
 //  Firestore & Storage 초기화
@@ -75,6 +75,6 @@ if (!storage) {
   process.exit(1);
 }
 
-console.log(' Firestore & Storage 초기화 완료');
+
 
 module.exports = { admin, db, storage, adminAuth, clientAuth, schedulesCollection };

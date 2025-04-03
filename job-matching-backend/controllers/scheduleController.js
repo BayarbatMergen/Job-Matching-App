@@ -91,7 +91,7 @@ const getScheduleById = async (req, res) => {
 //  정산 요청 처리 함수 (최종 완성본)
 const requestSettlement = async (req, res) => {
   try {
-    console.log(" [정산 요청] 요청 받음:", req.body);
+    
 
     const userId = req.user?.userId;  //  JWT 토큰에서 userId 가져오기
     const { totalWage } = req.body;
@@ -100,7 +100,7 @@ const requestSettlement = async (req, res) => {
       return res.status(400).json({ message: " userId와 totalWage가 필요합니다." });
     }
 
-    console.log(` 정산 요청: userId=${userId}, totalWage=${totalWage.toLocaleString()}원`);
+    
 
     //  1) 마지막 스케줄 종료일 검사
     const userSchedules = await db.collection('schedules').where('userId', '==', userId).get();
@@ -146,10 +146,10 @@ const requestSettlement = async (req, res) => {
 };
 
 const approveSettlement = async (req, res) => {
-  console.log("📥 approveSettlement 함수 실행됨");
+  
   try {
     const { settlementId, userId } = req.body;
-    console.log("📌 전달된 데이터:", { settlementId, userId });
+    
     if (!settlementId || !userId) {
       return res.status(400).json({ message: "settlementId와 userId가 필요합니다." });
     }
@@ -191,12 +191,12 @@ const approveSettlement = async (req, res) => {
           read: false,
           createdAt: admin.firestore.Timestamp.now(),
         });
-      console.log("알림 저장 완료:", result.id);
+      
     } catch (error) {
       console.error(" 알림 저장 실패:", error);
     }
 
-    console.log(`📬 사용자 알림 전송 완료: userId=${userId}`);
+    
 
     res.status(200).json({ message: "정산 승인 완료, 스케줄 삭제 및 사용자 알림 전송됨" });
   } catch (error) {
@@ -214,7 +214,7 @@ exports.requestSettlement = async (req, res) => {
       return res.status(400).json({ message: " userId와 totalWage가 필요합니다." });
     }
 
-    console.log(` [정산 요청] 사용자: ${userId}, 금액: ${totalWage}`);
+    
 
     //  Firestore에 정산 요청 저장
     await db.collection("settlementRequests").add({

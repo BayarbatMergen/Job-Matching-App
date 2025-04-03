@@ -4,7 +4,7 @@ const { verifyToken } = require("../middlewares/authMiddleware");
 const scheduleController = require("../controllers/scheduleController"); 
 const { sendAdminNotification } = require("../utils/notificationService"); 
 
-console.log(" getUserSchedules 존재 여부:", typeof scheduleController.getUserSchedules);
+
 
 router.get("/", verifyToken, scheduleController.getAllSchedules);
 router.get("/user/:userId", verifyToken, scheduleController.getUserSchedules);

@@ -13,7 +13,7 @@ export default function JobDetailScreen({ route, navigation }) {
         const storedUserId = await SecureStore.getItemAsync('userId');
         if (storedUserId) {
           setUserId(storedUserId);
-          console.log(" 불러온 사용자 ID:", storedUserId);
+          
         }
       } catch (error) {
         console.error(" 사용자 ID 불러오기 오류:", error);
@@ -24,7 +24,7 @@ export default function JobDetailScreen({ route, navigation }) {
   }, []);
 
   useEffect(() => {
-    console.log(" [Job Data]:", job);
+    
   }, [job]);
 
   if (!job) {

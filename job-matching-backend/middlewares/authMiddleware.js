@@ -12,7 +12,7 @@ const verifyToken = async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
     const decodedToken = jwt.verify(token, SECRET_KEY);
-    console.log(" [JWT 인증 성공] 사용자 정보:", decodedToken);
+    
 
     req.user = decodedToken;
     next();

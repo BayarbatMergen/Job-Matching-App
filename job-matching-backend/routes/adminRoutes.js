@@ -93,12 +93,12 @@ router.delete('/jobs/:id', async (req, res) => {
 
 router.get('/notifications', async (req, res) => {
   try {
-    console.log(" [관리자 알림 조회] 요청 수신");
+    
 
     const notificationsSnap = await db.collection('notifications').orderBy('timestamp', 'desc').get();
     const notifications = notificationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    console.log(" 관리자 알림 조회 성공:", notifications);
+    
     res.status(200).json(notifications);
   } catch (error) {
     console.error(" 관리자 알림 조회 중 오류 발생:", error);
@@ -199,14 +199,14 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
       endDate,
       createdAt: admin.firestore.Timestamp.now(),
     });
-    console.log(` 스케줄 생성 완료 for userId: ${userId}`);
+    
 
     // 4️⃣ 지원 상태 업데이트
     await applicationRef.update({ status: 'approved' });
-    console.log(` 지원 상태 업데이트 완료: approved`);
+    
 
     // 5️⃣ 공지 단톡방 찾기 및 유저 초대
-    console.log(" [approve] jobId:", jobId, "userId:", userId);
+    
 
     const chatRoomSnap = await db.collection('chats')
       .where('jobId', '==', jobId)
@@ -225,9 +225,9 @@ router.post('/applications/:applicationId/approve', async (req, res) => {
         await chatRef.update({
           participants: admin.firestore.FieldValue.arrayUnion(userId),
         });
-        console.log(` 사용자 ${userId} 공지 단톡방에 초대 완료`);
+        
       } else {
-        console.log(`ℹ️ 사용자 ${userId}는 이미 단톡방에 포함되어 있음`);
+        
       }
     } else {
       console.warn(` jobId: ${jobId} 에 해당하는 공지 단톡방이 존재하지 않습니다.`);
@@ -265,7 +265,7 @@ router.get('/applications/pending', async (req, res) => {
 //  모든 채팅방 목록 가져오기 (관리자용)
 router.get('/chats/all-rooms', async (req, res) => {
   try {
-    console.log("📡 (관리자) 채팅방 목록 요청 받음...");
+    
 
     const chatRoomsSnapshot = await db.collection("chats").get();
     const chatRooms = chatRoomsSnapshot.docs.map((doc) => ({
@@ -273,7 +273,7 @@ router.get('/chats/all-rooms', async (req, res) => {
       ...doc.data(),
     }));
 
-    console.log(` (관리자) 채팅방 개수: ${chatRooms.length}`);
+    
     res.status(200).json(chatRooms);
   } catch (error) {
     console.error(" (관리자) 채팅방 목록 불러오기 오류:", error);
@@ -285,7 +285,7 @@ router.get('/chats/all-rooms', async (req, res) => {
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    console.log("📥 [user 조회] 요청 받은 userId:", userId);
+    
 
     const userRef = admin.firestore().collection('users').doc(userId);
     const userSnap = await userRef.get();
@@ -296,7 +296,7 @@ router.get('/user/:userId', async (req, res) => {
     }
 
     const userData = userSnap.data();
-    console.log("사용자 데이터:", userData);
+    
 
     const { password, ...safeData } = userData;
 
@@ -422,7 +422,7 @@ router.delete("/chats/delete-room/:roomId", async (req, res) => {
     //  메시지 하위 컬렉션도 같이 삭제하려면 여기에 추가 가능
 
     await chatRef.delete();
-    console.log(`🗑️ 단톡방 삭제 완료: ${roomId}`);
+    
     return res.status(200).json({ message: " 채팅방 삭제 완료" });
   } catch (error) {
     console.error(" 단톡방 삭제 오류:", error);

@@ -4,7 +4,7 @@ import { fetchUserData } from "./authService";
 
 export const fetchUserSchedules = async () => {
   try {
-    console.log(" [fetchUserSchedules] 실행됨!");
+    
 
     const token = await SecureStore.getItemAsync("token");
     let userId = await SecureStore.getItemAsync("userId");
@@ -23,7 +23,7 @@ export const fetchUserSchedules = async () => {
     }
 
     const requestUrl = `${API_BASE_URL}/schedules/user/${userId}`;
-    console.log(` Firestore에서 일정 가져오는 중... 요청 URL: ${requestUrl}`);
+    
 
     const response = await fetch(requestUrl, {
       method: "GET",
@@ -43,7 +43,7 @@ export const fetchUserSchedules = async () => {
     }
 
     const schedules = await response.json();
-    console.log(" 일정 데이터 가져오기 성공:", schedules);
+    
     return schedules;
   } catch (error) {
     console.error(" [fetchUserSchedules] 일정 불러오기 오류:", error.message);
