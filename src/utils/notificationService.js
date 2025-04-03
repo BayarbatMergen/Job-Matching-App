@@ -68,7 +68,14 @@ export const sendUserApplicationApprovalNotification = async (userEmail, jobTitl
 /**
  * ✅ 에뮬레이터 테스트용 Alert 알림 (실제 푸시 대체)
  */
-export const sendTestNotification = (title, body) => {
+export const sendTestNotification = async (title, body) => {
   console.log("📢 [TEST] 에뮬레이터 알림 전송:", title, body);
-  Alert.alert(title, body);
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+    },
+    trigger: null,
+  });
 };
+
