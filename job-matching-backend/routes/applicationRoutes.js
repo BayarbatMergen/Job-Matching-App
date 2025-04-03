@@ -46,7 +46,7 @@ await db.collection('schedules').add({
   title,
   location,
   jobId,
-  wage: totalWage, // ✅ 총 급여 저장
+  wage: totalWage, // 총 급여 저장
   startDate,
   endDate,
   createdAt: admin.firestore.Timestamp.now(),
@@ -56,7 +56,7 @@ await db.collection('schedules').add({
 await applicationRef.update({
   status: 'approved',
   approvedAt: admin.firestore.Timestamp.now(),
-  wage: totalWage, // ✅ 여기도 업데이트
+  wage: totalWage, // 여기도 업데이트
 });
 
     // 5. 공지 단톡방에 유저 초대

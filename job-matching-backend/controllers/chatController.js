@@ -48,7 +48,7 @@ const addMessageToChat = async (req, res) => {
       text,
       senderId,
       createdAt,
-      readBy: [senderId], // ✅ 처음 보낸 사람은 읽은 것으로 처리
+      readBy: [senderId], // 처음 보낸 사람은 읽은 것으로 처리
     };
 
     await messageRef.set(newMessage);
@@ -276,12 +276,12 @@ const getUnreadChatRooms = async (req, res) => {
 
     return res.status(200).json({ unreadRoomIds });
   } catch (error) {
-    console.error("🔴 안읽은 메시지 조회 오류:", error);
+    console.error("안읽은 메시지 조회 오류:", error);
     res.status(500).json({ message: "서버 오류", error: error.message });
   }
 };
 
-// 🔴 사용자 기준 읽지 않은 채팅방 목록 조회
+// 사용자 기준 읽지 않은 채팅방 목록 조회
 const getUnreadStatus = async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -320,8 +320,42 @@ const getUnreadStatus = async (req, res) => {
 
     return res.status(200).json(unreadStatus);
   } catch (error) {
-    console.error("❌ 읽지 않은 상태 확인 오류:", error);
+    console.error(" 읽지 않은 상태 확인 오류:", error);
     return res.status(500).json({ message: "서버 오류 발생" });
+  }
+};
+
+// 마지막 메시지 시간 반환
+const getLastMessageTime = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    if (!roomId) {
+      return res.status(400).json({ message: "roomId가 필요합니다." });
+    }
+
+    const snapshot = await db
+      .collection("chats")
+      .doc(roomId)
+      .collection("messages")
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(200).json({ lastMessageTime: null });
+    }
+
+    const lastMessage = snapshot.docs[0].data();
+
+    let lastMessageTime = null;
+    if (lastMessage.createdAt && typeof lastMessage.createdAt.toDate === "function") {
+      lastMessageTime = lastMessage.createdAt.toDate();
+    }
+
+    return res.status(200).json({ lastMessageTime });
+  } catch (err) {
+    console.error("⛔ 마지막 메시지 시간 가져오기 실패:", err);
+    return res.status(500).json({ message: "마지막 메시지 시간 불러오기 실패" });
   }
 };
 
@@ -337,4 +371,5 @@ module.exports = {
   markMessageAsRead,
   getUnreadChatRooms,
   getUnreadStatus,
+  getLastMessageTime,
 };

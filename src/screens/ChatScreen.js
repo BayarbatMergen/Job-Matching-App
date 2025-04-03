@@ -21,7 +21,7 @@ export default function ChatScreen({ route }) {
   const [currentUserId, setCurrentUserId] = useState("");
   const flatListRef = useRef();
 
-  // ✅ 유저 ID와 메시지 로딩 처리
+  // 유저 ID와 메시지 로딩 처리
   useEffect(() => {
     const setup = async () => {
       try {
@@ -42,7 +42,7 @@ export default function ChatScreen({ route }) {
         const msgData = await res.json();
         setMessages(msgData);
 
-        // ✅ 안 읽은 메시지 읽음 처리
+        // 안 읽은 메시지 읽음 처리
         const unreadMessages = msgData.filter(
           (msg) =>
             msg.senderId !== userId &&
@@ -65,7 +65,7 @@ export default function ChatScreen({ route }) {
       } catch (error) {
         console.error("📛 메시지 로딩 실패:", error);
       } finally {
-        setLoading(false); // ✅ 반드시 호출되도록
+        setLoading(false); // 반드시 호출되도록
       }
     };
 

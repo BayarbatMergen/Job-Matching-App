@@ -107,11 +107,11 @@ export default function NotificationScreen() {
           setNotifications((prev) =>
             prev.map((n) =>
               n.id === item.id && n.source === item.source
-                ? { ...n, read: true } // ✅ 먼저 읽음 처리
+                ? { ...n, read: true } // 먼저 읽음 처리
                 : n
             )
           );
-          markAsRead(item); // ✅ 나중에 처리
+          markAsRead(item); // 나중에 처리
         }
       }}
     >

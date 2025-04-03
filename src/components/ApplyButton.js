@@ -10,7 +10,7 @@ const ApplyButton = ({ job, navigation }) => {
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
-  const [hasApplied, setHasApplied] = useState(false); // ✅ 중복 지원 여부
+  const [hasApplied, setHasApplied] = useState(false); // 중복 지원 여부
 
   // 사용자 인증 정보 가져오기
   useEffect(() => {
@@ -40,7 +40,7 @@ const ApplyButton = ({ job, navigation }) => {
     fetchUserData();
   }, [navigation]);
 
-  // ✅ 중복 지원 여부 확인
+  // 중복 지원 여부 확인
   useEffect(() => {
     const checkAlreadyApplied = async () => {
       if (!userEmail || !job?.id) return;
@@ -85,7 +85,7 @@ const ApplyButton = ({ job, navigation }) => {
       console.log("📨 서버 응답:", data);
   
       if (response.ok) {
-        // ✅ 사용자 이름 조회
+        // 사용자 이름 조회
         const userQuery = query(
           collection(db, "users"),
           where("email", "==", userEmail)
@@ -94,7 +94,7 @@ const ApplyButton = ({ job, navigation }) => {
         const userData = userSnap.docs[0]?.data();
         const userName = userData?.name || userEmail;
   
-        // ✅ 관리자 알림 전송
+        // 관리자 알림 전송
         await addDoc(collection(db, "notifications"), {
           type: "application",
           status: "unread",
@@ -126,7 +126,7 @@ const ApplyButton = ({ job, navigation }) => {
   };
   
 
-  // ✅ 지원 완료 상태 UI
+  // 지원 완료 상태 UI
   if (hasApplied) {
     return (
       <TouchableOpacity

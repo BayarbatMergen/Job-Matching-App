@@ -43,7 +43,7 @@ export default function AdminChatScreen({ route }) {
   
       const msgData = await msgRes.json();
   
-      // ✅ 읽지 않은 메시지만 필터
+      // 읽지 않은 메시지만 필터
       const unreadMessages = msgData.filter(
         (msg) => !msg.readBy?.includes(userId)
       );
@@ -59,11 +59,11 @@ export default function AdminChatScreen({ route }) {
             body: JSON.stringify({ userId }),
           });
         } catch (err) {
-          console.error("❌ 읽음 처리 실패:", err);
+          console.error(" 읽음 처리 실패:", err);
         }
       }
   
-      // ✅ 최신 메시지 반영
+      // 최신 메시지 반영
       setMessages(msgData);
     };
   
@@ -222,7 +222,7 @@ export default function AdminChatScreen({ route }) {
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "Asia/Seoul", // ✅ 명시함
+      timeZone: "Asia/Seoul", // 명시함
     })
     
     : ""}

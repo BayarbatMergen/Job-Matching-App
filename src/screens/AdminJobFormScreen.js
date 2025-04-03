@@ -47,7 +47,7 @@ export default function AdminJobFormScreen({ navigation }) {
       }
     }
   
-    // ✅ 알림 대상 유효성 검사 추가
+    // 알림 대상 유효성 검사 추가
     if (!sendToAll && (!userSelectionStore.selectedUsers || userSelectionStore.selectedUsers.length === 0)) {
       Alert.alert("알림 대상 선택", "특정 사용자를 선택하거나 전체 알림을 선택해주세요.");
       return;

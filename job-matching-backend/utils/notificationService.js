@@ -27,14 +27,14 @@ exports.sendAdminNotification = async (userId, amount) => {
         recipientEmail: adminEmail,
         message,
         status: "unread",
-        type: "settlement", // ✅ 알림 타입 추가
+        type: "settlement", // 알림 타입 추가
         createdAt: new Date(),
       });
       
     });
 
-    console.log("✅ 관리자 알림 전송 완료");
+    console.log("관리자 알림 전송 완료");
   } catch (error) {
-    console.error("❌ 알림 전송 오류:", error);
+    console.error(" 알림 전송 오류:", error);
   }
 };

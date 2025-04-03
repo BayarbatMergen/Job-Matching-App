@@ -29,7 +29,7 @@ export default function ApplicationApprovalScreen() {
         if (data.status === "pending") {
           let userName = data.userEmail;
   
-          // ✅ userId로 사용자 이름 가져오기
+          // userId로 사용자 이름 가져오기
           if (data.userId) {
             try {
               const userDoc = await getDocs(

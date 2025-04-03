@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API_BASE_URL from "../config/apiConfig";
@@ -15,21 +16,21 @@ import * as SecureStore from "expo-secure-store";
 
 export default function ChatListScreen({ navigation }) {
   const [chatRooms, setChatRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [unreadRoomIds, setUnreadRoomIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState(null);
 
   const fetchUnreadStatus = async (uid) => {
     try {
       const token = await SecureStore.getItemAsync("token");
       const res = await fetch(`${API_BASE_URL}/chats/unread-status?userId=${uid}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
+
       if (!res.ok) throw new Error("읽지 않은 메시지 상태 조회 실패");
 
-      const data = await res.json(); // { roomId1: true, roomId2: false }
+      const data = await res.json();
       const unreadIds = Object.entries(data)
         .filter(([_, isUnread]) => isUnread)
         .map(([roomId]) => roomId);
@@ -51,28 +52,67 @@ export default function ChatListScreen({ navigation }) {
       });
 
       if (!response.ok) throw new Error(`HTTP 오류: ${response.status}`);
-      const data = await response.json();
-      setChatRooms(data);
+      const rooms = await response.json();
+
+      const roomsWithTime = await Promise.all(
+        rooms.map(async (room) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/chats/${room.id}/last-message-time`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const msgData = await res.json();
+            let dateObj = new Date(0);
+            if (
+              msgData?.lastMessageTime &&
+              typeof msgData.lastMessageTime === "string"
+            ) {
+              dateObj = new Date(msgData.lastMessageTime);
+            }
+
+            return { ...room, lastMessageTime: dateObj };
+          } catch (err) {
+            console.error("❌ 메시지 시간 가져오기 실패:", err.message);
+            return { ...room, lastMessageTime: new Date(0) };
+          }
+        })
+      );
+
+      console.log("📦 roomsWithTime before sort:", roomsWithTime.map(r => ({
+        name: r.name,
+        lastMessageTime: r.lastMessageTime.toISOString(),
+      })));
+
+      roomsWithTime.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+      console.log("✅ roomsWithTime after sort:", roomsWithTime.map(r => ({
+        name: r.name,
+        lastMessageTime: r.lastMessageTime.toISOString(),
+      })));
+
+      setChatRooms(roomsWithTime);
       await fetchUnreadStatus(uid);
     } catch (error) {
       console.error("❌ 채팅방 목록 오류:", error);
       Alert.alert("오류", "채팅방 목록을 불러오지 못했습니다.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  const init = async () => {
+    const uid = await SecureStore.getItemAsync("userId");
+    if (!uid) {
+      Alert.alert("로그인 필요", "다시 로그인 해주세요.");
+      navigation.replace("Login");
+      return;
+    }
+    setUserId(uid);
+    await fetchChatRooms(uid);
+  };
+
   useEffect(() => {
-    const init = async () => {
-      const uid = await SecureStore.getItemAsync("userId");
-      if (!uid) {
-        Alert.alert("로그인 필요", "다시 로그인 해주세요.");
-        navigation.replace("Login");
-        return;
-      }
-      setUserId(uid);
-      fetchChatRooms(uid);
-    };
     init();
   }, []);
 
@@ -143,8 +183,7 @@ export default function ChatListScreen({ navigation }) {
             </TouchableOpacity>
           )}
           showsVerticalScrollIndicator={false}
-          refreshing={loading}
-          onRefresh={() => userId && fetchChatRooms(userId)}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={init} />}
         />
       )}
     </SafeAreaView>

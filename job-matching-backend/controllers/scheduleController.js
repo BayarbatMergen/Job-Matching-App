@@ -191,7 +191,7 @@ const approveSettlement = async (req, res) => {
           read: false,
           createdAt: admin.firestore.Timestamp.now(),
         });
-      console.log("✅ 알림 저장 완료:", result.id);
+      console.log("알림 저장 완료:", result.id);
     } catch (error) {
       console.error(" 알림 저장 실패:", error);
     }

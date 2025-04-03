@@ -358,6 +358,7 @@ router.post('/change-password', verifyToken, async (req, res) => {
   }
 });
 
+
 console.log(" authRoutes.js 로드 완료");
 
 module.exports = router;

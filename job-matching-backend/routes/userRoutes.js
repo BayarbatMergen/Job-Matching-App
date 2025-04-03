@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../config/firebaseAdmin');
 
-// ✅ 사용자 UID로 이름 반환
+// 사용자 UID로 이름 반환
 router.get('/:uid', async (req, res) => {
     let { uid } = req.params;
-    uid = uid.trim(); // ✅ 공백 제거
+    uid = uid.trim(); // 공백 제거
   
     try {
       const userRef = db.collection('users').doc(uid);

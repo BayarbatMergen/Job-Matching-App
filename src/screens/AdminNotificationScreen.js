@@ -35,7 +35,7 @@ export default function AdminNotificationScreen({ navigation }) {
     <TouchableOpacity
       onPress={async () => {
         try {
-          // ✅ 상태를 'read'로 변경
+          // 상태를 'read'로 변경
           await updateDoc(doc(db, "notifications", item.id), {
             status: "read",
           });
@@ -43,7 +43,7 @@ export default function AdminNotificationScreen({ navigation }) {
           console.error("알림 상태 업데이트 실패:", error);
         }
   
-        // ✅ 알림 타입에 따라 이동
+        // 알림 타입에 따라 이동
         if (item.type === "settlement") {
           navigation.navigate("AdminSchedule", { screen: "SettlementApprovalScreen" });
         } else if (item.type === "application") {

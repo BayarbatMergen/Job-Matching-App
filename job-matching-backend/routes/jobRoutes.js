@@ -22,12 +22,12 @@ router.post('/add', async (req, res) => {
       location, description, notifyUsers
     } = req.body;
 
-    // ✅ 필수 항목 검사
+    // 필수 항목 검사
     if (!title || !wage || !startDate || !endDate || !workDays || !employmentType || !location) {
       return res.status(400).json({ message: '모든 필수 항목을 입력해주세요.' });
     }
 
-    // ✅ 알림 대상 유효성 검사
+    // 알림 대상 유효성 검사
     if (
       notifyUsers === undefined ||
       (notifyUsers !== 'all' && (!Array.isArray(notifyUsers) || notifyUsers.length === 0))
@@ -37,7 +37,7 @@ router.post('/add', async (req, res) => {
       });
     }
 
-    // ✅ 데이터 정리
+    // 데이터 정리
     const parsedWage = Number(wage);
     const parsedMaleRecruitment = Number(maleRecruitment || 0);
     const parsedFemaleRecruitment = Number(femaleRecruitment || 0);
@@ -46,7 +46,7 @@ router.post('/add', async (req, res) => {
       ? "all"
       : notifyUsers.map(uid => String(uid).replace(/"/g, '').trim());
 
-    // ✅ 공고 저장
+    // 공고 저장
     const jobRef = db.collection('jobs').doc();
     await jobRef.set({
       title,
@@ -67,11 +67,11 @@ router.post('/add', async (req, res) => {
       updatedAt: admin.firestore.Timestamp.now(),
     });
 
-    console.log(`✅ 공고 등록 성공! [${jobRef.id}]`);
+    console.log(`공고 등록 성공! [${jobRef.id}]`);
 
-    // ✅ 알림 전송
+    // 알림 전송
     if (notifyUsers === "all") {
-      // ✅ 글로벌 알림만 전송 (중복 제거됨!)
+      // 글로벌 알림만 전송 (중복 제거됨!)
       await db.collection('globalNotifications').add({
         title: "새 공고 등록",
         message: `"${title}" 공고가 새로 등록되었습니다.`,
@@ -81,7 +81,7 @@ router.post('/add', async (req, res) => {
 
       console.log("📣 글로벌 알림 전송 완료");
     } else if (Array.isArray(visibleTo)) {
-      // ✅ 특정 사용자에게만 개별 알림 전송
+      // 특정 사용자에게만 개별 알림 전송
       for (const userId of visibleTo) {
         await db
           .collection('notifications')
@@ -98,7 +98,7 @@ router.post('/add', async (req, res) => {
       console.log(`📣 ${visibleTo.length}명의 사용자에게 개별 알림 전송 완료`);
     }
 
-    // ✅ 단톡방 생성
+    // 단톡방 생성
     const chatRoomRef = db.collection('chats').doc();
     await chatRoomRef.set({
       name: `알바생 단톡방 (${title})`,
@@ -109,11 +109,11 @@ router.post('/add', async (req, res) => {
       type: 'group',
     });
 
-    console.log(`💬 공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
+    console.log(`공고 단톡방 생성 완료! [roomId: ${chatRoomRef.id}]`);
 
     res.status(201).json({ message: '공고 등록 및 알림 전송 완료', jobId: jobRef.id });
   } catch (error) {
-    console.error('❌ 공고 등록 또는 알림 전송 오류:', error.stack);
+    console.error(' 공고 등록 또는 알림 전송 오류:', error.stack);
     res.status(500).json({ message: '서버 오류', error: error.message });
   }
 });
@@ -383,7 +383,7 @@ router.post('/notifications/global/:notificationId/read', async (req, res) => {
 
     res.status(200).json({ message: "글로벌 알림 읽음 처리 완료" });
   } catch (error) {
-    console.error("❌ 글로벌 알림 읽음 처리 오류:", error);
+    console.error(" 글로벌 알림 읽음 처리 오류:", error);
     res.status(500).json({ message: "서버 오류", error: error.message });
   }
 });

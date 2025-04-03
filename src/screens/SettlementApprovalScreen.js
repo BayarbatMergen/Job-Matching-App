@@ -127,7 +127,7 @@ export default function SettlementApprovalScreen() {
               <Text>요청 금액: {Number(item.totalWage).toLocaleString()}원</Text>
               <Text>
   요청 날짜: {new Date(item.requestedAt.seconds * 1000).toLocaleString("ko-KR", {
-    timeZone: "Asia/Seoul", // ✅ 한국 시간대로 설정
+    timeZone: "Asia/Seoul", // 한국 시간대로 설정
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

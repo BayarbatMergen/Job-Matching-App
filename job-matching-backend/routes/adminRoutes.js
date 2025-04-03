@@ -291,12 +291,12 @@ router.get('/user/:userId', async (req, res) => {
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      console.warn(`❌ userId ${userId} 에 해당하는 사용자를 찾을 수 없습니다.`);
+      console.warn(` userId ${userId} 에 해당하는 사용자를 찾을 수 없습니다.`);
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }
 
     const userData = userSnap.data();
-    console.log("✅ 사용자 데이터:", userData);
+    console.log("사용자 데이터:", userData);
 
     const { password, ...safeData } = userData;
 
@@ -430,7 +430,7 @@ router.delete("/chats/delete-room/:roomId", async (req, res) => {
   }
 });
 
-// ✅ 모든 사용자 조회 API
+// 모든 사용자 조회 API
 router.get('/users', async (req, res) => {
   try {
     const snapshot = await db.collection('users').get();

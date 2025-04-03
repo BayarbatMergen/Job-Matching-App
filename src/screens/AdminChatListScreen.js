@@ -15,6 +15,8 @@ import * as SecureStore from "expo-secure-store";
 import { Swipeable } from "react-native-gesture-handler";
 import { db } from "../config/firebase";
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { RefreshControl } from "react-native";
+
 
 export default function AdminChatListScreen({ navigation }) {
   const [chatRooms, setChatRooms] = useState([]);
@@ -60,7 +62,7 @@ export default function AdminChatListScreen({ navigation }) {
     // 정렬
     roomWithLastMessage.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
   
-    // ✅ 정렬된 리스트와 unreadRoomIds를 반환
+    // 정렬된 리스트와 unreadRoomIds를 반환
     return { sortedRooms: roomWithLastMessage, unreadRoomIds };
   };
   
@@ -88,8 +90,8 @@ export default function AdminChatListScreen({ navigation }) {
       const data = await response.json();
       const { sortedRooms, unreadRoomIds } = await fetchUnreadRooms(data, adminId);
   
-      setChatRooms(sortedRooms);        // ✅ 정렬 반영
-      setUnreadRoomIds(unreadRoomIds);  // ✅ 도트 표시도 반영
+      setChatRooms(sortedRooms);        // 정렬 반영
+      setUnreadRoomIds(unreadRoomIds);  // 도트 표시도 반영
     } catch (error) {
       console.error("채팅방 목록 오류:", error);
       Alert.alert("오류", "채팅방 목록을 불러올 수 없습니다.");
@@ -161,8 +163,11 @@ export default function AdminChatListScreen({ navigation }) {
         <FlatList
           data={chatRooms}
           keyExtractor={(item) => item.id}
-          refreshing={refreshing}      // ✅ 추가
-          onRefresh={onRefresh}        // ✅ 추가
+          refreshing={refreshing}      // 추가
+          onRefresh={onRefresh}        // 추가
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           renderItem={({ item }) => (
             <Swipeable renderRightActions={() => renderRightActions(item.id)}>
               <TouchableOpacity

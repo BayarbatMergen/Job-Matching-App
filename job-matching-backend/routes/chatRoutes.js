@@ -11,7 +11,8 @@ const {
   getUserNameById,
   markMessageAsRead,
   getUnreadChatRooms,
-  getUnreadStatus
+  getUnreadStatus,
+  getLastMessageTime
 } = require("../controllers/chatController");
 const { verifyToken } = require("../middlewares/authMiddleware");
 
@@ -43,6 +44,8 @@ router.post('/rooms/:roomId/messages/:messageId/read', markMessageAsRead);
 
 router.get("/unread-status", verifyToken, getUnreadStatus);
 
+// 마지막 메시지 시간 조회 (토큰 필요)
+router.get("/:roomId/last-message-time", getLastMessageTime);
 
 console.log(" chatRoutes.js 로드 완료");
 

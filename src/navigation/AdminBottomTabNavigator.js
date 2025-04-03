@@ -53,7 +53,7 @@ export function useUnreadNotificationCount() {
   return count;
 }
 
-// ✅ 관리자 unread 채팅 감지용 훅
+// 관리자 unread 채팅 감지용 훅
 function useUnreadChatCount() {
   const [hasUnread, setHasUnread] = useState(false);
 
@@ -210,7 +210,7 @@ function AdminMyPageStack() {
   );
 }
 
-// ✅ 관리자 바텀 탭 네비게이터
+// 관리자 바텀 탭 네비게이터
 export default function AdminBottomTabNavigator() {
   const hasUnreadChat = useUnreadChatCount();
 
