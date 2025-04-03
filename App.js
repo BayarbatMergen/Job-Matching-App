@@ -3,6 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { testAsyncStorage } from './src/services/authService';  //  가져오기
 import MainScreen from './src/screens/MainScreen'; //  MainScreen 추가
+import { registerForPushNotificationsAsync, sendTestNotification  } from './src/utils/notificationService';
+import { fetchUserData } from './src/services/authService';
+import * as SecureStore from 'expo-secure-store';
 
 //  기본 인증 화면
 import LoginScreen from './src/screens/LoginScreen';
@@ -38,9 +41,21 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   useEffect(() => {
-    //firebaseAutoLogin();  //  자동 Firebase 로그인 실행
-    testAsyncStorage();   // (선택) 저장된 값 디버깅 확인
+    testAsyncStorage();
+
+    const setupPush = async () => {
+      const userId = await SecureStore.getItemAsync("userId");
+      if (userId) {
+        await registerForPushNotificationsAsync(userId);
+      }
+
+      // ✅ 에뮬레이터용 테스트 알림 띄우기
+      sendTestNotification("🔥 앱 실행됨", "이건 에뮬레이터 확인용 테스트 알림입니다.");
+    };
+
+    setupPush();
   }, []);
+
 
   return (
     <NavigationContainer>
