@@ -201,3 +201,14 @@ export const testAsyncStorage = async () => {
     console.error(" SecureStore 테스트 오류:", error.message);
   }
 };
+
+// 기존: resetPasswordWithFirebase
+export const resetPasswordWithBackend = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("비밀번호 재설정 이메일 전송 완료:", email);
+  } catch (error) {
+    console.error("비밀번호 재설정 오류:", error.message);
+    throw error;
+  }
+};
