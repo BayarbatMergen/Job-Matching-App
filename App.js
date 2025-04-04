@@ -64,7 +64,18 @@ export default function App() {
         {/* 로그인 & 회원가입 */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="ConsentScreen" component={ConsentScreen} />
+        <Stack.Screen
+  name="ConsentScreen"
+  component={ConsentScreen}
+  options={{
+    headerShown: true,
+    title: '이용약관',
+    headerStyle: { backgroundColor: '#fff' },
+    headerTintColor: '#007AFF',
+    headerTitleAlign: 'center',
+  }}
+/>
+
         {/* 사용자 & 관리자 메인 */}
         <Stack.Screen name="Main" component={MainScreen} />
         

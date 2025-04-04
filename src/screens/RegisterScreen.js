@@ -21,7 +21,7 @@ const RegisterScreen = ({ navigation, route }) => {
   const [idImage, setIdImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [agreeMarketing, setAgreeMarketing] = useState(false);
+
   const isPasswordValid = (password) => /^(?=.*[!@#$%^&*()]).{6,}$/.test(password);
   const isKoreanOnly = (text) => /^[가-힣]*$/.test(text);
   const handleGenderSelect = (selectedGender) => setGender(selectedGender);
@@ -76,9 +76,7 @@ const RegisterScreen = ({ navigation, route }) => {
     formData.append("gender", gender);
     formData.append("bank", bank);
     formData.append("accountNumber", accountNumber.replace(/-/g, ''));
-
-    // ✅ 약관 동의 정보도 함께 전송
-    formData.append("marketingConsent", agreeMarketing);
+    formData.append("marketingConsent", false);
     formData.append("termsAgreedAt", new Date().toISOString());
     formData.append("termsVersion", "1.0");
 
@@ -116,14 +114,12 @@ const RegisterScreen = ({ navigation, route }) => {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/images/thechingu.png')} style={styles.logo} />
         <Text style={styles.title}>회원가입</Text>
-  
-        {/* 입력 필드들 */}
+
         <TextInput style={styles.input} placeholder="이메일" value={email} onChangeText={setEmail} keyboardType="email-address" />
         <TextInput style={styles.input} placeholder="비밀번호 (6자 이상, 특수문자 포함)" secureTextEntry value={password} onChangeText={setPassword} />
         <TextInput style={styles.input} placeholder="비밀번호 확인" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
         <TextInput style={styles.input} placeholder="이름 (한글만)" value={name} onChangeText={setName} />
-  
-        {/* 성별 선택 */}
+
         <View style={styles.genderContainer}>
           <Text style={styles.label}>성별 선택:</Text>
           <View style={styles.genderButtons}>
@@ -135,8 +131,7 @@ const RegisterScreen = ({ navigation, route }) => {
             </TouchableOpacity>
           </View>
         </View>
-  
-        {/* 전화번호 */}
+
         <TextInput
           style={styles.input}
           placeholder="전화번호 (010-XXXX-XXXX)"
@@ -155,8 +150,7 @@ const RegisterScreen = ({ navigation, route }) => {
             setPhone(formatted);
           }}
         />
-  
-        {/* 은행 */}
+
         <View style={styles.pickerContainer}>
           <Text style={styles.label}>은행 선택:</Text>
           <Picker selectedValue={bank} onValueChange={(value) => setBank(value)} style={styles.picker}>
@@ -169,8 +163,7 @@ const RegisterScreen = ({ navigation, route }) => {
             <Picker.Item label="농협은행" value="농협은행" />
           </Picker>
         </View>
-  
-        {/* 계좌번호 */}
+
         <TextInput
           style={styles.input}
           placeholder="계좌번호 (숫자만)"
@@ -182,21 +175,16 @@ const RegisterScreen = ({ navigation, route }) => {
             setAccountNumber(formatted);
           }}
         />
-  
-        {/* 사진 업로드 */}
+
         <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
           <Text style={styles.uploadButtonText}>신분증 사진 업로드</Text>
         </TouchableOpacity>
         {idImage && <Image source={{ uri: idImage }} style={styles.profileImage} />}
-  
 
-  
-        {/* 회원가입 버튼 */}
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading || !agreeTerms}>
+        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
           {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.registerButtonText}>회원가입</Text>}
         </TouchableOpacity>
-  
-        {/* 체크박스 */}
+
         <View style={styles.checkboxContainer}>
           <Checkbox value={agreeTerms} onValueChange={setAgreeTerms} color={agreeTerms ? '#007AFF' : undefined} />
           <Text style={styles.checkboxLabel}>
@@ -206,43 +194,33 @@ const RegisterScreen = ({ navigation, route }) => {
             </Text>
           </Text>
         </View>
-  
-        <View style={styles.checkboxContainer}>
-          <Checkbox value={agreeMarketing} onValueChange={setAgreeMarketing} />
-          <Text style={styles.checkboxLabel}>
-            [선택]{' '}
-            <Text onPress={() => navigation.navigate("ConsentScreen")} style={styles.linkText}>
-              마케팅 정보 수신 동의
-            </Text>
-          </Text>
-        </View>
-          {/* 약관 안내 문구 */}
-          {!agreeTerms && (
+
+        {!agreeTerms && (
           <Text style={styles.noticeText}>※ 이용약관에 동의해야 회원가입이 가능합니다.</Text>
         )}
-        {/* 로그인 이동 */}
+
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
           <Text style={styles.loginText}>이미 계정이 있나요? 로그인</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
-};  
+};
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingVertical: 30, // ✅ 상하 여백
+    paddingVertical: 30,
     paddingHorizontal: 20,
     backgroundColor: '#fff',
   },
   logo: {
     width: 160,
     height: 160,
-    resizeMode: 'contain', // ✅ 짤림 방지
+    resizeMode: 'contain',
     marginBottom: 10,
-    marginTop: 10, // ✅ 추가 상단 여백
+    marginTop: 10,
   },
   title: {
     fontSize: 26,
