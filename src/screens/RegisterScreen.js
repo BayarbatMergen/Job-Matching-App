@@ -5,8 +5,11 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
+import Checkbox from 'expo-checkbox';
 
-const RegisterScreen = ({ navigation }) => {
+const RegisterScreen = ({ navigation, route }) => {
+  const { marketingConsent = false, termsAgreedAt = '', termsVersion = '' } = route.params || {};
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,11 +20,10 @@ const RegisterScreen = ({ navigation }) => {
   const [accountNumber, setAccountNumber] = useState('');
   const [idImage, setIdImage] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
   const isPasswordValid = (password) => /^(?=.*[!@#$%^&*()]).{6,}$/.test(password);
-
   const isKoreanOnly = (text) => /^[가-힣]*$/.test(text);
-
   const handleGenderSelect = (selectedGender) => setGender(selectedGender);
 
   const pickImage = async () => {
@@ -42,6 +44,11 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
+    if (!agreeTerms) {
+      Alert.alert("약관 동의", "이용약관에 동의해야 회원가입이 가능합니다.");
+      return;
+    }
+
     if (!email || !password || !confirmPassword || !name || !phone || !gender || !bank || !accountNumber) {
       Alert.alert('입력 오류', '모든 필드를 입력하세요.');
       return;
@@ -50,7 +57,6 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert("이름 오류", "이름은 한글만 입력 가능합니다.");
       return;
     }
-    
     if (password !== confirmPassword) {
       Alert.alert("비밀번호 불일치", "비밀번호가 일치하지 않습니다.");
       return;
@@ -70,6 +76,11 @@ const RegisterScreen = ({ navigation }) => {
     formData.append("gender", gender);
     formData.append("bank", bank);
     formData.append("accountNumber", accountNumber.replace(/-/g, ''));
+
+    // ✅ 약관 동의 정보도 함께 전송
+    formData.append("marketingConsent", agreeMarketing);
+    formData.append("termsAgreedAt", new Date().toISOString());
+    formData.append("termsVersion", "1.0");
 
     if (idImage) {
       formData.append("idImage", {
@@ -105,34 +116,14 @@ const RegisterScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Image source={require('../../assets/images/thechingu.png')} style={styles.logo} />
         <Text style={styles.title}>회원가입</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="이메일"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호 (6자 이상, 특수문자 포함)"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="비밀번호 확인"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
-<TextInput
-  style={styles.input}
-  placeholder="이름 (한글만)"
-  value={name}
-  onChangeText={setName}
-/>
+  
+        {/* 입력 필드들 */}
+        <TextInput style={styles.input} placeholder="이메일" value={email} onChangeText={setEmail} keyboardType="email-address" />
+        <TextInput style={styles.input} placeholder="비밀번호 (6자 이상, 특수문자 포함)" secureTextEntry value={password} onChangeText={setPassword} />
+        <TextInput style={styles.input} placeholder="비밀번호 확인" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
+        <TextInput style={styles.input} placeholder="이름 (한글만)" value={name} onChangeText={setName} />
+  
+        {/* 성별 선택 */}
         <View style={styles.genderContainer}>
           <Text style={styles.label}>성별 선택:</Text>
           <View style={styles.genderButtons}>
@@ -144,7 +135,8 @@ const RegisterScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-
+  
+        {/* 전화번호 */}
         <TextInput
           style={styles.input}
           placeholder="전화번호 (010-XXXX-XXXX)"
@@ -163,7 +155,8 @@ const RegisterScreen = ({ navigation }) => {
             setPhone(formatted);
           }}
         />
-
+  
+        {/* 은행 */}
         <View style={styles.pickerContainer}>
           <Text style={styles.label}>은행 선택:</Text>
           <Picker selectedValue={bank} onValueChange={(value) => setBank(value)} style={styles.picker}>
@@ -176,7 +169,8 @@ const RegisterScreen = ({ navigation }) => {
             <Picker.Item label="농협은행" value="농협은행" />
           </Picker>
         </View>
-
+  
+        {/* 계좌번호 */}
         <TextInput
           style={styles.input}
           placeholder="계좌번호 (숫자만)"
@@ -188,45 +182,192 @@ const RegisterScreen = ({ navigation }) => {
             setAccountNumber(formatted);
           }}
         />
-
+  
+        {/* 사진 업로드 */}
         <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
           <Text style={styles.uploadButtonText}>신분증 사진 업로드</Text>
         </TouchableOpacity>
-
         {idImage && <Image source={{ uri: idImage }} style={styles.profileImage} />}
+  
 
-        <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading}>
+  
+        {/* 회원가입 버튼 */}
+        <TouchableOpacity style={styles.registerButton} onPress={handleRegister} disabled={loading || !agreeTerms}>
           {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.registerButtonText}>회원가입</Text>}
         </TouchableOpacity>
-
+  
+        {/* 체크박스 */}
+        <View style={styles.checkboxContainer}>
+          <Checkbox value={agreeTerms} onValueChange={setAgreeTerms} color={agreeTerms ? '#007AFF' : undefined} />
+          <Text style={styles.checkboxLabel}>
+            [필수]{' '}
+            <Text onPress={() => navigation.navigate("ConsentScreen")} style={styles.linkText}>
+              이용약관 및 개인정보 수집 동의
+            </Text>
+          </Text>
+        </View>
+  
+        <View style={styles.checkboxContainer}>
+          <Checkbox value={agreeMarketing} onValueChange={setAgreeMarketing} />
+          <Text style={styles.checkboxLabel}>
+            [선택]{' '}
+            <Text onPress={() => navigation.navigate("ConsentScreen")} style={styles.linkText}>
+              마케팅 정보 수신 동의
+            </Text>
+          </Text>
+        </View>
+          {/* 약관 안내 문구 */}
+          {!agreeTerms && (
+          <Text style={styles.noticeText}>※ 이용약관에 동의해야 회원가입이 가능합니다.</Text>
+        )}
+        {/* 로그인 이동 */}
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.loginText}>로그인으로 이동</Text>
+          <Text style={styles.loginText}>이미 계정이 있나요? 로그인</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
-};
+};  
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, alignItems: 'center', padding: 20, backgroundColor: '#fff' },
-  logo: { width: 180, height: 180, marginBottom: 10 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, color: '#333' },
-  input: { width: '100%', height: 50, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingHorizontal: 15, marginBottom: 12, fontSize: 16 },
-  genderContainer: { width: '100%', marginBottom: 12 },
-  label: { fontSize: 16, fontWeight: '500', marginBottom: 5 },
-  genderButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  genderButton: { flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#007AFF', alignItems: 'center', marginHorizontal: 5 },
-  selectedGender: { backgroundColor: '#007AFF' },
-  genderButtonText: { fontSize: 16, fontWeight: 'bold' },
-  selectedGenderText: { color: '#fff' },
-  pickerContainer: { width: '100%', marginBottom: 12 },
-  picker: { height: 50, width: '100%' },
-  uploadButton: { backgroundColor: '#007AFF', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 10 },
-  uploadButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
-  registerButton: { backgroundColor: '#007AFF', width: '100%', height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 8, marginTop: 10 },
-  registerButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  loginText: { color: '#007AFF', fontSize: 16, marginTop: 15, fontWeight: '500' },
+  container: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingVertical: 30, // ✅ 상하 여백
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+  },
+  logo: {
+    width: 160,
+    height: 160,
+    resizeMode: 'contain', // ✅ 짤림 방지
+    marginBottom: 10,
+    marginTop: 10, // ✅ 추가 상단 여백
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 25,
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginBottom: 12,
+    fontSize: 15,
+  },
+  genderContainer: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 6,
+    color: '#444',
+  },
+  genderButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  genderButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  selectedGender: {
+    backgroundColor: '#007AFF',
+  },
+  genderButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  selectedGenderText: {
+    color: '#fff',
+  },
+  pickerContainer: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  picker: {
+    width: '100%',
+    height: 50,
+  },
+  uploadButton: {
+    backgroundColor: '#007AFF',
+    width: '100%',
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+  },
+  registerButton: {
+    backgroundColor: '#007AFF',
+    width: '100%',
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    width: '100%',
+    paddingLeft: 2,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#333',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  linkText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+  noticeText: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  loginText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
 });
 
 export default RegisterScreen;
