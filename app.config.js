@@ -47,7 +47,10 @@ export default {
       firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jobmatchingapp-383da.appspot.com",
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "937100963582",
       firebaseAppId: process.env.FIREBASE_APP_ID || "1:937100963582:web:a722b7f770cb3d3db73faf",
-      firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-85K46L7DNP"
+      firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-85K46L7DNP",
+      eas: {
+        projectId: "83bb19eb-57b1-4d6b-ad6a-8af26ea7a58e" // ✅ 요기!
+      }
     }
   }
 };

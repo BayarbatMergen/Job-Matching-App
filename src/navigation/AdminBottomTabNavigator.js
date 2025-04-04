@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { db } from '../config/firebase';
 import {
   collection,
@@ -34,7 +34,8 @@ import AdminNotificationScreen from '../screens/AdminNotificationScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-export function useUnreadNotificationCount() {
+// ✅ 알림 감지 훅
+function useUnreadNotificationCount() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function useUnreadNotificationCount() {
   return count;
 }
 
-// 관리자 unread 채팅 감지용 훅
+// ✅ 채팅 감지 훅
 function useUnreadChatCount() {
   const [hasUnread, setHasUnread] = useState(false);
 
@@ -69,14 +70,13 @@ function useUnreadChatCount() {
       );
 
       const allRooms = roomSnap.docs;
-
       if (allRooms.length === 0) {
         setHasUnread(false);
         return;
       }
 
       const unsubArray = [];
-      const unreadMap = {}; // 각 방의 unread 상태 저장
+      const unreadMap = {};
 
       allRooms.forEach((doc) => {
         const roomId = doc.id;
@@ -90,7 +90,6 @@ function useUnreadChatCount() {
 
           unreadMap[roomId] = hasUnreadInRoom;
 
-          // 전체 방 중 하나라도 true면 true
           const isAnyUnread = Object.values(unreadMap).some(Boolean);
           setHasUnread(isAnyUnread);
         });
@@ -102,15 +101,11 @@ function useUnreadChatCount() {
     };
 
     listen();
-
-    return () => {
-      unsubscribers.forEach((unsub) => unsub());
-    };
+    return () => unsubscribers.forEach((unsub) => unsub());
   }, []);
 
   return hasUnread;
 }
-
 
 // 모집 공고 관리 스택
 function AdminHomeStack() {
@@ -136,17 +131,7 @@ function AdminHomeStack() {
             >
               <View>
                 <Ionicons name="notifications-outline" size={24} color="white" />
-                {unreadCount > 0 && (
-                  <View style={{
-                    position: 'absolute',
-                    right: -2,
-                    top: -2,
-                    width: 8,
-                    height: 8,
-                    backgroundColor: 'red',
-                    borderRadius: 4
-                  }} />
-                )}
+                {unreadCount > 0 && <View style={styles.redDot} />}
               </View>
             </TouchableOpacity>
           ),
@@ -210,9 +195,10 @@ function AdminMyPageStack() {
   );
 }
 
-// 관리자 바텀 탭 네비게이터
+// ✅ 관리자 바텀 탭 네비게이터
 export default function AdminBottomTabNavigator() {
   const hasUnreadChat = useUnreadChatCount();
+  const unreadNotificationCount = useUnreadNotificationCount();
 
   return (
     <Tab.Navigator
@@ -227,20 +213,14 @@ export default function AdminBottomTabNavigator() {
           else if (route.name === 'AdminChat') iconName = 'chatbubble-outline';
           else if (route.name === 'AdminMyPage') iconName = 'person-outline';
 
+          const showRedDot =
+            (route.name === 'AdminChat' && hasUnreadChat) ||
+            (route.name === 'AdminHome' && unreadNotificationCount > 0);
+
           return (
             <View style={{ position: 'relative' }}>
               <Ionicons name={iconName} size={28} color={color} />
-              {route.name === 'AdminChat' && hasUnreadChat && (
-                <View style={{
-                  position: 'absolute',
-                  top: -2,
-                  right: -6,
-                  width: 8,
-                  height: 8,
-                  backgroundColor: 'red',
-                  borderRadius: 4,
-                }} />
-              )}
+              {showRedDot && <View style={styles.redDot} />}
             </View>
           );
         },
@@ -253,3 +233,15 @@ export default function AdminBottomTabNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  redDot: {
+    position: 'absolute',
+    top: -2,
+    right: -6,
+    width: 8,
+    height: 8,
+    backgroundColor: 'red',
+    borderRadius: 4,
+  },
+});
