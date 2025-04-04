@@ -41,7 +41,7 @@ export default function JobListScreen({ navigation, hasNotifications }) {
       }
       const user = await fetchUserData();
       setUserId(user.userId);
-      fetchJobs(user.userId);
+      await fetchJobs(user.userId);
     };
     init();
   }, []);
@@ -65,11 +65,10 @@ export default function JobListScreen({ navigation, hasNotifications }) {
     }, [hasNotifications])
   );
 
-  const onRefresh = useCallback(() => {
-    if (userId) {
-      setRefreshing(true);
-      fetchJobs(userId);
-    }
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const storedUserId = userId || (await fetchUserData()).userId;
+    await fetchJobs(storedUserId);
   }, [userId]);
 
   if (loading) {
@@ -82,53 +81,62 @@ export default function JobListScreen({ navigation, hasNotifications }) {
   }
 
   return (
-    <View style={styles.container}>
-      {jobListings.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="briefcase-outline" size={50} color="#ccc" />
-          <Text style={styles.emptyTextTitle}>모집 공고가 없습니다</Text>
-          <Text style={styles.emptyTextSub}>새로운 공고가 등록되면 알려드릴게요!</Text>
-        </View>
-      ) : (
-<FlatList
-  data={jobListings}
-  keyExtractor={(item) => item.id}
-  refreshing={refreshing}
-  onRefresh={onRefresh}
-  contentContainerStyle={
-    jobListings.length === 0 ? styles.emptyContainer : { paddingBottom: 30 }
-  }
-  renderItem={({ item }) => (
-    <TouchableOpacity
-      style={styles.jobCard}
-      onPress={() => navigation.navigate('JobDetail', { job: item })}
-    >
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
-      <Text style={styles.date}>
-        {item.startDate && item.endDate
-          ? `${item.startDate} ~ ${item.endDate}`
-          : '기간 정보 없음'}
-      </Text>
-      <Text style={styles.location}>📍 {item.location}</Text>
-    </TouchableOpacity>
-  )}
-/>
-
-      )}
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      <FlatList
+        data={jobListings}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.jobCard}
+            onPress={() => navigation.navigate('JobDetail', { job: item })}
+          >
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.wage}>{Number(item.wage).toLocaleString()}원</Text>
+            <Text style={styles.date}>
+              {item.startDate && item.endDate
+                ? `${item.startDate} ~ ${item.endDate}`
+                : '기간 정보 없음'}
+            </Text>
+            <Text style={styles.location}>📍 {item.location}</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="briefcase-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyTextTitle}>모집 공고가 없습니다</Text>
+            <Text style={styles.emptyTextSub}>새로운 공고가 등록되면 알려드릴게요!</Text>
+          </View>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#007AFF"
+          />
+        }
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: 20,
+          paddingHorizontal: 20,
+          paddingBottom: 40,
+        }}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 50,
+    paddingTop: 60,
   },
   emptyTextTitle: {
     fontSize: 20,
@@ -141,7 +149,6 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 5,
   },
-
   jobCard: {
     backgroundColor: '#F8F8F8',
     padding: 18,
@@ -150,11 +157,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
   },
-  title: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 6 },
-  wage: { fontSize: 16, color: 'red', marginBottom: 4 },
-  date: { fontSize: 14, color: '#555', marginBottom: 4 },
-  location: { fontSize: 14, color: '#777' },
-
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+  },
+  wage: {
+    fontSize: 16,
+    color: 'red',
+    marginBottom: 4,
+  },
+  date: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 4,
+  },
+  location: {
+    fontSize: 14,
+    color: '#777',
+  },
   notificationDot: {
     position: 'absolute',
     top: -3,

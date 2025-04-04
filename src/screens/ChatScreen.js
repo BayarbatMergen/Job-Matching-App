@@ -17,77 +17,79 @@ export default function ChatScreen({ route }) {
   const { roomId, roomType } = route.params;
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
   const flatListRef = useRef();
 
-  // 유저 ID와 메시지 로딩 처리
-  useEffect(() => {
-    const setup = async () => {
-      try {
-        const userId = await SecureStore.getItemAsync("userId");
-        const token = await SecureStore.getItemAsync("token");
-
-        if (!userId || !token) {
-          console.warn("❗️userId 또는 token이 없습니다.");
-          return;
-        }
-
-        setCurrentUserId(userId);
-
-        const res = await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
-          headers: { Authorization: `Bearer ${token}` },
+  // 메시지 불러오기
+  const fetchMessages = async () => {
+    try {
+      const userId = await SecureStore.getItemAsync("userId");
+      const token = await SecureStore.getItemAsync("token");
+      if (!userId || !token) return [];
+  
+      setCurrentUserId(userId);
+  
+      const res = await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const msgData = await res.json();
+  
+      // 읽음 처리
+      const unreadMessages = msgData.filter(
+        (msg) => msg.senderId !== userId && (!msg.readBy || !msg.readBy.includes(userId))
+      );
+  
+      for (const msg of unreadMessages) {
+        await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages/${msg.id}/read`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId }),
         });
-
-        const msgData = await res.json();
-        setMessages(msgData);
-
-        // 안 읽은 메시지 읽음 처리
-        const unreadMessages = msgData.filter(
-          (msg) =>
-            msg.senderId !== userId &&
-            (!msg.readBy || !msg.readBy.includes(userId))
-        );
-
-        for (const msg of unreadMessages) {
-          await fetch(
-            `${API_BASE_URL}/chats/rooms/${roomId}/messages/${msg.id}/read`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ userId }),
-            }
-          );
-        }
-      } catch (error) {
-        console.error("📛 메시지 로딩 실패:", error);
-      } finally {
-        setLoading(false); // 반드시 호출되도록
       }
-    };
+  
+      return msgData;
+    } catch (err) {
+      console.error("📛 메시지 로딩 실패:", err);
+      return [];
+    }
+  };
+  
 
-    setup();
+  useEffect(() => {
+    const load = async () => {
+      const data = await fetchMessages();
+      setMessages(data);
+      setLoading(false);
+    };
+    load();
   }, [roomId]);
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    const newData = await fetchMessages();
+    setMessages(newData);
+    setRefreshing(false);
+  };
+  
 
   const sendMessage = async () => {
     if (roomType === "notice" || messageText.trim() === "") return;
 
     try {
       const token = await SecureStore.getItemAsync("token");
-      const res = await fetch(
-        `${API_BASE_URL}/chats/rooms/${roomId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ text: messageText }),
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/chats/rooms/${roomId}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: messageText }),
+      });
 
       if (res.ok) {
         setMessageText("");
@@ -119,6 +121,8 @@ export default function ChatScreen({ route }) {
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
         renderItem={({ item }) => (
           <View
             style={[
