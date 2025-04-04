@@ -114,7 +114,7 @@ const requestSettlement = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (today <= lastEndDate) {
-      return res.status(400).json({ message: '❗ 모든 스케줄이 종료된 다음 날부터 정산 요청이 가능합니다.' });
+      return res.status(400).json({ message: '모든 스케줄이 종료된 다음 날부터 정산 요청이 가능합니다.' });
     }
 
     //  2) 이미 pending 상태의 요청이 있는지 검사
@@ -124,7 +124,7 @@ const requestSettlement = async (req, res) => {
       .get();
 
     if (!existingRequests.empty) {
-      return res.status(400).json({ message: '❗ 승인 대기 중인 정산 요청이 이미 존재합니다.' });
+      return res.status(400).json({ message: '승인 대기 중인 정산 요청이 이미 존재합니다.' });
     }
 
     //  3) 정산 요청 저장

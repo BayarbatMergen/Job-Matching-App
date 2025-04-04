@@ -302,7 +302,7 @@ router.get('/user/:userId', async (req, res) => {
 
     res.status(200).json(safeData);
   } catch (error) {
-    console.error('❗ 사용자 상세 조회 오류:', error);
+    console.error('사용자 상세 조회 오류:', error);
     res.status(500).json({ message: '사용자 정보 가져오기 실패', error: error.message });
   }
 });
@@ -438,7 +438,7 @@ router.get('/users', async (req, res) => {
 
     res.status(200).json(users);
   } catch (error) {
-    console.error("❗ 사용자 목록 조회 실패:", error);
+    console.error("사용자 목록 조회 실패:", error);
     res.status(500).json({ message: '사용자 목록을 불러오지 못했습니다.' });
   }
 });

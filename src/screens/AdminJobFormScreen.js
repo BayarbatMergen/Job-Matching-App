@@ -12,10 +12,6 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import API_BASE_URL from "../config/apiConfig";
 import userSelectionStore from "../store/userSelectionStore";
-import {
-  sendUserApplicationApprovalNotification,
-  sendTestNotification,
-} from '../utils/notificationService';
 
 export default function AdminJobFormScreen({ navigation }) {
   const [form, setForm] = useState({
@@ -51,17 +47,12 @@ export default function AdminJobFormScreen({ navigation }) {
       }
     }
   
-    if (!sendToAll && (!userSelectionStore.selectedUsers || userSelectionStore.selectedUsers.length === 0)) {
-      Alert.alert("알림 대상 선택", "특정 사용자를 선택하거나 전체 알림을 선택해주세요.");
-      return;
-    }
-  
     try {
       const jobData = {
         ...form,
-        wage: Number(form.wage),
-        maleRecruitment: Number(form.maleRecruitment || 0),
-        femaleRecruitment: Number(form.femaleRecruitment || 0),
+        wage: Number(form.wage), // ✅ 숫자로 변환
+        maleRecruitment: Number(form.maleRecruitment || 0), // ✅ 숫자로 변환
+        femaleRecruitment: Number(form.femaleRecruitment || 0), // ✅ 숫자로 변환
         workDays: form.workDays
           .split(",")
           .map((day) => day.trim())
@@ -70,40 +61,16 @@ export default function AdminJobFormScreen({ navigation }) {
       };
   
       const response = await axios.post(`${API_BASE_URL}/jobs/add`, jobData);
-      
+      console.log(" 공고 등록 성공:", response.data);
+  
       Alert.alert("등록 완료", "공고가 성공적으로 등록되었습니다.");
-  
-      // ✅ 알림 전송
-      if (sendToAll) {
-        const allUsers = await getAllUsers();
-        for (const user of allUsers) {
-          if (user.email) {
-            await sendUserApplicationApprovalNotification(user.email, form.title);
-          }
-        }
-      } else {
-        for (const user of userSelectionStore.selectedUsers) {
-          if (user.email) {
-            await sendUserApplicationApprovalNotification(user.email, form.title);
-          }
-        }
-      }
-  
-      // ✅ 테스트 푸시 알림 (에뮬레이터용)
-      sendTestNotification(`'${form.title}' 공고가 성공적으로 등록되었습니다.`);
-  
       userSelectionStore.clearSelectedUsers();
       navigation.goBack();
     } catch (error) {
-      console.error("❌ 공고 등록 API 오류:", error);
-      if (error.response) {
-        
-      }
+      console.error(" 공고 등록 API 오류:", error);
       Alert.alert("등록 실패", "공고 등록 중 오류가 발생했습니다.");
     }
-  };
-  
-  
+  };  
 
   return (
     <ScrollView style={styles.container}>
