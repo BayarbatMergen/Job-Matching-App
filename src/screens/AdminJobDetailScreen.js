@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import API_BASE_URL from "../config/apiConfig";
 
 export default function AdminJobDetailScreen({ route, navigation }) {
   const { job, updateJob } = route.params;
@@ -20,7 +21,7 @@ export default function AdminJobDetailScreen({ route, navigation }) {
         try {
           const names = [];
           for (const uid of editedJob.visibleTo) {
-            const response = await fetch(`http://192.168.0.5:5000/api/users/${uid}`);
+            const response = await fetch(`${API_BASE_URL}/users/${uid}`);
             const data = await response.json();
             if (data && data.name) {
               names.push(data.name);

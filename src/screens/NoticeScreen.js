@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { db } from '../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function NoticeScreen({ navigation }) {
   const [notices, setNotices] = useState([]);

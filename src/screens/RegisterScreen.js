@@ -6,6 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import Checkbox from 'expo-checkbox';
+import API_BASE_URL from '../config/apiConfig';
 
 const RegisterScreen = ({ navigation, route }) => {
   const { marketingConsent = false, termsAgreedAt = '', termsVersion = '' } = route.params || {};
@@ -89,7 +90,7 @@ const RegisterScreen = ({ navigation, route }) => {
     }
 
     try {
-      const response = await fetch("http://192.168.0.5:5000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         body: formData,
         headers: { "Content-Type": "multipart/form-data" },

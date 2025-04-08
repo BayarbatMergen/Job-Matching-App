@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
+import API_BASE_URL from '../config/apiConfig';
 
 const ConsentScreen = ({ navigation }) => {
   return (

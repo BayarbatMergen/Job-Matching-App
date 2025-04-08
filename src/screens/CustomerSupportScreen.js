@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { db } from '../config/firebase';
 import * as SecureStore from 'expo-secure-store';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function CustomerSupportScreen() {
   const [message, setMessage] = useState('');

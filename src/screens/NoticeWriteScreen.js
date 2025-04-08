@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import API_BASE_URL from "../config/apiConfig";
 
-const API_BASE_URL = 'http://192.168.0.5:5000';
 
 export default function NoticeWriteScreen({ navigation }) {
   const [title, setTitle] = useState('');
@@ -18,7 +18,7 @@ export default function NoticeWriteScreen({ navigation }) {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/notice`, {
+      const response = await fetch(`${API_BASE_URL}/admin/notice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

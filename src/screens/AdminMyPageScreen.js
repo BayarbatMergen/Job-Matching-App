@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 import { logout } from '../services/authService';
+import API_BASE_URL from "../config/apiConfig";
 
 export default function AdminMyPageScreen() {
   const navigation = useNavigation();

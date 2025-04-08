@@ -8,6 +8,7 @@ import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import * as SecureStore from 'expo-secure-store';
 import { useIsFocused } from '@react-navigation/native';
+import API_BASE_URL from "../config/apiConfig";
 
 export default function AdminJobListScreen({ navigation }) {
   const [jobListings, setJobListings] = useState([]);

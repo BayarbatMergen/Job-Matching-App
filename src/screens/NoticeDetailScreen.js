@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
 import { db } from '../config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function NoticeDetailScreen({ route }) {
   const { noticeId } = route.params;

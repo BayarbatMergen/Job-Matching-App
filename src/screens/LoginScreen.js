@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { loginWithBackend, resetPasswordWithBackend } from "../services/authService";
 import { fetchUserData } from "../services/authService";
 import { saveUserData } from "../services/authService";
+import API_BASE_URL from "../config/apiConfig";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -73,7 +74,7 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://192.168.0.5:5000/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

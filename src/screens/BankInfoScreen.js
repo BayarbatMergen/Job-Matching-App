@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { db } from '../config/firebase';
 import { fetchUserData } from '../services/authService';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function BankInfoScreen() {
   const [existingBankInfo, setExistingBankInfo] = useState({ bankName: '', accountNumber: '' });

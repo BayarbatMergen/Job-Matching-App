@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import ApplyButton from '../components/ApplyButton';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function JobDetailScreen({ route, navigation }) {
   const { job } = route.params ?? {};

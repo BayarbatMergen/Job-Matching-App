@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-nativ
 import { db } from '../config/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function MyInquiriesScreen() {
   const [inquiries, setInquiries] = useState([]);

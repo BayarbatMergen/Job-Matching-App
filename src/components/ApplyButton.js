@@ -4,6 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { db } from "../config/firebase";
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 const jwtDecode = require("jwt-decode");
+import API_BASE_URL from "../config/apiConfig";
 
 const ApplyButton = ({ job, navigation }) => {
   const [loading, setLoading] = useState(false);
@@ -47,7 +48,7 @@ const ApplyButton = ({ job, navigation }) => {
 
       try {
         const response = await fetch(
-          `http://192.168.0.5:5000/api/jobs/applied?jobId=${job.id}&userEmail=${userEmail}`
+          `${API_BASE_URL}/jobs/applied?jobId=${job.id}&userEmail=${userEmail}`
         );
         const data = await response.json();
 
@@ -72,7 +73,7 @@ const ApplyButton = ({ job, navigation }) => {
   
     setLoading(true);
     try {
-      const response = await fetch("http://192.168.0.5:5000/api/jobs/apply", {
+      const response = await fetch(`${API_BASE_URL}/jobs/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

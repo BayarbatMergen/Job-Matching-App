@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase";
 import userSelectionStore from "../store/userSelectionStore";
+import API_BASE_URL from '../config/apiConfig';
 
 export default function UserSelectionScreen({ navigation }) {
   const [users, setUsers] = useState([]);

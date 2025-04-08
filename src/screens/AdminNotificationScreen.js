@@ -4,7 +4,7 @@ import { db } from '../config/firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { doc, updateDoc } from "firebase/firestore"; // 추가
-
+import API_BASE_URL from "../config/apiConfig";
 
 export default function AdminNotificationScreen({ navigation }) {
   const [notifications, setNotifications] = useState([]);

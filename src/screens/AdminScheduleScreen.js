@@ -12,6 +12,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useNavigation } from '@react-navigation/native';
+import API_BASE_URL from '../config/apiConfig';
 
 // 📆 한국어 캘린더 설정
 LocaleConfig.locales['kr'] = {

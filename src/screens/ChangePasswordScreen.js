@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState(''); // 현재 비밀번호는 입력만 받되 사용하지 않음 (백엔드로 검증)
@@ -24,7 +25,7 @@ export default function ChangePasswordScreen() {
   
       const token = await SecureStore.getItemAsync("token");
   
-      const response = await fetch("http://192.168.0.5:5000/api/auth/change-password", {
+      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

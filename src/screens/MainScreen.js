@@ -5,6 +5,7 @@ import BottomTabNavigator from '../navigation/BottomTabNavigator';
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import API_BASE_URL from '../config/apiConfig';
 
 const Stack = createNativeStackNavigator();
 

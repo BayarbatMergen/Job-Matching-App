@@ -10,8 +10,7 @@ import {
   Alert
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-const API_BASE_URL = "http://192.168.0.5:5000";
+import API_BASE_URL from "../config/apiConfig";
 
 const UserManagementScreen = ({ navigation }) => {
   const [users, setUsers] = useState([]);
@@ -23,7 +22,7 @@ const UserManagementScreen = ({ navigation }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/admin/users`);
+      const response = await fetch(`${API_BASE_URL}/admin/users`);
       if (!response.ok) {
         throw new Error("사용자 목록을 불러오지 못했습니다.");
       }

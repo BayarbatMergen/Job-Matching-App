@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import API_BASE_URL from "../config/apiConfig";
 
-const API_BASE_URL = 'http://192.168.0.5:5000';
 
 export default function UserDetailScreen({ route }) {
   const { userId } = route.params;
@@ -12,7 +12,7 @@ export default function UserDetailScreen({ route }) {
   const fetchUserDetails = async () => {
     try {
       
-      const response = await fetch(`${API_BASE_URL}/api/admin/user/${userId}`);
+      const response = await fetch(`${API_BASE_URL}/admin/user/${userId}`);
       if (!response.ok) {
         throw new Error('사용자 정보를 가져오는 데 실패했습니다.');
       }

@@ -11,7 +11,7 @@ import {
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import axios from "axios";
-import API_BASE_URL from "../config/apiConfig"; // ←  default export에 맞는 import 방식
+import API_BASE_URL from "../config/apiConfig";
 
 
 export default function ApplicationApprovalScreen() {

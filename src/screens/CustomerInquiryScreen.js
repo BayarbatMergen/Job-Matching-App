@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function CustomerInquiryScreen() {
   const [inquiries, setInquiries] = useState([]);

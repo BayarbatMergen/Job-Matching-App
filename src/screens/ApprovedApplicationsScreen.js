@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import API_BASE_URL from '../config/apiConfig';
 
 export default function ApprovedApplicationsScreen() {
   const [approvedApplications, setApprovedApplications] = useState([]);
