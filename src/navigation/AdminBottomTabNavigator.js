@@ -147,18 +147,31 @@ function AdminHomeStack() {
 }
 
 // 일정 관리 스택
+// 일정 관리 스택
 function AdminScheduleStack() {
   return (
-    <Stack.Navigator screenOptions={{
-      headerStyle: { backgroundColor: '#007AFF' },
-      headerTintColor: '#fff',
-      headerTitleAlign: 'center'
-    }}>
-      <Stack.Screen name="AdminScheduleScreen" component={AdminScheduleScreen} options={{ headerTitle: '일정 관리' }} />
-      <Stack.Screen name="SettlementApprovalScreen" component={SettlementApprovalScreen} options={{ headerTitle: '정산 승인 관리' }} />
+    <Stack.Navigator
+      initialRouteName="AdminScheduleScreen" // 초기 화면 설정
+      screenOptions={{
+        headerStyle: { backgroundColor: '#007AFF' },
+        headerTintColor: '#fff',
+        headerTitleAlign: 'center',
+      }}
+    >
+      <Stack.Screen
+        name="AdminScheduleScreen"
+        component={AdminScheduleScreen}
+        options={{ headerTitle: '일정 관리' }}
+      />
+      <Stack.Screen
+        name="SettlementApprovalScreen"
+        component={SettlementApprovalScreen}
+        options={{ headerTitle: '정산 승인 관리' }}
+      />
     </Stack.Navigator>
   );
 }
+
 
 // 채팅 스택
 function AdminChatStack() {
