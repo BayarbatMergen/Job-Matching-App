@@ -49,7 +49,7 @@ export default {
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "937100963582",
       firebaseAppId: process.env.FIREBASE_APP_ID || "1:937100963582:web:a722b7f770cb3d3db73faf",
       firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-85K46L7DNP",
-      API_BASE_URL: process.env.API_BASE_URL || "https://d159-121-155-151-115.ngrok-free.app/api", // 환경 변수 사용
+      API_BASE_URL: process.env.API_BASE_URL || "https://us-central1-jobmatchingapp-383da.cloudfunctions.net/api",
       eas: {
         projectId: "83bb19eb-57b1-4d6b-ad6a-8af26ea7a58e",
       },

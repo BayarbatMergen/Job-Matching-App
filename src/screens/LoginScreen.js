@@ -16,6 +16,8 @@ import { loginWithBackend, resetPasswordWithBackend } from "../services/authServ
 import { fetchUserData } from "../services/authService";
 import { saveUserData } from "../services/authService";
 import API_BASE_URL from "../config/apiConfig";
+import Constants from 'expo-constants';
+
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -66,6 +68,8 @@ const LoginScreen = ({ navigation }) => {
 
   //  로그인 처리 함수
   const handleLogin = async () => {
+    console.log("🔗 현재 API_BASE_URL:", Constants.expoConfig.extra.API_BASE_URL);
+
     if (!email || !password) {
       Alert.alert("입력 오류", "이메일과 비밀번호를 모두 입력해주세요.");
       return;
