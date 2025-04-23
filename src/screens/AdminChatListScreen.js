@@ -156,45 +156,52 @@ export default function AdminChatListScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      {chatRooms.length === 0 ? (
-        <Text style={styles.noChatText}>표시할 채팅방이 없습니다.</Text>
-      ) : (
-        <FlatList
-          data={chatRooms}
-          keyExtractor={(item) => item.id}
-          refreshing={refreshing}      // 추가
-          onRefresh={onRefresh}        // 추가
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          renderItem={({ item }) => (
-            <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-              <TouchableOpacity
-                style={styles.roomItem}
-                onPress={() =>
-                  navigation.navigate("AdminChatScreen", {
-                    roomId: item.id,
-                    roomName: item.name || "채팅방",
-                    roomType: item.roomType || "inquiry",
-                  })
-                }
-                onLongPress={() => confirmDelete(item.id)}
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={24} color="#007AFF" />
-                <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
-                {unreadRoomIds.includes(item.id) && (
-                  <View style={styles.unreadDot} />
-                )}
-              </TouchableOpacity>
-            </Swipeable>
-          )}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <FlatList
+        contentContainerStyle={{
+          padding: 20,
+          flexGrow: 1,
+          justifyContent: chatRooms.length === 0 ? 'center' : 'flex-start',
+          alignItems: chatRooms.length === 0 ? 'center' : 'stretch',
+        }}
+        data={chatRooms}
+        keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        renderItem={({ item }) => (
+          <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+            <TouchableOpacity
+              style={styles.roomItem}
+              onPress={() =>
+                navigation.navigate("AdminChatScreen", {
+                  roomId: item.id,
+                  roomName: item.name || "채팅방",
+                  roomType: item.roomType || "inquiry",
+                })
+              }
+              onLongPress={() => confirmDelete(item.id)}
+            >
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={24}
+                color="#007AFF"
+              />
+              <Text style={styles.roomName}>{item.name || "채팅방"}</Text>
+              {unreadRoomIds.includes(item.id) && (
+                <View style={styles.unreadDot} />
+              )}
+            </TouchableOpacity>
+          </Swipeable>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.noChatText}>표시할 채팅방이 없습니다.</Text>
+        }
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
-}
+}  
 
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: "#fff", padding: 20 },

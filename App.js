@@ -52,6 +52,7 @@ export default function App() {
 
       // ✅ 에뮬레이터용 테스트 알림 띄우기
       sendTestNotification("🔥 앱 실행됨", "이건 에뮬레이터 확인용 테스트 알림입니다.");
+
     };
 
     setupPush();
